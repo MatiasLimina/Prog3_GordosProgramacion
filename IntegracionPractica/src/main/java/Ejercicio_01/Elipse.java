@@ -8,13 +8,24 @@ public class Elipse extends Figura {
     /**
      * Constructor para una Elipse.
      * @param color El color de la figura.
-     * @param radioMayor El radio mayor de la elipse.
-     * @param radioMenor El radio menor de la elipse.
+     * @param radioMayor El radio mayor de la elipse (>0).
+     * @param radioMenor El radio menor de la elipse (>0).
      */
     public Elipse(String color, double radioMayor, double radioMenor) {
         super(color);
+        if (radioMayor <= 0 || radioMenor <= 0) {
+            throw new IllegalArgumentException("Radios deben ser > 0");
+        }
         this.radioMayor = radioMayor;
         this.radioMenor = radioMenor;
+    }
+
+    public double getRadioMayor() {
+        return radioMayor;
+    }
+
+    public double getRadioMenor() {
+        return radioMenor;
     }
 
     /**
