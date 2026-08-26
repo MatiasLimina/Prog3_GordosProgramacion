@@ -1,0 +1,95 @@
+<diagram program="umletino" version="15.1"><zoom_level>6</zoom_level><element><id>UMLClass</id><coordinates><x>450</x><y>0</y><w>60</w><h>48</h></coordinates><panel_attributes>Museo
+--
+-nombre:String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>636</x><y>144</y><w>138</w><h>138</h></coordinates><panel_attributes>Artista
+--
+-nombre: String
+
+-fechaNacimiento: LocalDate
+
+-fechaDefuncion: LocalDate (opcional)
+
+-paisOrigen: String
+
+-epoca: String
+
+-estiloPrincipal: String
+
+-descripcion: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>84</y><w>96</w><h>120</h></coordinates><panel_attributes>ColeccionExterna
+--
+-nombre: String
+
+-tipoColeccion: String
+
+-descripcion: String
+
+-direccion: String
+
+-telefono: String
+
+-personaContacto: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>246</x><y>0</y><w>108</w><h>66</h></coordinates><panel_attributes>Exposicion
+--
+-nombre: String
+
+-fechaComienzo: LocalDate
+
+-fechaFinalizacion: LocalDate</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>426</x><y>144</y><w>102</w><h>138</h></coordinates><panel_attributes>/ObjetoDeArte/
+--
+-idIdentificacion: String
+
+-titulo: String
+
+-descripcion: String
+
+-anioCreacion: int (opcional)
+
+-paisOrigen: String
+
+-cultura: String
+
+-epoca: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>522</x><y>348</y><w>108</w><h>66</h></coordinates><panel_attributes>Pintura
+--
+-material: String
+
+-altura: double
+
+-peso: double
+
+-estilo: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>414</x><y>348</y><w>108</w><h>30</h></coordinates><panel_attributes>OtroObjeto
+--
+-tipoEspecifico: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>264</x><y>210</y><w>102</w><h>30</h></coordinates><panel_attributes>/EstadoTenencia/
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>114</x><y>180</y><w>108</w><h>54</h></coordinates><panel_attributes>Prestamo
+--
+-fechaRecepcion: LocalDate
+
+-fechaDevolucion: LocalDate</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>114</x><y>234</y><w>108</w><h>66</h></coordinates><panel_attributes>Permanente
+--
+-fechaAdquisicion: LocalDate
+
+-coste: double
+
+-enExposicion: boolean</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>354</x><y>348</y><w>60</w><h>66</h></coordinates><panel_attributes>Escultura
+--
+-material: String
+
+-altura: double
+
+-peso: double
+
+-estilo: String</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>462</x><y>276</y><w>42</w><h>84</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>50;10;10;120</additional_attributes></element><element><id>Relation</id><coordinates><x>522</x><y>276</y><w>42</w><h>84</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;10;50;120</additional_attributes></element><element><id>Relation</id><coordinates><x>378</x><y>276</y><w>78</w><h>84</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>110;10;10;120</additional_attributes></element><element><id>Relation</id><coordinates><x>216</x><y>204</y><w>60</w><h>18</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>80;10;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>216</x><y>234</y><w>60</w><h>30</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>80;10;10;30</additional_attributes></element><element><id>Relation</id><coordinates><x>474</x><y>42</y><w>72</w><h>114</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+Posee/gestiona
+m1=1
+m2=n</panel_attributes><additional_attributes>10;10;10;170</additional_attributes></element><element><id>Relation</id><coordinates><x>348</x><y>12</y><w>114</w><h>30</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+Organiza
+m1=1
+m2=n</panel_attributes><additional_attributes>170;20;10;20</additional_attributes></element><element><id>Relation</id><coordinates><x>360</x><y>210</y><w>78</w><h>24</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=n</panel_attributes><additional_attributes>110;10;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>306</x><y>60</y><w>132</w><h>114</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+exhibe
+m1=0..*
+m2=1..*</panel_attributes><additional_attributes>10;10;10;160;200;160</additional_attributes></element><element><id>Relation</id><coordinates><x>522</x><y>168</y><w>126</w><h>30</h></coordinates><panel_attributes>lt=&lt;-
+creado por
+m1=1..*
+m2=0..*	</panel_attributes><additional_attributes>190;20;10;20</additional_attributes></element><element><id>Relation</id><coordinates><x>90</x><y>114</y><w>102</w><h>78</h></coordinates><panel_attributes>lt=&lt;-
+pertenece a
+m1=1..*
+m2=0..*</panel_attributes><additional_attributes>10;20;130;20;130;110</additional_attributes></element></diagram>

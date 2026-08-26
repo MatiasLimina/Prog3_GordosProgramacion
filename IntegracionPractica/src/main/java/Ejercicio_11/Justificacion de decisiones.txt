@@ -1,0 +1,57 @@
+================================================================================
+EJERCICIO 11: COSMÉTICA NATURAL - JUSTIFICACIÓN DE DECISIONES Y DISEÑO
+================================================================================
+
+1. ANÁLISIS DE CLASES Y ATRIBUTOS
+--------------------------------------------------------------------------------
+- Persona (Clase base): nombre, direccion, telefono, fechaNacimiento.
+- RepresentanteVentas (Clase abstracta extends Persona): cuitCuil, fechaIncorporacion, porcentajeComision.
+- Vendedor (Hereda de RepresentanteVentas): Hereda atributos laborales y personales.
+- Lider (Hereda de RepresentanteVentas): fechaPromocionLider y coordina un Equipo.
+- Equipo: nombreEquipo, agrupa a sus Vendedores.
+- Cliente (Hereda de Persona): fechaIngresoCliente (para fines promocionales y de seguimiento).
+- Producto: nombre, precioVenta.
+- TicketVenta: fecha, precio, Producto, Cliente (opcional hasta venta final), RepresentanteVentas (emisor).
+- ReunionGeneral: fechaUltimaReunion, fechaProximaReunion, lista de asistentes (fuerza de ventas).
+
+
+2. JUSTIFICACIÓN DE RELACIONES TODO-PARTE (COMPOSICIÓN VS AGREGACIÓN)
+--------------------------------------------------------------------------------
+
+A) Líder y Equipo (Composición: 1 ◆— 1) / Equipo y Vendedor (Agregación / Composición: 1 ◆— 1..*)
+- ¿Por qué Composición / Agregación?
+  La estructura de ventas organiza a los vendedores en equipos coordinados por líderes. Un equipo no existe sin su líder que lo encabeza, y agrupa a un conjunto de vendedores (`1..*`). Si el equipo se disuelve, sus miembros dejan de estar agrupados bajo esa estructura organizativa.
+- Multiplicidad:
+  * Líder a Equipo (1 — 1): Un líder coordina exactamente un equipo.
+  * Equipo a Vendedor (1 — 1..*): Un equipo está compuesto por uno o más vendedores. Un vendedor pertenece a un único equipo.
+
+
+3. FUNDAMENTO DE ASOCIACIONES Y MULTIPLICIDADES
+--------------------------------------------------------------------------------
+
+A) RepresentanteVentas y Cliente (Asociación: 1 — 0..*)
+- Todos los representantes de ventas (tanto vendedores como líderes) poseen su propia cartera de clientes. Cada cliente pertenece a un único representante que realiza su seguimiento y promoción, mientras que un representante gestiona cero o muchos clientes.
+
+B) RepresentanteVentas y TicketVenta (Asociación: 1 — 0..*)
+- Los vendedores y líderes adquieren productos directamente de la empresa y abonan contra entrega de un ticket de venta por unidad. Un representante emite/adquiere múltiples tickets a lo largo de su actividad.
+
+C) TicketVenta y Cliente (Asociación: 0..1 — 1)
+- Los tickets se emiten por triplicado. Una copia se completa con el nombre del cliente tras la venta final. Por lo tanto, un ticket está asociado a 0..1 cliente (puede estar pendiente de asignación o ser venta directa al representante sin cliente final registrado).
+
+D) TicketVenta y Producto (Asociación: * — 1)
+- Cada ticket de venta registra una unidad de un producto específico. Múltiples tickets pueden corresponder a un mismo producto.
+
+E) RepresentanteVentas y ReunionGeneral (Asociación N:M: * — *)
+- Una vez por mes la empresa lleva a cabo una reunión general con toda su fuerza de ventas. Los representantes asisten a estas reuniones donde se rinden comisiones y se informa sobre fechas y seguimiento.
+
+
+4. REGLAS DE NEGOCIO Y CÁLCULO DE COMISIONES
+--------------------------------------------------------------------------------
+- Vendedor: Se le reintegra el porcentaje de comisión sobre el monto total de sus ventas (tickets registrados) desde la fecha de la última reunión general.
+- Líder: Se le reintegra el mismo porcentaje de comisión sobre sus propias ventas directas, MÁS el porcentaje de comisión sobre el monto total de las ventas registradas de los vendedores de su equipo en el mismo período.
+
+
+5. DUDAS ABIERTAS O PROBLEMAS ENCONTRADOS
+--------------------------------------------------------------------------------
+1. Relación Cliente-Representante: El enunciado indica que cada representante posee su cartera de clientes. Se modeló con una lista de clientes en `RepresentanteVentas` y referencia al representante en `Cliente`.
+2. Asistencia a Reuniones: Se modeló una asociación entre `RepresentanteVentas` y `ReunionGeneral` para reflejar el seguimiento mensual y la liquidación de comisiones.

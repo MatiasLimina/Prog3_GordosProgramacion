@@ -1,0 +1,74 @@
+================================================================================
+EJERCICIO 9: MUSEO - JUSTIFICACIÓN DE DECISIONES Y DISEÑO
+================================================================================
+
+1. ANÁLISIS DE SUSTANTIVOS Y VERBOS DEL ENUNCIADO
+--------------------------------------------------------------------------------
+- Sustantivos detectados como Clases:
+  * Museo: Entidad principal que gestiona la colección y exposiciones.
+  * Artista: Creador de los objetos de arte.
+  * Exposicion: Evento temporal que exhibe un conjunto de objetos de arte.
+  * ColeccionExterna: Otras colecciones (museos, privadas) con las que se intercambian obras (origen de préstamos).
+  * ObjetoDeArte (Abstracta): Superclase de Pintura, Escultura y OtroObjeto.
+  * Pintura, Escultura, OtroObjeto: Especializaciones de ObjetoDeArte.
+  * EstadoTenencia (Abstracta): Superclase que modela si la obra es Permanente o en Préstamo.
+  * Permanente, Prestamo: Estados de tenencia específicos de un objeto de arte.
+
+- Verbos y relaciones principales:
+  * "Museo posee/gestiona ObjetoDeArte" -> Composición (1 a 0..*)
+  * "Museo organiza Exposicion" -> Composición (1 a 0..*)
+  * "ObjetoDeArte tiene EstadoTenencia" -> Composición (1 a 1)
+  * "Exposicion exhibe ObjetoDeArte" -> Agregación (0..* a 1..*)
+  * "ObjetoDeArte creado por Artista" -> Asociación (0..* a 0..1)
+  * "Prestamo pertenece a ColeccionExterna" -> Asociación (0..* a 1)
+
+
+2. JUSTIFICACIÓN DE RELACIONES TODO-PARTE (COMPOSICIÓN VS AGREGACIÓN)
+--------------------------------------------------------------------------------
+
+A) Museo y ObjetoDeArte (Composición: 1 ◆— 0..*)
+- ¿Por qué Composición?
+  Un objeto de arte de la colección permanente o gestionada por el museo pertenece y depende existencialmente del museo en cuanto a su inventario y administración central. Si el museo como institución principal deja de existir, su colección inventariada deja de pertenecer a este contexto de gestión (dependencia de ciclo de vida en el dominio del sistema).
+- Multiplicidad (1 — 0..*):
+  * Lado Museo (1): Un objeto de arte gestionado pertenece a exactamente un museo principal en este contexto de sistema.
+  * Lado ObjetoDeArte (0..*): Un museo puede tener cero objetos al crearse, y luego acumular múltiples obras de arte.
+
+B) Museo y Exposicion (Composición: 1 ◆— 0..*)
+- ¿Por qué Composición?
+  Las exposiciones son organizadas y creadas por el museo dentro de sus instalaciones o bajo su tutela institucional. No existen de manera independiente al museo que las programa.
+- Multiplicidad (1 — 0..*):
+  * Lado Museo (1): Cada exposición es organizada por exactamente un museo.
+  * Lado Exposicion (0..*): Un museo puede no tener exposiciones programadas temporalmente, o tener varias activas/futuras.
+
+C) ObjetoDeArte y EstadoTenencia (Composición: 1 ◆— 1)
+- ¿Por qué Composición?
+  El estado de tenencia (ya sea Permanente con fecha de adquisición y coste, o Préstamo con fechas de recepción/devolución) es una característica intrínseca y exclusiva del objeto de arte dentro del museo. Un objeto no puede existir sin un estado de tenencia (es permanente o es prestado), y dicho objeto es el único dueño de ese registro de tenencia. Si el objeto de arte se da de baja, su registro de tenencia desaparece con él.
+- Multiplicidad (1 — 1):
+  * Lado ObjetoDeArte (1): Cada objeto posee exactamente un estado de tenencia activo.
+  * Lado EstadoTenencia (1): Dicho estado pertenece de forma exclusiva a ese objeto de arte.
+
+D) Exposicion y ObjetoDeArte (Agregación: 0..* ◇— 1..*)
+- ¿Por qué Agregación (rombo hueco)?
+  A diferencia de la posesión del museo, una exposición *exhibe* obras de arte preexistentes en la colección del museo. Los objetos de arte existen independientemente de que participen o no en una exposición puntual; pueden estar en el almacén, en otra exposición o exhibidos permanentemente. La exposición no destruye las obras cuando finaliza; las obras sobreviven y pueden ser reexhibidas en futuras exposiciones. Por lo tanto, es una relación de **agregación** (todo-parte débil).
+- Multiplicidad (0..* — 1..*):
+  * Lado Exposicion (0..*): Un objeto de arte puede estar en cero exposiciones (ej. guardado en almacén) o en múltiples exposiciones a lo largo del tiempo.
+  * Lado ObjetoDeArte (1..*): Toda exposición debe exhibir al menos una obra de arte para considerarse válida (mínimo 1), pudiendo exhibir muchas.
+
+
+3. FUNDAMENTO DE LAS MULTIPLICIDADES EN ASOCIACIONES
+--------------------------------------------------------------------------------
+
+A) ObjetoDeArte y Artista (Asociación: 0..* — 0..1)
+- Artista (0..1): Un objeto de arte puede haber sido creado por un artista conocido (1) o ser anónimo (0). Por lo tanto, la multiplicidad hacia Artista es `0..1`.
+- ObjetoDeArte (0..*): Un artista puede haber creado múltiples obras (o ninguna registrada en el sistema).
+
+B) Prestamo y ColeccionExterna (Asociación: 0..* — 1)
+- ColeccionExterna (1): Si un objeto está en estado `Prestamo`, obligatoriamente proviene de una y sólo una colección externa colaboradora específica (`1`).
+- Prestamo (0..*): Una colección externa puede haber prestado múltiples obras al museo a lo largo del tiempo.
+
+
+4. DUDAS ABIERTAS O PROBLEMAS ENCONTRADOS
+--------------------------------------------------------------------------------
+1. Obras compartidas / Múltiples museos: El enunciado modela un único Museo central. Si se requiere soportar redes de museos donde una obra se presta entre museos propios, la relación Museo-ObjetoDeArte debería cambiar a agregación o M-N. Con los datos actuales, 1 a 0..* es adecuado.
+2. Artista único vs Múltiples artistas: El enunciado indica "información de los artistas: su nombre (se supone que único)...". Se modeló `0..1` o `1` artista por obra. Si una obra es co-creada por varios artistas, requeriría una lista `List<Artista>` (múltiples artistas por obra, N-M). Se deja con un artista principal (o null si anónimo) según la especificación textual directa.
+3. Historial de exposiciones: Se modeló `List<ObjetoDeArte>` en `Exposicion`. En un sistema completo, un objeto podría registrar en qué exposiciones participó mediante una clase de asociación con fecha, pero la agregación directa cubre el requisito funcional básico del enunciado.
