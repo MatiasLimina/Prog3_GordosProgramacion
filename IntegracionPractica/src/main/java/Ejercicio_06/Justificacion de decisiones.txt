@@ -1,0 +1,91 @@
+================================================================================
+EJERCICIO 6: PARQUES NACIONALES - JUSTIFICACIÓN DE DECISIONES Y DISEÑO
+================================================================================
+
+1. ANÁLISIS DE CLASES Y ATRIBUTOS
+--------------------------------------------------------------------------------
+- ComunidadAutonoma: nombre, organismoResponsable, lista de parques.
+- ParqueNacional: nombre (único), fechaDeclaracion, lista de CAs, áreas, entradas, alojamientos, personal.
+- Area: nombre (único dentro del parque), extensionKm2, lista de guardas asignados, especies residentes (censo).
+- Entrada: numero (del 1 al total de entradas del parque), lista de celadores asignados.
+- Alojamiento: nombre (único dentro del parque), capacidad, categoria, estadías registradas, excursiones organizadas.
+- Especie (Clase abstracta): nombreCientifico, nombreVulgar.
+- EspecieVegetal (extends Especie): tieneFloracion, periodoFloracion.
+- EspecieAnimal (abstract extends Especie): periodoCelo, lista de alimentos (especies que le sirven de alimento).
+- Herbivoro, Carnivoro, Omnivoro (subclases de EspecieAnimal).
+- CensoEspecie / PresenciaEspecie (Clase de asociación Area — Especie): especie, numeroIndividuos.
+- Visitante: dni, nombre, direccion, profesion, estadías, excursiones inscritas, visitas registradas.
+- Estadia (Clase de asociación Visitante — Alojamiento): numeroHabitacion, fechaInicio, fechaFin, visitante, alojamiento.
+- Excursion: codigo, dia, hora, alojamientos que la organizan, visitantes inscritos.
+- Personal (Clase base abstracta): dni, nombre, direccion, telefono, sueldo, numeroSeguridadSocial, parque donde trabaja.
+- Celador (extends Personal): entrada donde está destinado, registros de visita efectuados.
+- Guarda (extends Personal): area asignada, vehiculo.
+- Investigador (extends Personal): titulacion, proyectos en los que participa.
+- Vehiculo: tipo, matricula.
+- ProyectoInvestigacion: nombre, presupuesto, fechaInicio, fechaFin, especies investigadas, investigadores participantes.
+- RegistroVisita (Clase de asociación Celador — Visitante — Entrada): fecha, celador, visitante, entrada.
+
+
+2. JUSTIFICACIÓN DE RELACIONES TODO-PARTE (COMPOSICIÓN VS AGREGACIÓN)
+--------------------------------------------------------------------------------
+
+A) ParqueNacional y Area (Composición: 1 ◆— 1..*)
+- ¿Por qué Composición?
+  Las áreas físicas y zonificaciones no tienen existencia independiente fuera del parque nacional al que pertenecen; además el enunciado indica explícitamente que los nombres de las áreas no se repiten dentro del mismo parque (dependencia contextual y de ciclo de vida). Si el parque nacional desaparece, sus áreas dejan de existir.
+- Multiplicidad (1 — 1..*):
+  * Lado ParqueNacional (1): Un área pertenece exclusivamente a un parque.
+  * Lado Area (1..*): Todo parque nacional cuenta con al menos un área delimitada (1..*).
+
+B) ParqueNacional y Entrada (Composición: 1 ◆— 1..*)
+- ¿Por qué Composición?
+  Las entradas son accesos físicos directos al parque y están numeradas correlativamente del 1 al N respecto a ese parque particular. Dependen enteramente de la existencia del parque.
+- Multiplicidad (1 — 1..*):
+  * Lado ParqueNacional (1): Cada entrada pertenece a un único parque nacional.
+  * Lado Entrada (1..*): Todo parque posee una o varias entradas (1..*).
+
+C) ParqueNacional y Alojamiento (Composición: 1 ◆— 0..*)
+- ¿Por qué Composición?
+  El enunciado aclara que "Los PN tienen alojamientos propios" y "No hay dos alojamientos de un parque con igual nombre". Son infraestructuras gestionadas y contenidas dentro del parque.
+- Multiplicidad (1 — 0..*):
+  * Lado ParqueNacional (1): Un alojamiento pertenece a un parque específico.
+  * Lado Alojamiento (0..*): Un parque puede no contar con alojamientos propios o tener varios (0..*).
+
+
+3. FUNDAMENTO DE ASOCIACIONES Y MULTIPLICIDADES
+--------------------------------------------------------------------------------
+
+A) ComunidadAutonoma y ParqueNacional (Asociación N:M: 1..* — 1..*)
+- "Hay parques que se extienden por varias CAs": Un parque puede abarcar más de una CA (1..*), y una CA puede tener varios parques (1..*).
+
+B) Area y Especie / CensoEspecie (Asociación N:M: 1..* — 0..*)
+- En cada área residen varias especies y se conoce el número de individuos mediante la clase de asociación `CensoEspecie`.
+
+C) EspecieAnimal y Especie (Asociación Reflexiva / Cadena Trófica: 0..* — 0..*)
+- "Registrar qué animales o vegetales sirven de alimento a los animales de los parques": Un animal puede alimentarse de varias especies (animales o vegetales) y una especie puede servir de alimento a varios animales.
+
+D) Alojamiento y Excursion (Asociación N:M: 1..* — 0..*)
+- Una excursión es organizada por uno o varios alojamientos del parque, y un alojamiento puede participar en la organización de varias excursiones.
+
+E) Visitante y Excursion (Asociación N:M: 0..* — 0..*)
+- Los visitantes se inscriben en las excursiones organizadas.
+
+F) Visitante y Alojamiento (vía Estadia):
+- Los visitantes utilizan alojamientos en una habitación y período determinados (fechaInicio a fechaFin).
+
+G) Personal y ParqueNacional (Asociación: 1..* — 1):
+- Todo empleado del personal trabaja en un parque nacional.
+
+H) Guarda, Area y Vehiculo:
+- Cada guarda tiene asignada un área del parque (varios guardas pueden patrullar la misma área: `1..* — 1`) y la recorre en un vehículo (tipo y matrícula).
+
+I) Celador y Entrada:
+- Cada celador está destinado en una entrada (varios celadores pueden estar en una entrada: `1..* — 1`). Registra las visitas de los visitantes mediante `RegistroVisita`.
+
+J) Investigador, ProyectoInvestigacion y Especie:
+- Un investigador participa en proyectos de investigación (`1..* — 0..*`), y en cada proyecto se investigan una o varias especies (`0..* — 1..*`).
+
+
+4. DUDAS ABIERTAS O PROBLEMAS ENCONTRADOS
+--------------------------------------------------------------------------------
+1. Roles múltiples del personal: El enunciado indica que "Una persona puede desempeñar varios cargos al mismo tiempo (ej. guarda e investigador)". En Java con herencia simple, se modela como clases de especialización de `Personal` o bien mediante un patrón Role/Strategy. Se implementan las subclases directas de `Personal` y se documenta la alternativa de patrón Rol.
+2. Identificadores únicos: Nombres de áreas y alojamientos son únicos por parque; nombres de parques son únicos a nivel global. Se gestionan colecciones y validaciones en las entidades correspondientes.
