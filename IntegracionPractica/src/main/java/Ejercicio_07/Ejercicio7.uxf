@@ -1,0 +1,161 @@
+<diagram program="umletino" version="15.1"><zoom_level>4</zoom_level><element><id>UMLClass</id><coordinates><x>444</x><y>348</y><w>96</w><h>40</h></coordinates><panel_attributes>Campeonato
+--
+- pruebas : List&lt;Prueba&gt;
+--
++ Campeonato()
++ agregarPrueba(prueba: Prueba) : void
++ getPruebas() : List&lt;Prueba&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>264</x><y>316</y><w>116</w><h>80</h></coordinates><panel_attributes>Equipo
+--
+- codigo : String
+- entrenador : String
+- esquiadores : List&lt;Esquiador&gt;
+--
++ Equipo(codigo: String, entrenador: String)
++ agregarEsquiador(esquiador: Esquiador) : void
++ getCantidadEsquiadores() : int
++ getCodigo() : String
++ setCodigo(codigo: String) : void
++ getEntrenador() : String
++ setEntrenador(entrenador: String) : void
++ getEsquiadores() : List&lt;Esquiador&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>128</x><y>372</y><w>116</w><h>84</h></coordinates><panel_attributes>Federacion
+--
+- nombre : String
+- esquiadores : List&lt;Esquiador&gt;
+- estaciones : List&lt;Estacion&gt;
+--
++ Federacion(nombre: String)
++ getNumeroFederados() : int
++ agregarEsquiador(esquiador: Esquiador) : void
++ agregarEstacion(estacion: Estacion) : void
++ getNombre() : String
++ setNombre(nombre: String) : void
++ getEsquiadores() : List&lt;Esquiador&gt;
++ getEstaciones() : List&lt;Estacion&gt;
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>0</x><y>212</y><w>212</w><h>124</h></coordinates><panel_attributes>Esquiador
+--
+- dni : String
+- nombre : String
+- fechaNacimiento : LocalDate
+- federacion : Federacion
+- equipo : Equipo
+--
++ Esquiador(dni: String, nombre: String, fechaNacimiento: LocalDate, federacion: Federacion)
++ getEdad() : int
++ esIndividual() : boolean
++ getDni() : String
++ setDni(dni: String) : void
++ getNombre() : String
++ setNombre(nombre: String) : void
++ getFechaNacimiento() : LocalDate
++ setFechaNacimiento(fechaNacimiento: LocalDate) : void
++ getFederacion() : Federacion
++ setFederacion(federacion: Federacion) : void
++ getEquipo() : Equipo
++ setEquipo(equipo: Equipo) : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>444</x><y>164</y><w>196</w><h>152</h></coordinates><panel_attributes>Prueba
+--
+- nombre : String
+- tipo : String
+- vencedor : String
+- tiempoEmpleadoVencedor : float
+- fechasPrevistas : List&lt;LocalDate&gt;
+- campeonato : Campeonato
+- estacion : Estacion
+- inscripciones : List&lt;Inscripcion&gt;
+--
++ Prueba(nombre: String, tipo: String, campeonato: Campeonato, estacion: Estacion)
++ agregarFechaPrevista(fecha: LocalDate) : void
++ inscribirParticipante(participante: Participante, dorsal: int) : Inscripcion
++ getNombre() : String
++ setNombre(nombre: String) : void
++ getTipo() : String
++ setTipo(tipo: String) : void
++ getVencedor() : String
++ setVencedor(vencedor: String) : void
++ getTiempoEmpleadoVencedor() : float
++ setTiempoEmpleadoVencedor(tiempoEmpleadoVencedor: float) : void
++ getFechasPrevistas() : List&lt;LocalDate&gt;
++ getCampeonato() : Campeonato
++ getEstacion() : Estacion
++ getInscripciones() : List&lt;Inscripcion&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>596</x><y>464</y><w>188</w><h>112</h></coordinates><panel_attributes>Pista
+--
+- codigo : String
+- longitudKm : float
+- nivelDificultad : String
+- estacion : Estacion
+- subpistas : List&lt;Pista&gt;
+--
++ Pista(codigo: String, longitudKm: float, nivelDificultad: String, estacion: Estacion)
++ agregarSubpista(subpista: Pista) : void
++ getCodigo() : String
++ setCodigo(codigo: String) : void
++ getLongitudKm() : float
++ setLongitudKm(longitudKm: float) : void
++ getNivelDificultad() : String
++ setNivelDificultad(nivelDificultad: String) : void
++ getEstacion() : Estacion
++ setEstacion(estacion: Estacion) : void
++ getSubpistas() : List&lt;Pista&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>284</x><y>416</y><w>264</w><h>128</h></coordinates><panel_attributes>Estacion
+--
+- codigoIdentificativo : String
+- nombre : String
+- direccion : String
+- telefono : String
+- totalKmEsquiables : float
+- personasContacto : List&lt;String&gt;
+- pistas : List&lt;Pista&gt;
+- federacionesAdmin : List&lt;Federacion&gt;
+--
++ Estacion(codigoIdentificativo: String, nombre: String, direccion: String, telefono: String, totalKmEsquiables: float)
++ getNumeroPistas() : int
++ crearPista(longitudKm: float, nivelDificultad: String) : Pista
++ agregarFederacion(federacion: Federacion) : void
++ agregarPersonaContacto(persona: String) : void
++ getCodigoIdentificativo() : String
++ setCodigoIdentificativo(codigoIdentificativo: String) : void
++ getNombre() : String
++ setNombre(nombre: String) : void
++ getDireccion() : String
++ setDireccion(direccion: String) : void
++ getTelefono() : String
++ setTelefono(telefono: String) : void
++ getTotalKmEsquiables() : float
++ setTotalKmEsquiables(totalKmEsquiables: float) : void
++ getPersonasContacto() : List&lt;String&gt;
++ getPistas() : List&lt;Pista&gt;
++ getFederacionesAdmin() : List&lt;Federacion&gt;</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>352</x><y>220</y><w>84</w><h>36</h></coordinates><panel_attributes>Inscripcion
+--
+- dorsal : int
+- fechasParticipacion : Date[*]
+- tiempoEmpleado : float
+- posicionObtenida : int</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>264</x><y>260</y><w>124</w><h>40</h></coordinates><panel_attributes>/Participante/
+--
+# inscripciones : List&lt;Inscripcion&gt;
+--
++ Participante()
++ getInscripciones() : List&lt;Inscripcion&gt;
++ agregarInscripcion(inscripcion: Inscripcion) : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>208</x><y>284</y><w>64</w><h>40</h></coordinates><panel_attributes>lt=&lt;&lt;-
+</panel_attributes><additional_attributes>140;10;10;80</additional_attributes></element><element><id>Relation</id><coordinates><x>308</x><y>296</y><w>12</w><h>28</h></coordinates><panel_attributes>lt=&lt;&lt;-
+</panel_attributes><additional_attributes>10;10;10;50</additional_attributes></element><element><id>Relation</id><coordinates><x>384</x><y>280</y><w>68</w><h>20</h></coordinates><panel_attributes>lt=-
+m1=1..*
+m2=1..*
+</panel_attributes><additional_attributes>10;20;150;20</additional_attributes></element><element><id>Relation</id><coordinates><x>412</x><y>252</y><w>12</w><h>44</h></coordinates><panel_attributes>lt=.
+</panel_attributes><additional_attributes>10;10;10;90</additional_attributes></element><element><id>Relation</id><coordinates><x>484</x><y>312</y><w>20</w><h>44</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=1..*</panel_attributes><additional_attributes>10;90;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>208</x><y>328</y><w>64</w><h>24</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-
+m1=0..1
+m2=1..*</panel_attributes><additional_attributes>140;30;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>236</x><y>300</y><w>24</w><h>44</h></coordinates><panel_attributes>lt=.
+{XOR}
+</panel_attributes><additional_attributes>10;10;10;90</additional_attributes></element><element><id>Relation</id><coordinates><x>164</x><y>332</y><w>20</w><h>48</h></coordinates><panel_attributes>lt=-
+m1=1
+m2=1..*
+ </panel_attributes><additional_attributes>10;100;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>240</x><y>428</y><w>52</w><h>20</h></coordinates><panel_attributes>lt=-
+m1=1..*
+m2=1..*
+ </panel_attributes><additional_attributes>110;20;10;20</additional_attributes></element><element><id>Relation</id><coordinates><x>368</x><y>312</y><w>88</w><h>112</h></coordinates><panel_attributes>lt=-
+m1=1
+m2=0..*
+ </panel_attributes><additional_attributes>10;260;190;10</additional_attributes></element><element><id>Relation</id><coordinates><x>544</x><y>480</y><w>60</w><h>16</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=1..*</panel_attributes><additional_attributes>10;10;130;10</additional_attributes></element><element><id>Relation</id><coordinates><x>608</x><y>432</y><w>64</w><h>40</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=0..*</additional_attributes><additional_attributes>10;80;10;10;120;10;120;80</additional_attributes></element></diagram>
