@@ -1,0 +1,76 @@
+<diagram program="umlet" version="15.1"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>30</x><y>30</y><w>200</w><h>90</h></coordinates><panel_attributes>Figura
+--
+# color: String
+--
++ Figura(color: String)
++ calcularArea(): double {abstract}</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>30</x><y>180</y><w>200</w><h>110</h></coordinates><panel_attributes>Elipse
+--
+# radioMayor: double
+# radioMenor: double
+--
++ Elipse(color, radioMayor, radioMenor)
++ calcularArea(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>30</x><y>340</y><w>200</w><h>90</h></coordinates><panel_attributes>Circulo
+--
+- radio: double
+--
++ Circulo(color, radio)
++ getRadio(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>300</x><y>180</y><w>210</w><h>110</h></coordinates><panel_attributes>Poligono {abstract}
+--
+- lados: List&lt;Lado&gt;
+--
++ Poligono(color, lados)
++ getLados(): List&lt;Lado&gt;
++ calcularArea(): double {abstract}</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>300</x><y>340</y><w>200</w><h>80</h></coordinates><panel_attributes>Triangulo
+--
+--
++ Triangulo(color, lados)
++ calcularArea(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>560</x><y>340</y><w>210</w><h>90</h></coordinates><panel_attributes>Cuadrilatero {abstract}
+--
+--
++ Cuadrilatero(color, lados)
++ calcularArea(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>560</x><y>480</y><w>210</w><h>100</h></coordinates><panel_attributes>Rectangulo
+--
+- base: double
+- altura: double
+--
++ Rectangulo(color, base, altura)
++ calcularArea(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>560</x><y>620</y><w>210</w><h>80</h></coordinates><panel_attributes>Cuadrado
+--
+- lado: double
+--
++ Cuadrado(color, lado)
++ calcularArea(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>860</x><y>30</y><w>210</w><h>120</h></coordinates><panel_attributes>FiguraCompuesta
+--
+- figuras: List&lt;Figura&gt;
+--
++ FiguraCompuesta(color)
++ agregarFigura(Figura): void
++ calcularArea(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>300</x><y>620</y><w>200</w><h>90</h></coordinates><panel_attributes>Lado
+--
+- puntoA: Punto
+- puntoB: Punto
+--
++ Lado(puntoA, puntoB)
++ calcularLongitud(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>30</x><y>620</y><w>200</w><h>90</h></coordinates><panel_attributes>Punto
+--
+- x: double
+- y: double
+--
++ Punto(x, y)
++ getX(): double
++ getY(): double</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>120</x><y>120</y><w>80</w><h>70</h></coordinates><panel_attributes>lt=&lt;-
+</panel_attributes><additional_attributes>10;10;10;60</additional_attributes></element><element><id>Relation</id><coordinates><x>120</x><y>290</y><w>80</w><h>60</h></coordinates><panel_attributes>lt=&lt;-
+</panel_attributes><additional_attributes>10;10;10;50</additional_attributes></element><element><id>Relation</id><coordinates><x>130</x><y>120</y><w>180</w><h>70</h></coordinates><panel_attributes>lt=&lt;-
+</panel_attributes><additional_attributes>180;10;10;60</additional_attributes></element><element><id>Relation</id><coordinates><x>400</x><y>290</y><w>80</w><h>60</h></coordinates><panel_attributes>lt=&lt;-
+</panel_attributes><additional_attributes>10;10;10;50</additional_attributes></element><element><id>Relation</id><coordinates><x>650</x><y>430</y><w>80</w><h>60</h></coordinates><panel_attributes>lt=&lt;-
+</panel_attributes><additional_attributes>10;10;10;50</additional_attributes></element><element><id>Relation</id><coordinates><x>650</x><y>570</y><w>80</w><h>60</h></coordinates><panel_attributes>lt=&lt;-
+</panel_attributes><additional_attributes>10;10;10;50</additional_attributes></element><element><id>Relation</id><coordinates><x>660</x><y>430</y><w>210</w><h>50</h></coordinates><panel_attributes>lt=&lt;-
+</panel_attributes><additional_attributes>10;10;200;10</additional_attributes></element><element><id>Relation</id><coordinates><x>230</x><y>150</y><w>90</w><h>460</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=0..*
+</panel_attributes><additional_attributes>10;10;80;450</additional_attributes></element><element><id>Relation</id><coordinates><x>500</x><y>230</y><w>80</w><h>400</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;&lt;-
+m1=1
+m2=3..*
+</panel_attributes><additional_attributes>10;10;10;390</additional_attributes></element><element><id>Relation</id><coordinates><x>200</x><y>660</y><w>120</w><h>50</h></coordinates><panel_attributes>lt=&lt;&lt;&gt;&gt;&gt;-
+m1=1
+m2=2</panel_attributes><additional_attributes>10;10;110;10</additional_attributes></element></diagram>

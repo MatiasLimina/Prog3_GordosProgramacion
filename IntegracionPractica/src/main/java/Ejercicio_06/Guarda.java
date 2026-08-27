@@ -1,19 +1,31 @@
 package Ejercicio_06;
 
-import java.util.Objects;
-
 public class Guarda extends Personal {
+    private String vehiculoTipo;
+    private String vehiculoMatricula;
     private Area areaAsignada;
-    private Vehiculo vehiculo;
 
-    public Guarda(String dni, String nombre, String direccion, String telefono, double sueldo, String numeroSeguridadSocial,
-                  Area areaAsignada, Vehiculo vehiculo) {
-        super(dni, nombre, direccion, telefono, sueldo, numeroSeguridadSocial);
-        Objects.requireNonNull(areaAsignada, "El área asignada no puede ser nula");
-        Objects.requireNonNull(vehiculo, "El vehículo no puede ser nulo");
+    public Guarda(String dni, String nombre, String direccion, String telefono, double sueldo, String nroSeguridadSocial, String vehiculoTipo, String vehiculoMatricula, Area areaAsignada) {
+        super(dni, nombre, direccion, telefono, sueldo, nroSeguridadSocial);
+        this.vehiculoTipo = vehiculoTipo;
+        this.vehiculoMatricula = vehiculoMatricula;
         this.areaAsignada = areaAsignada;
-        this.vehiculo = vehiculo;
-        this.areaAsignada.agregarGuarda(this);
+    }
+
+    public String getVehiculoTipo() {
+        return vehiculoTipo;
+    }
+
+    public void setVehiculoTipo(String vehiculoTipo) {
+        this.vehiculoTipo = vehiculoTipo;
+    }
+
+    public String getVehiculoMatricula() {
+        return vehiculoMatricula;
+    }
+
+    public void setVehiculoMatricula(String vehiculoMatricula) {
+        this.vehiculoMatricula = vehiculoMatricula;
     }
 
     public Area getAreaAsignada() {
@@ -21,16 +33,10 @@ public class Guarda extends Personal {
     }
 
     public void setAreaAsignada(Area areaAsignada) {
-        Objects.requireNonNull(areaAsignada, "El área no puede ser nula");
         this.areaAsignada = areaAsignada;
     }
 
-    public Vehiculo getVehiculo() {
-        return vehiculo;
-    }
-
-    public void setVehiculo(Vehiculo vehiculo) {
-        Objects.requireNonNull(vehiculo, "El vehículo no puede ser nulo");
-        this.vehiculo = vehiculo;
+    public void recorrerArea() {
+        System.out.println("Guarda " + this.nombre + " recorriendo el área " + this.areaAsignada.getNombre() + " en vehículo " + this.vehiculoTipo + " (" + this.vehiculoMatricula + ")");
     }
 }

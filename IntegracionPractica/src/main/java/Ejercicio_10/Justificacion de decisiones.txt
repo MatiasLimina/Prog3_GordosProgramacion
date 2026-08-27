@@ -1,0 +1,52 @@
+================================================================================
+EJERCICIO 10: JUEGOS OLÍMPICOS - JUSTIFICACIÓN DE DECISIONES Y DISEÑO
+================================================================================
+
+1. ANÁLISIS DE CLASES Y ATRIBUTOS
+--------------------------------------------------------------------------------
+- SedeOlimpica: numeroComplejos, presupuestoAproximado.
+- ComplejoDeportivo (Clase Base / Abstracta): localizacion, jefeOrganizacion, areaOcupada.
+- ComplejoUnicoDeporte (Hereda de ComplejoDeportivo): Complejo donde se desarrolla un único deporte.
+- Polideportivo (Hereda de ComplejoDeportivo): Complejo multideporte con información específica.
+- AreaDesignada: indicadorSituacion (centro, esquina N-E, etc.).
+- Deporte: nombre.
+- Evento: fecha, duracion, numeroParticipantes, numeroComisarios, materialNecesario (List<String>).
+- Comisario: id / nombre.
+
+
+2. JUSTIFICACIÓN DE RELACIONES TODO-PARTE (COMPOSICIÓN VS AGREGACIÓN)
+--------------------------------------------------------------------------------
+
+A) SedeOlimpica y ComplejoDeportivo (Composición: 1 ◆— 1..*)
+- ¿Por qué Composición?
+  Los complejos deportivos pertenecen y están contenidos dentro de una sede olímpica específica. Si la sede olímpica deja de existir o se disuelve, sus complejos deportivos como instalaciones olímpicas pierden su razón de ser en ese contexto organizativo. La sede gestiona la creación y ciclo de vida de los complejos.
+- Multiplicidad (1 — 1..*):
+  * Lado SedeOlimpica (1): Cada complejo deportivo pertenece a exactamente una sede olímpica.
+  * Lado ComplejoDeportivo (1..*): Toda sede olímpica se compone de al menos un complejo deportivo (mínimo 1, generalmente varios).
+
+B) ComplejoDeportivo y AreaDesignada (Composición: 1 ◆— 1..*)
+- ¿Por qué Composición?
+  Las áreas designadas (como la pista del estadio, una cancha, la zona de saltos, etc.) son partes físicas y estructurales constitutivas del complejo deportivo. No tienen existencia independiente fuera del complejo al que pertenecen. Si se destruye o clausura el complejo, sus áreas designadas dejan de existir como tales.
+- Multiplicidad (1 — 1..*):
+  * Lado ComplejoDeportivo (1): Cada área designada pertenece de forma exclusiva a un complejo deportivo.
+  * Lado AreaDesignada (1..*): Todo complejo deportivo cuenta con al menos un área designada (1..*).
+
+
+3. FUNDAMENTO DE ASOCIACIONES Y MULTIPLICIDADES
+--------------------------------------------------------------------------------
+
+A) AreaDesignada y Deporte (Asociación Simple: * — 1)
+- Cada área designada está asociada a un deporte específico que se practica en ella (ej. la pista de atletismo al deporte Atletismo). Multiplicidad: N áreas por 1 deporte.
+
+B) ComplejoDeportivo y Evento (Asociación: 1 — 0..*)
+- Un complejo deportivo celebra múltiples eventos deportivos a lo largo de los Juegos Olímpicos (0..*), mientras que un evento específico se lleva a cabo en un complejo determinado (1).
+
+C) Evento y Comisario (Asociación N:M: 1..* — 1..*)
+- Un evento requiere la participación de uno o varios comisarios para su control y arbitraje (1..*). A su vez, un comisario está involucrado en una lista de múltiples eventos a lo largo de las olimpíadas (1..* o 0..*). Esto se modela con una relación bidireccional N:M entre `Evento` y `Comisario`.
+
+
+4. DUDAS ABIERTAS O PROBLEMAS ENCONTRADOS
+--------------------------------------------------------------------------------
+1. Atributo `numeroComplejos` en SedeOlimpica: Puede considerarse un atributo derivado (`complejos.size()`). Se mantuvo como atributo almacenado actualizable o derivable mediante método.
+2. Diferenciación Polideportivo vs ComplejoUnicoDeporte: El enunciado menciona que "ambos tipos manejan diferente tipo de información". Se añadió un atributo específico en cada subclase (ej. `deportePrincipal` en único deporte y `listaDeportes` o `numeroDisciplinas` en polideportivo).
+3. Material necesario: Se modeló como `List<String>` (porterías, pértigas, barras paralelas) tal como indica el enunciado.
