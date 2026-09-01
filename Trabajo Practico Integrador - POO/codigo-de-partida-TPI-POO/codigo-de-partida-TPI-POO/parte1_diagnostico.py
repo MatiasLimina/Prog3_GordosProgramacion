@@ -25,6 +25,7 @@ class Figura:
         self._construida = True   # marca de que Figura.__init__ realmente corrió
 
     # >>> getters preventivos SIN lógica (ceremonia de Java) <<<
+
     def getNombre(self):
         return self._nombre
 
