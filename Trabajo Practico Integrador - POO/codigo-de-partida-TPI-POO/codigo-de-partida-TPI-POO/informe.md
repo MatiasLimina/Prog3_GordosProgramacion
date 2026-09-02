@@ -1,0 +1,72 @@
+# Informe — TP Integrador Unidad 3 POO
+
+## Parte 1 — Diagnóstico de java-ismos (20%)
+
+Los 8 java-ismos corregidos en `parte1_diagnostico.py` (y replicados en `figuras.py`):
+
+| # | Java-ismo | Dónde (clase.método) | Inversión que lo explica | Síntoma observable |
+|---|---|---|---|---|
+| 1 | Getters preventivos sin lógica `getNombre`/`getColor` | `Figura.getNombre:29`, `Figura.getColor:32` | Encapsulamiento por convención / `@property` solo con lógica | Ceremonia Java: código cliente acoplado a `getX()` sin validación ni cálculo; en Python se accede directo a `obj._nombre` o `obj.nombre` property. |
+| 2 | Getter/Setter estilo Java Bean con validación | `Lado.getLongitud:44`, `Lado.setLongitud:47` | `@property` (compilador → acuerdo) | Dos métodos para un atributo; en Python `l.longitud = 5` debe validar igual que `setLongitud`. Se convierte en `@property` con setter que valida `>0`. |
+| 3 | Atributo de clase mutable `catalogo = []` | `Poligono.catalogo:56` | Atributo de clase vs instancia / declaración → runtime | `p1.catalogo is p2.catalogo == True`; `len(Poligono.catalogo)` crece con cada instancia y nunca se libera (fuga). |
+| 4 | Defaults mutables `lados=[], observaciones=[]` | `Poligono.__init__:59` | Default mutable (trampa runtime) | `p1._observaciones is p2._observaciones == True`; `p1.agregar_observacion("x")` aparece en `p2`. Demostrado en `demo_sintomas.py`. |
+| 5 | `super().__init__()` olvidado | `Poligono.__init__:61` | Herencia / `super()` obligatorio | `Figura.__init__` nunca corre: `self._construida` no se setea, `_nombre/_color` se reasignan a mano (duplicación, si Figura cambia se rompe Poligono). |
+| 6 | Alias sin copia `self._lados = lados` + `getLados()` expone lista interna | `Poligono.__init__:64`, `Poligono.getLados:85` | Copia defensiva / encapsulamiento | `lista_externa.append(Lado(99))` muta el polígono; `pol.getLados().clear()` vacía el polígono desde afuera. Demostrado en `demo_sintomas.py`. |
+| 7 | Type hint miente `-> int` devuelve `str` | `Poligono.area:79` | Type hints / contrato | `mypy` falla; `area()` retorna `"area sin calcular"` rompiendo `float`. Corregido a `-> float: return 0.0`. |
+| 8 | Sobrecarga constructor `*args` + `isinstance` | `Triangulo.__init__:92`, `Cuadrado.__init__:105` | Declaración → runtime (Python no tiene sobrecarga) | Firma ilegible `Triangulo(*args)`; 3 ramas `isinstance`. Se reemplaza por `def __init__(self, nombre="triángulo", color="negro", lados=None)` pythónico. |
+
+**Ruido sintáctico también limpiado (no cuenta en 8):** `if activo == True:` → `if activo:`, `;` al final de línea, `"x" + str(y)` → f-strings, `total = total + l.getLongitud()` → `sum(l.longitud for l in self._lados)`.
+
+**Detalle @property justificado:** solo `Lado.longitud` tenía lógica (validación `>0`), por eso es el único getter convertido en `@property`. `Figura.nombre/color` no tenían lógica: se exponen como `@property` readonly solo por compatibilidad, pero el acceso directo `obj._nombre` sería suficiente según convención `_`.
+
+**Demo 2 síntomas:** `demo_sintomas.py` — síntoma 1 (default mutable + catalogo compartido) y síntoma 2 (alias + exposición lista interna), con antes/después.
+
+---
+
+## Parte 2 — Relaciones estructurales (25%)
+
+### Clases agregadas
+
+- **Etiqueta**: `@dataclass(frozen=True)` con `texto: str`. Validación en `__post_init__`. Inmutable, compartible. `figuras.py:12-26`
+- **Taller**: agregación `0..*` Poligono. No fabrica, recibe por `recibir()`/`restaurar()`. `figuras.py:141-185`
+- **Lado.etiqueta**: `Etiqueta | None = None` (asociación `0..1`). `figuras.py:48-72`
+
+### Copia defensiva (multiplicidades *)
+
+- `Poligono.lados() -> tuple[Lado,...]` `figuras.py:112-114`: `return tuple(self._lados)` (no expone lista interna).
+- `Taller.inventario() -> tuple[Poligono,...]` `figuras.py:168-170`: `return tuple(self._poligonos)`.
+- En constructores: `self._lados = list(lados) if lados else []` `figuras.py:89` y `self._poligonos = list(poligonos) if ...` `figuras.py:149` evitan alias con lista externa.
+
+### Pregunta obligatoria — ¿Cómo se ve la diferencia si `self._x = x` es idéntica?
+
+La sintaxis de guardar la referencia es la misma, lo que cambia es **quién crea el objeto y quién controla su ciclo de vida**, visible en el **constructor y en los métodos que crean vs. reciben**.
+
+| Relación | Diagrama | Línea que lo delata | Ciclo de vida |
+|---|---|---|---|
+| **Composición** `Poligono *-- 3..* Lado` | `*--` (rombo lleno) | `figuras.py:89` `self._lados = list(lados)` + `figuras.py:134` `super().__init__(..., [Lado(medida) for _ in range(cantidad)])` en `PoligonoRegular`. El Poligono **fabrica/copia** sus Lados. | Si `del poligono`, sus `Lado`s dejan de tener sentido y son recolectados (salvo copia externa). `Lado` no sobrevive al `Poligono`. |
+| **Agregación** `Taller o-- 0..* Poligono` | `o--` (rombo vacío) | `figuras.py:149` `self._poligonos = list(poligonos) if poligonos else []` + `figuras.py:151-159` `def recibir(self, poligono: Poligono): self._poligonos.append(poligono)` — **no hay `Poligono(...)` dentro de Taller**. | `Poligono` se construye **fuera** y se pasa ya hecho. `del taller` no destruye polígonos (`main.py` lo demuestra: `ref_tri.perimetro()` sigue funcionando). |
+| **Asociación** `Lado --> 0..1 Etiqueta` | `-->` (flecha) | `figuras.py:48` `def __init__(self, longitud, etiqueta: Etiqueta | None = None)` + `figuras.py:55` `self._etiqueta = etiqueta` con `None` permitido. `Lado` **no crea** `Etiqueta`, solo la referencia. | `Etiqueta` es `@dataclass(frozen=True)` independiente y compartible; `del lado` deja `etiqueta` viva (`etiqueta_rescatada` en `main.py`). Puede ser `None`. |
+
+**Resumen:** composición = "lo creo yo" (`[Lado(...)]`), agregación/asociación = "me lo dan hecho" (`def recibir(self, poligono)` / `etiqueta=None`), y la copia defensiva (`tuple(...)`) es la que protege la multiplicidad `*`.
+
+### Evidencia en demo (`main.py`)
+
+- `main.py:66-77` agregación no aliasa lista externa.
+- `main.py:80-87` copia defensiva lados/inventario.
+- `main.py:89-91` agregación sobrevive al `del taller`.
+- `main.py:42-47` asociación sobrevive al `del lado`.
+- `main.py:51-58` composición: polígono temporal y sus lados.
+
+---
+
+## Parte 3 — Herencia justificada (pendiente)
+
+Decisión sobre `PoligonoRegular` y `lados_esperados()` abstracto. A implementar.
+
+## Parte 4 — ABC vs Protocol (pendiente)
+
+`Exportable` como `Protocol` para `PlanoCAD`.
+
+## Parte 5 — Cierre (pendiente)
+
+Tabla de equivalencias Java↔Python y diagrama final `uml/modelo_final.md`.
