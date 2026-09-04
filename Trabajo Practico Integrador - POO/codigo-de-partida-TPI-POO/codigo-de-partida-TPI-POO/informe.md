@@ -93,9 +93,48 @@ if esperados != 0 and len(self._lados) != esperados:
 
 Diagrama: `PoligonoRegular` queda sin flecha de herencia (como en PDF "a revisar en Parte 3"), documentado como `<<factory>>` o nota.
 
-## Parte 4 — ABC vs Protocol (pendiente)
+## Parte 4 — ABC vs Protocol (15%)
 
-`Exportable` como `Protocol` para `PlanoCAD`.
+### 1. Contrato `Exportable` como `Protocol`
+
+```python
+# figuras.py:18-32
+from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class Exportable(Protocol):
+    def exportar(self) -> str: ...
+```
+
+- **Estructural, no nominal (duck typing tipado):** no exige heredar. `Poligono` ya tiene `exportar()` (`figuras.py:164`) y lo cumple; `PlanoCAD` (`libreria_externa.py:23`) lo cumple sin heredar de nada nuestro y sin tocar `libreria_externa.py` (cerrada, "NO SE MODIFICA. NUNCA.").
+- **`@runtime_checkable`:** sin él `Protocol` solo sirve a `mypy`/IDE; con él permite `isinstance(obj, Exportable)` en runtime (`figuras.py:262`), usado en `exportar_todo` para falla temprana. Demo: `isinstance(PlanoCAD("A-101"), Exportable)==True`, `isinstance(Lado(1), Exportable)==False` (`main.py:demo_parte4_ok`).
+
+### 2. `exportar_todo(items: list[Exportable]) -> list[str]` (`figuras.py:252-270`)
+
+```python
+def exportar_todo(items: list[Exportable]) -> list[str]:
+    resultado = []
+    for item in items:
+        if not isinstance(item, Exportable):
+            raise TypeError(f"{type(item).__name__} no cumple Exportable (requiere exportar()->str)")
+        resultado.append(item.exportar())
+    return resultado
+```
+
+Lista heterogénea `[Triangulo, Cuadrado, Pentagono, PlanoCAD, PoligonoRegular->Pentagono]` funciona en una pasada; `[]` → `[]`; elemento sin `exportar()` lanza `TypeError` (`main.py:demo_parte4_fallos` con `Lado`, `str`, `None`).
+
+### 3. ¿Por qué una ABC no hubiera servido para `PlanoCAD`?
+
+`class Exportable(ABC): @abstractmethod def exportar` exige herencia explícita: `class PlanoCAD(Exportable)`. Como `PlanoCAD` está en `libreria_externa.py` (librería de tercero instalada vía pip, simulada), no se puede editar ni hacerla heredar. Con `ABC` la única salida sería envolverla (Adapter) o modificarla — ambas rompen la consigna. `Protocol` resuelve contrato estructural sin acoplamiento nominal.
+
+### 4. ¿Lo decide el lenguaje o el dominio?
+
+**Lo decide el dominio; el lenguaje solo provee la herramienta.** Partes 3 y 4 llegan al mismo criterio por dos caminos:
+
+- Parte 3 (herencia): `Poligono` usa `ABC` + `@abstractmethod lados_esperados()` porque el dominio afirma "es-un" con invariante y falla temprana (Parte 3).
+- Parte 4 (contrato): `Exportable` usa `Protocol` porque es capacidad transversal ("puede exportar") que cruza jerarquías ajenas; no hay "es-un" entre `Poligono` y `PlanoCAD`.
+
+Cuando herencia modela parentesco real y `Protocol` modela capacidad compartida, la elección queda justificada con el mismo criterio y la unidad está cerrada.
 
 ## Parte 5 — Cierre (pendiente)
 

@@ -1,12 +1,14 @@
-"""main.py — Demo integral Parte 2 + Parte 3
+"""main.py — Demo integral Parte 2 + Parte 3 + Parte 4
 
 Parte 2: Taller (agregación), Etiqueta (asociación), copia defensiva
 Parte 3: Herencia justificada — ABC, lados_esperados abstracto, PoligonoRegular Factory
+Parte 4: ABC vs Protocol — Exportable, exportar_todo con PlanoCAD (duck typing)
 Incluye pruebas de funcionamiento correcto, robustez y manejo de fallos.
 """
 
 from figuras import (
     Etiqueta,
+    Exportable,
     Figura,
     Lado,
     Poligono,
@@ -16,6 +18,7 @@ from figuras import (
     Hexagono,
     PoligonoRegular,
     Taller,
+    exportar_todo,
 )
 from libreria_externa import PlanoCAD
 
@@ -228,10 +231,90 @@ def demo_parte3_fallos() -> None:
         print(f"   FAIL Hexagono grande: {e}")
 
 
+def demo_parte4_ok() -> None:
+    print("\n=== Parte 4 — Exportable Protocol + exportar_todo (funcionamiento correcto) ===\n")
+
+    # 1. Runtime checkable: Poligono y PlanoCAD cumplen sin herencia común
+    tri = Triangulo("Tri-P4", "rojo", [Lado(3), Lado(4), Lado(5)])
+    cua = Cuadrado("Cua-P4", "azul", [Lado(2) for _ in range(4)])
+    pen = PoligonoRegular("Pen-Reg", "verde", 4, 5)  # Factory -> Pentagono
+    plano1 = PlanoCAD("A-101", "1:50")
+    plano2 = PlanoCAD("B-202", "1:100")
+    print(f"isinstance(tri, Exportable)={isinstance(tri, Exportable)} (True, Poligono tiene exportar)")
+    print(f"isinstance(plano1, Exportable)={isinstance(plano1, Exportable)} (True, duck typing sin heredar)")
+    print(f"isinstance(Lado(1), Exportable)={isinstance(Lado(1), Exportable)} (False)")
+    print(f"PlanoCAD bases: {PlanoCAD.__bases__} — no hereda de Exportable ni Poligono")
+
+    # 2. Lista heterogénea polimórfica: 4 polígonos + 2 planos + 1 factory (consigna Parte 5)
+    items: list[Exportable] = [tri, cua, pen, plano1, plano2]
+    print(f"\nexportar_todo con {len(items)} items mixtos (Poligono + PlanoCAD):")
+    for linea in exportar_todo(items):
+        print(f"  - {linea}")
+
+    # 3. Solo polígonos
+    print(f"\nSolo polígonos: {exportar_todo([tri, cua])}")
+
+    # 4. Solo planos externos
+    print(f"Solo PlanoCAD: {exportar_todo([plano1, plano2])}")
+
+    # 5. Lista vacía
+    print(f"Lista vacía: {exportar_todo([])} (esperado [])")
+
+    # 6. Taller + exportar_todo integrados
+    taller = Taller([tri, cua])
+    taller.recibir(pen)
+    # Taller.inventario() es tuple[Poligono,...] que es compatible con list[Exportable]
+    combinado = list(taller.inventario()) + [plano1]
+    print(f"\nTaller ({len(taller)}) + PlanoCAD exportado junto: {exportar_todo(combinado)}")
+
+
+def demo_parte4_fallos() -> None:
+    print("\n=== Parte 4 — Robustez y manejo de fallos ===\n")
+
+    tri_ok = Triangulo("T", "rojo", [Lado(3), Lado(4), Lado(5)])
+
+    # 1. Elemento no exportable en lista mixta
+    casos_fallo = [
+        ("Lado sin exportar", [tri_ok, Lado(5)]),
+        ("str sin exportar", [tri_ok, "no exportable"]),
+        ("int sin exportar", [tri_ok, 123]),
+        ("None", [tri_ok, None]),
+        ("lista vacía con luego fallo", [Lado(1)]),
+    ]
+    for desc, items in casos_fallo:
+        try:
+            exportar_todo(items)  # type: ignore
+            print(f"   FAIL {desc}: no lanzó TypeError")
+        except TypeError as e:
+            print(f"   OK {desc} -> TypeError: {e}")
+        except Exception as e:
+            print(f"   ?? {desc} -> {type(e).__name__}: {e}")
+
+    # 2. Objeto con exportar pero firma incorrecta (no -> str)
+    print("\n   Objeto con exportar que no retorna str (contrato roto):")
+
+    class FalsoExportable:
+        def exportar(self) -> int:  # type: ignore
+            return 123  # type: ignore
+
+    falso = FalsoExportable()
+    # isinstance con @runtime_checkable solo chequea existencia del método, no firma
+    print(f"   isinstance(FalsoExportable(), Exportable)={isinstance(falso, Exportable)} (True, solo chequea nombre)")
+    print(f"   exportar_todo([falso])={exportar_todo([falso])} (pasa runtime, falla en type checker mypy)")
+
+    # 3. Por qué ABC no serviría para PlanoCAD
+    print("\n   ¿Por qué ABC no sirve para PlanoCAD?")
+    print("   Si Exportable fuese 'class Exportable(ABC): @abstractmethod def exportar...',")
+    print("   PlanoCAD debería declarar 'class PlanoCAD(Exportable)' y no se puede modificar")
+    print(f"   (libreria_externa.py). Con Protocol, PlanoCAD cumple sin tocarlo: {isinstance(PlanoCAD('X'), Exportable)}")
+
+
 def main() -> None:
     demo_parte2()
     demo_parte3_ok()
     demo_parte3_fallos()
+    demo_parte4_ok()
+    demo_parte4_fallos()
 
 
 if __name__ == "__main__":

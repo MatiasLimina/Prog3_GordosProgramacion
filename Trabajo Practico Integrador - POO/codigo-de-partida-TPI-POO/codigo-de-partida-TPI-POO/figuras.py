@@ -1,18 +1,20 @@
 """figuras.py — Dominio Figura / Polígono / Lado + Etiqueta / Taller
 
-Resuelve Parte 1 (corrección de java-ismos), Parte 2 (relaciones estructurales)
-y Parte 3 (herencia justificada por dominio).
+Resuelve Parte 1 (corrección de java-ismos), Parte 2 (relaciones estructurales),
+Parte 3 (herencia justificada por dominio) y Parte 4 (ABC vs Protocol).
 - Etiqueta: @dataclass(frozen=True), asociación 0..1 con Lado
 - Taller: agregación 0..* con Poligono, copia defensiva en inventario()
 - Poligono.lados(): copia defensiva (tuple)
 - Composición Poligono *-- Lado ya resuelta, se mantiene y documenta
 - Parte 3: Figura y Poligono son ABC; PoligonoRegular es Factory vía __new__
+- Parte 4: Exportable como Protocol runtime_checkable; exportar_todo() duck typing
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
 
 
 # ---------- Etiqueta (Parte 2) ----------
@@ -30,6 +32,23 @@ class Etiqueta:
     def __post_init__(self) -> None:
         if not isinstance(self.texto, str) or not self.texto.strip():
             raise ValueError("Etiqueta.texto debe ser un str no vacío")
+
+
+# ---------- Exportable (Parte 4 - Protocol) ----------
+
+@runtime_checkable
+class Exportable(Protocol):
+    """Contrato estructural para objetos exportables.
+
+    Parte 4: Protocol, no ABC. Cualquier objeto con exportar()->str lo cumple
+    sin heredar (duck typing tipado). Por eso PlanoCAD de libreria_externa.py
+    —que no hereda de nada nuestro ni se puede modificar— satisface el contrato
+    solo por tener el método. Con @runtime_checkable permite isinstance() en runtime.
+    """
+
+    def exportar(self) -> str:
+        """Retorna una representación textual exportable."""
+        ...
 
 
 # ---------- Figura ----------
@@ -243,6 +262,28 @@ class PoligonoRegular:
         lados = [Lado(medida) for _ in range(cantidad)]
         # Delega validación a Poligono.__init__ (lados_esperados)
         return subclase(nombre, color, lados)
+
+
+# ---------- exportar_todo (Parte 4) ----------
+
+def exportar_todo(items: list[Exportable]) -> list[str]:
+    """Exporta una colección polimórfica de Exportable (duck typing).
+
+    Parte 4: recibe polígonos y planos CAD en la misma lista y funciona en runtime
+    con ambos tipos gracias al contrato estructural. Lista vacía -> [].
+    Valida con isinstance(Exportable) gracias a @runtime_checkable; si un elemento
+    no cumple, lanza TypeError con falla temprana.
+    """
+
+    resultado: list[str] = []
+    for item in items:
+        if not isinstance(item, Exportable):
+            raise TypeError(
+                f"Objeto {item!r} de tipo {type(item).__name__} "
+                f"no cumple Exportable (requiere método exportar() -> str)"
+            )
+        resultado.append(item.exportar())
+    return resultado
 
 
 # ---------- Taller (Parte 2 - Agregación) ----------
