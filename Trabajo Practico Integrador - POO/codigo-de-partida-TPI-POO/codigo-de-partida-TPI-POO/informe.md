@@ -59,9 +59,39 @@ La sintaxis de guardar la referencia es la misma, lo que cambia es **quién crea
 
 ---
 
-## Parte 3 — Herencia justificada (pendiente)
+## Parte 3 — Herencia justificada por dominio (20%)
 
-Decisión sobre `PoligonoRegular` y `lados_esperados()` abstracto. A implementar.
+### 1. Poligono como ABC con `lados_esperados()` abstracto
+
+- `Figura` hereda de `ABC` y declara `area() -> float` como `@abstractmethod` (`figuras.py:34-55`). Es `<<abstract>>` en UML, falla al instanciar directo.
+- `Poligono(Figura)` declara `lados_esperados() -> int` como `@abstractmethod` (`figuras.py:132-135`). Instanciar `Poligono(...)` sin subclase concreta lanza `TypeError: Can't instantiate abstract class Poligono with abstract method lados_esperados` — falla temprana al construir, no al usar (`main.py` Parte 3 fallo 1/1c).
+
+### 2. Validación contra `lados_esperados()`
+
+Centralizada en `Poligono.__init__` (`figuras.py:120-127`):
+
+```python
+esperados = self.lados_esperados()
+if esperados != 0 and len(self._lados) != esperados:
+    raise ValueError(f"{self.__class__.__name__} requiere {esperados} lados, recibidos {len(self._lados)}")
+```
+
+`Triangulo(3)`, `Cuadrado(4)`, `Pentagono(5)`, `Hexagono(6)` implementan `lados_esperados()` y heredan la validación. Crear `Triangulo` con 2/4/0 lados o `Cuadrado` con 3 lados lanza `ValueError` en construcción (`main.py` fallo 2). Sin duplicación por subclase.
+
+### 3. Decisión sobre `PoligonoRegular` — de herencia a Factory
+
+**Decisión:** `PoligonoRegular` **no** hereda de `Poligono`. Se rediseña como **clase fábrica** vía `__new__` (`figuras.py:190-228`).
+
+**Justificación (criterio de la unidad: dominio "es-un" vs. necesidad del compilador):**
+
+| Criterio | Evaluación |
+|---|---|
+| Dominio ¿es-un? | No. `PoligonoRegular` no añade comportamiento nuevo, solo restringe estado (N lados iguales). En un modelo mutable, heredar de `Poligono` viola LSP: cliente que muta un lado individual rompería el invariante de regularidad. |
+| Compilador Java | En Java se heredaba para poder meter `PoligonoRegular` y `Triangulo` en la misma `List<Poligono>` (polimorfismo nominal obligatorio). En Python el polimorfismo es estructural (duck typing / Protocol); no hace falta ancestro común para compartir `perimetro()`/`exportar()`. |
+| Implementación | `__new__` mapea `cantidad -> {3:Triangulo,4:Cuadrado,5:Pentagono,6:Hexagono}`, fabrica `[Lado(medida)]*cantidad` (composición) y retorna `subclase(nombre,color,lados)`. `issubclass(PoligonoRegular, Poligono)==False`, `type(PoligonoRegular(...,5)) is Pentagono`. |
+| Compatibilidad | Código cliente no cambia: `PoligonoRegular("Pentágono","verde",4,5)` sigue funcionando, pero ahora produce un `Pentagono` real con validación y copia defensiva. Cantidad no soportada (2,7) o medida<=0 lanza `ValueError`. |
+
+Diagrama: `PoligonoRegular` queda sin flecha de herencia (como en PDF "a revisar en Parte 3"), documentado como `<<factory>>` o nota.
 
 ## Parte 4 — ABC vs Protocol (pendiente)
 

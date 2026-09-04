@@ -1,14 +1,17 @@
 """figuras.py — Dominio Figura / Polígono / Lado + Etiqueta / Taller
 
-Resuelve Parte 1 (corrección de java-ismos) y Parte 2 (relaciones estructurales).
+Resuelve Parte 1 (corrección de java-ismos), Parte 2 (relaciones estructurales)
+y Parte 3 (herencia justificada por dominio).
 - Etiqueta: @dataclass(frozen=True), asociación 0..1 con Lado
 - Taller: agregación 0..* con Poligono, copia defensiva en inventario()
 - Poligono.lados(): copia defensiva (tuple)
 - Composición Poligono *-- Lado ya resuelta, se mantiene y documenta
+- Parte 3: Figura y Poligono son ABC; PoligonoRegular es Factory vía __new__
 """
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 
@@ -31,8 +34,12 @@ class Etiqueta:
 
 # ---------- Figura ----------
 
-class Figura:
-    """Figura base con encapsulamiento por convención."""
+class Figura(ABC):
+    """Figura base con encapsulamiento por convención.
+
+    Parte 3: es abstracta (<<abstract>> en UML). area() es @abstractmethod:
+    falla temprano al intentar instanciar sin implementar.
+    """
 
     def __init__(self, nombre: str, color: str) -> None:
         self._nombre = nombre
@@ -50,8 +57,10 @@ class Figura:
     def color(self) -> str:
         return self._color
 
+    @abstractmethod
     def area(self) -> float:
-        return 0.0
+        """Área de la figura. Cada subclase concreta debe implementarla."""
+        ...
 
 
 # ---------- Lado (asociación con Etiqueta) ----------
@@ -120,9 +129,18 @@ class Poligono(Figura):
         # java-ismo #6 corregido: alias sin copia -> copia defensiva en construcción
         self._lados: list[Lado] = list(lados) if lados is not None else []
         self._observaciones: list[str] = list(observaciones) if observaciones is not None else []
+        # Parte 3 - validación contra lados_esperados() (falla temprana en construcción)
+        esperados = self.lados_esperados()
+        if esperados != 0 and len(self._lados) != esperados:
+            raise ValueError(
+                f"{self.__class__.__name__} requiere {esperados} lados, "
+                f"recibidos {len(self._lados)}"
+            )
 
+    @abstractmethod
     def lados_esperados(self) -> int:
-        return 0
+        """Cantidad de lados que debe tener esta subclase concreta."""
+        ...
 
     def perimetro(self) -> float:
         # java-ismo corregido: bucle acumulador manual -> comprehension/sum
@@ -130,6 +148,7 @@ class Poligono(Figura):
 
     def area(self) -> float:
         # java-ismo #7 corregido: type hint mentía (-> int devolvía str)
+        # Poligono cumple el contrato abstracto de Figura.area()
         return 0.0
 
     def agregar_observacion(self, texto: str) -> None:
@@ -187,20 +206,43 @@ class Hexagono(Poligono):
         return 6
 
 
-class PoligonoRegular(Poligono):
-    """Polígono de N lados de igual longitud.
+class PoligonoRegular:
+    """Fábrica de polígonos regulares — NO hereda de Poligono (Parte 3).
 
-    NOTA Parte 3: su lugar en la jerarquía se decide en Parte 3.
-    Se mantiene por compatibilidad con parte1_diagnostico.py.
+    Decisión: la herencia PoligonoRegular -> Poligono violaba LSP y era
+    ceremonia del compilador de Java para meter tipos distintos en una misma
+    lista. En Python el polimorfismo es por duck typing / Protocol, no por
+    jerarquía. PoligonoRegular no añade comportamiento nuevo, solo restringe
+    construcción (N lados iguales); eso se resuelve con fábrica, no con "es-un".
+
+    Implementación: __new__ intercepta la construcción y devuelve directamente
+    una instancia de la subclase concreta (Triangulo/Cuadrado/Pentagono/Hexagono).
+    El código cliente sigue escribiendo PoligonoRegular(...) sin cambios,
+    pero recibe un Pentagono, Hexagono, etc. real.
+    type(PoligonoRegular(...)) is Pentagono, no PoligonoRegular.
+    issubclass(PoligonoRegular, Poligono) == False.
     """
 
-    def __init__(self, nombre: str, color: str, medida: float, cantidad: int) -> None:
-        # Composición: fabrica sus propios Lado internos, no los recibe hechos
-        super().__init__(nombre, color, [Lado(medida) for _ in range(cantidad)])
-        self._cantidad = cantidad
-
-    def lados_esperados(self) -> int:
-        return self._cantidad
+    def __new__(
+        cls, nombre: str, color: str, medida: float, cantidad: int
+    ) -> Poligono:
+        if medida <= 0:
+            raise ValueError("La medida debe ser positiva")
+        mapa: dict[int, type[Poligono]] = {
+            3: Triangulo,
+            4: Cuadrado,
+            5: Pentagono,
+            6: Hexagono,
+        }
+        if cantidad not in mapa:
+            raise ValueError(
+                f"PoligonoRegular: cantidad={cantidad} no soportada. "
+                f"Soportadas: {sorted(mapa)}"
+            )
+        subclase = mapa[cantidad]
+        lados = [Lado(medida) for _ in range(cantidad)]
+        # Delega validación a Poligono.__init__ (lados_esperados)
+        return subclase(nombre, color, lados)
 
 
 # ---------- Taller (Parte 2 - Agregación) ----------
