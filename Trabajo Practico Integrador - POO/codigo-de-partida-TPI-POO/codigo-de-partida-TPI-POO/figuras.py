@@ -16,6 +16,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+import libreria_externa  # Parte 5: importa sin modificar — evidencia dependencia externa para Protocol
+
 
 # ---------- Etiqueta (Parte 2) ----------
 
