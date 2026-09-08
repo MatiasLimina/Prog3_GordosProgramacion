@@ -244,7 +244,7 @@ class PoligonoRegular:
     issubclass(PoligonoRegular, Poligono) == False.
     """
 
-    def __new__(
+    def __new__(  # type: ignore[misc]
         cls, nombre: str, color: str, medida: float, cantidad: int
     ) -> Poligono:
         if medida <= 0:
@@ -339,7 +339,7 @@ if __name__ == "__main__":
         print(f"Figuras en el taller: {len(taller.inventario())}")
         print(f"Nombre (via property): {t.nombre}")
         r = PoligonoRegular("Pentágono", "verde", 4, 5)
-        print(f"Perímetro del pentágono: {r.perimetro()}")
+        print(f"Perímetro del pentágono: {r.perimetro()}")  # type: ignore[attr-defined]
         # Etiqueta
         et = Etiqueta("corte láser")
         lado_etiquetado = Lado(10, etiqueta=et)
