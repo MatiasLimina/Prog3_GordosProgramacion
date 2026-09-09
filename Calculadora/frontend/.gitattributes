@@ -1,0 +1,6 @@
+# Los scripts de shell SIEMPRE con finales de linea LF, aunque se clonen en
+# Windows. Si git los deja con CRLF, el shebang queda como "#!/bin/sh\r" y
+# Linux busca un interprete llamado "/bin/sh\r" que no existe: el contenedor
+# falla con "not found" apuntando al script, que ademas confunde porque el
+# archivo SI esta ahi.
+*.sh text eol=lf
