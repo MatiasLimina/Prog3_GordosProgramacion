@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feria de Proyectos</title>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header__logo">
+            <span class="page-header__logo-text">logo</span>
+        </div>
+        <h1 class="page-header__title">Feria de Proyectos</h1>
+        <nav class="page-header__nav">
+            <button class="page-header__menu-toggle" aria-label="Abrir menú">
+                <span class="page-header__menu-line"></span>
+                <span class="page-header__menu-line"></span>
+                <span class="page-header__menu-line"></span>
+            </button>
+            <ul class="page-header__menu">
+                <li class="page-header__menu-item"><a href="#" class="page-header__menu-link">Inicio</a></li>
+                <li class="page-header__menu-item"><a href="#" class="page-header__menu-link">Proyectos</a></li>
+                <li class="page-header__menu-item"><a href="#" class="page-header__menu-link">Contacto</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="page-main">
+        <section class="project-list">
+            <article class="project-card">
+                <h2 class="project-card__title">Startup Innovadora</h2>
+                <div class="project-card__content">
+                    <p class="project-card__description">Descripción del proyecto innovador con tecnología de punta.</p>
+                    <div class="project-card__image-placeholder">
+                        <img src="imagenes/startup1.jpg" alt="Imagen del proyecto" class="project-card__image">
+                    </div>
+                </div>
+                <span class="project-card__badge project-card__badge--destacado">Destacado</span>
+            </article>
+
+            <article class="project-card">
+                <h2 class="project-card__title">App Sostenible</h2>
+                <div class="project-card__content">
+                    <p class="project-card__description">Solución tecnológica enfocada en sostenibilidad ambiental.</p>
+                    <div class="project-card__image-placeholder">
+                        <img src="imagenes/startup2.jpg" alt="Imagen del proyecto" class="project-card__image">
+                    </div>
+                </div>
+                <span class="project-card__badge project-card__badge--destacado">Destacado</span>
+            </article>
+
+            <article class="project-card">
+                <h2 class="project-card__title">Plataforma Educativa</h2>
+                <div class="project-card__content">
+                    <p class="project-card__description">Herramienta digital para transformar la educación.</p>
+                    <div class="project-card__image-placeholder">
+                        <img src="imagenes/startup4.jpg" alt="Imagen del proyecto" class="project-card__image">
+                    </div>
+                </div>
+                <span class="project-card__badge project-card__badge--destacado">Destacado</span>
+            </article>
+
+            <article class="project-card">
+                <h2 class="project-card__title">Red Social Creativa</h2>
+                <div class="project-card__content">
+                    <p class="project-card__description">Espacio digital para conectar creadores de contenido.</p>
+                    <div class="project-card__image-placeholder">
+                        <img src="imagenes/startup4.png" alt="Imagen del proyecto" class="project-card__image">
+                    </div>
+                </div>
+                <span class="project-card__badge project-card__badge--destacado">Destacado</span>
+            </article>
+        </section>
+    </main>
+
+    <div class="modal" role="dialog" aria-labelledby="modal-title">
+        <div class="modal__overlay"></div>
+        <div class="modal__container">
+            <h2 class="modal__title" id="modal-title">Información del Proyecto</h2>
+            <p class="modal__content">Aquí se muestra información detallada del proyecto seleccionado.</p>
+            <button class="modal__close" aria-label="Cerrar ventana">Cerrar</button>
+        </div>
+    </div>
+</body>
+</html>
