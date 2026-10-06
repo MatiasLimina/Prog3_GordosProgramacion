@@ -3,7 +3,7 @@
 Este documento define las reglas técnicas, la metodología y la estructura obligatoria para el desarrollo del trabajo práctico grupal de CSS avanzado y BEM.
 
 ## 📌 Contexto del Proyecto
-- **Objetivo:** Construir una página web responsive de una "feria de proyectos" cumpliendo con criterios estrictos de CSS.
+- **Objetivo:** Construir una página web responsive de una "feria de proyectos de start-ups" cumpliendo con criterios estrictos de CSS.
 - **Metodología CSS:** Metodología BEM estricta.
 
 ## 🏗️ Convenciones Técnicas Obligatorias
