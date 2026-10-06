@@ -1,0 +1,18 @@
+Ejercicio 1: Funciones de tres formas
+
+La función declarativa calcularArea permite ser llamada antes de su declaración.
+Esto ocurre por el hoisting, ya que JavaScript eleva la declaración completa de
+las funciones declarativas al inicio de su ámbito.
+
+Las funciones expresada y flecha no pueden llamarse antes de su declaración,
+porque se asignan a constantes y estas no pueden utilizarse antes de ser
+inicializadas.
+
+Ejercicio 2: Una clase para un estudiante
+
+Una propiedad es un dato que describe las características de un objeto. En la
+clase Estudiante, nombre, edad y notas son propiedades.
+
+Un método es una función que pertenece a un objeto y define una acción que este
+puede realizar. En la clase Estudiante, promedio() es un método porque calcula
+y devuelve el promedio de las notas.
