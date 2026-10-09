@@ -1,3 +1,6 @@
+# Antes que SQLModel defina la tabla: fija la naming convention de constraints,
+# así uq_<tabla>_<col> no depende del orden de imports.
+import app.core.base  # noqa: F401
 from sqlmodel import Field, SQLModel
 
 
