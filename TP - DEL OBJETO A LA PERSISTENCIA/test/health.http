@@ -1,0 +1,10 @@
+@host = http://localhost:8000
+
+### Liveness: no toca la base
+# Esperado: 200 {"estado": "vivo"}
+GET {{host}}/health/live
+
+### Readiness: ejecuta SELECT 1 contra la base
+# Esperado: 200 {"estado": "listo", "base_de_datos": "disponible"}
+# Con la base caída: 503 {"detail": "La base de datos no está disponible."}
+GET {{host}}/health/ready
