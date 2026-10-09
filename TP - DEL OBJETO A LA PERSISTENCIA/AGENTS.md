@@ -35,6 +35,7 @@ uvicorn app.main:app --reload        # servidor
 pytest                               # tests automatizados
 ```
 
+Si el puerto 5432 está ocupado (p. ej. un PostgreSQL instalado en Windows), usar `POSTGRES_PORT=5433` en `.env` y el mismo puerto en `DATABASE_URL`.
 `DB_ECHO=true` en `.env` muestra en consola las consultas emitidas (evidencia del caso C-07).
 
 ## 3. Estructura obligatoria
@@ -82,6 +83,39 @@ Módulos: `health`, `editoriales`, `generos`, `autores`, `libros`, `clientes`, `
 - **Sesión**: siempre con `Depends(get_session)`; una por petición; `expire_on_commit=False`.
 - **Constraints con nombre**: `SQLModel.metadata` usa una naming convention (en `app/core/database.py`); los mensajes de 409 se eligen por nombre de constraint.
 - **Mensajes de error** propios y en español.
+- **Columnas únicas**: `Field(unique=True)` **sin** `index=True`. El UNIQUE ya crea su índice; con `unique=True, index=True` SQLAlchemy genera un índice `ix_...` en vez de la constraint `uq_...` y el 409 cae en el mensaje genérico.
+- **CHECK con nombre**: todo `CheckConstraint` lleva `name="..."` corto (p. ej. `CheckConstraint("precio > 0", name="precio_positivo")`). La naming convention lo exige; sin `name` falla al definir la tabla.
+- **Nombres de constraints** (son las claves del dict de mensajes):
+
+| Tipo | Patrón | Ejemplo |
+|---|---|---|
+| UNIQUE | `uq_<tabla>_<columna>` | `uq_libro_isbn`, `uq_cliente_email`, `uq_perfil_cliente_cliente_id` |
+| FK | `fk_<tabla>_<columna>_<tabla_ref>` | `fk_libro_editorial_id_editorial`, `fk_renglon_venta_libro_id_libro` |
+| CHECK | `ck_<tabla>_<name>` | `ck_libro_precio_positivo` |
+| Índice | `ix_<tabla>_<columna>` | `ix_libro_editorial_id` |
+
+- **Traducir `IntegrityError`** (`app/core/errors.py`):
+
+```python
+MENSAJES = {
+    "uq_libro_isbn": "Ya existe un libro con ese ISBN.",
+    "fk_libro_editorial_id_editorial": "La editorial indicada no existe.",
+}
+
+# Caso simple: sólo commit
+await commit_or_409(session, MENSAJES)
+
+# Si hay flush() o lecturas (autoflush) antes del commit, envolver todo el bloque:
+async with traducir_integrity(session, MENSAJES):
+    session.add(venta)
+    await session.flush()
+    ...
+    await session.commit()
+```
+
+  Si un `IntegrityError` escapa sin envolver, el handler global de `app/main.py` responde 409 con un mensaje genérico (red de seguridad, no reemplaza los mensajes propios).
+- **Registro de modelos**: cada modelo nuevo se importa en `app/models.py` (con `# noqa: F401`); ese archivo importa primero `app.core.database` para fijar la naming convention.
+- **Relaciones entre módulos**: type hints cruzados bajo `if TYPE_CHECKING:` y `Relationship` con el nombre de la clase como string (`list["RenglonVenta"]`), para evitar imports circulares.
 - **Navegación en los dos extremos** con `Relationship(back_populates=...)`, según esta tabla:
 
 | Relación | Lado A | Lado B | FK en |
