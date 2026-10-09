@@ -1,6 +1,6 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.core.database import get_session
 from app.main import app
@@ -62,3 +62,34 @@ async def test_ready_ante_cualquier_error_da_503(client):
     r = await client.get("/health/ready")
     assert r.status_code == 503
     assert "inesperada" not in r.text
+
+
+async def test_handler_global_integrity_error_da_409_sin_texto_interno():
+    from fastapi import FastAPI
+
+    from app.main import registrar_handlers
+
+    mini = FastAPI()
+    registrar_handlers(mini)
+
+    @mini.get("/boom")
+    async def boom():
+        raise IntegrityError("INSERT INTO libro ...", {}, _Orig())
+
+    async with AsyncClient(transport=ASGITransport(app=mini), base_url="http://test") as c:
+        r = await c.get("/boom")
+    assert r.status_code == 409
+    assert "único" in r.json()["detail"]
+    for interno in ("duplicate key", "uq_libro_isbn", "INSERT"):
+        assert interno not in r.text
+
+
+async def test_app_real_tiene_handler_de_integrity_error():
+    assert IntegrityError in app.exception_handlers
+
+
+class _Orig(Exception):
+    sqlstate = "23505"
+
+    def __init__(self):
+        super().__init__('duplicate key value violates unique constraint "uq_libro_isbn"')
