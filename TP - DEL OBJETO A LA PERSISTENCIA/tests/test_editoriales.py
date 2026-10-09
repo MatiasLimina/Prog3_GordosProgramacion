@@ -111,3 +111,19 @@ async def test_patch_inexistente_da_404(client):
 async def test_patch_body_invalido_da_422(client):
     await crear(client)
     assert (await client.patch("/editoriales/1", json={"nombre": ""})).status_code == 422
+
+
+@pytest.mark.parametrize("body", [{"nombre": None}, {"pais": None}, {"nombre": "X", "pais": None}])
+async def test_patch_con_null_explicito_da_422(client, body):
+    await crear(client)
+    r = await client.patch("/editoriales/1", json=body)
+    assert r.status_code == 422
+    # no se modificó nada
+    assert (await client.get("/editoriales/1")).json() == {"id": 1, "nombre": "Planeta", "pais": "España"}
+
+
+async def test_patch_omitir_campos_sigue_permitido_tras_el_validador(client):
+    await crear(client)
+    r = await client.patch("/editoriales/1", json={"nombre": "Nueva"})
+    assert r.status_code == 200
+    assert r.json() == {"id": 1, "nombre": "Nueva", "pais": "España"}
