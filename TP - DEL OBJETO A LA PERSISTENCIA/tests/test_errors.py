@@ -111,3 +111,44 @@ async def test_nunca_filtra_texto_de_la_base(constraint):
     assert "violates" not in detalle
     assert "uq_libro_isbn" not in detalle
     assert "INSERT" not in detalle
+
+
+# --- traducir_integrity: cubre flush/execute además del commit ---
+from app.core.errors import traducir_integrity  # noqa: E402
+
+
+async def test_traducir_integrity_flush_da_409_con_rollback():
+    s = SesionFalsa()
+    with pytest.raises(HTTPException) as exc:
+        async with traducir_integrity(s, MENSAJES):
+            raise integrity_error(OrigFalso("23505", "uq_libro_isbn"))  # simula un flush()
+    assert exc.value.status_code == 409
+    assert exc.value.detail == "Ya existe un libro con ese ISBN."
+    assert s.rollbacks == 1
+
+
+async def test_traducir_integrity_sin_error_no_hace_rollback():
+    s = SesionFalsa()
+    async with traducir_integrity(s, MENSAJES):
+        pass
+    assert s.rollbacks == 0
+
+
+async def test_traducir_integrity_no_toca_otras_excepciones():
+    s = SesionFalsa()
+    with pytest.raises(ValueError):
+        async with traducir_integrity(s, MENSAJES):
+            raise ValueError("otra cosa")
+    assert s.rollbacks == 0
+
+
+async def test_traducir_integrity_usa_default_y_sqlstate():
+    s = SesionFalsa()
+    with pytest.raises(HTTPException) as exc:
+        async with traducir_integrity(s, {}, default="Conflicto propio."):
+            raise integrity_error(OrigFalso("23503"))
+    assert exc.value.detail == "Conflicto propio."
+    with pytest.raises(HTTPException) as exc:
+        async with traducir_integrity(s, {}):
+            raise integrity_error(OrigFalso("23503"))
+    assert "relación" in exc.value.detail

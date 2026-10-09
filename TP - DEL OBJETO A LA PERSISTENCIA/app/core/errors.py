@@ -4,6 +4,9 @@ Regla: el cliente nunca ve texto interno de la base (mensajes de PostgreSQL,
 nombres de constraints, SQL). Cada módulo pasa sus propios mensajes en
 español, indexados por nombre de constraint.
 """
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,16 +46,26 @@ def mensaje_para(error: IntegrityError, mensajes: dict[str, str], default: str |
     return _MENSAJES_POR_SQLSTATE.get(sqlstate, _MENSAJE_GENERICO)
 
 
-async def commit_or_409(
+@asynccontextmanager
+async def traducir_integrity(
     session: AsyncSession, mensajes: dict[str, str], default: str | None = None
-) -> None:
-    """Hace commit; si la base rechaza la escritura, rollback y 409.
+) -> AsyncIterator[None]:
+    """Envuelve cualquier escritura (flush/commit/execute).
 
-    `mensajes` mapea nombre de constraint -> mensaje en español.
+    Si la base rechaza la escritura (IntegrityError): rollback y 409 con
+    mensaje propio. `mensajes` mapea nombre de constraint -> mensaje en español.
     """
     try:
-        await session.commit()
+        yield
     except IntegrityError as e:
         await session.rollback()
         # `from None`: no encadena la excepción de la base en la respuesta/log de HTTP.
         raise HTTPException(status_code=409, detail=mensaje_para(e, mensajes, default)) from None
+
+
+async def commit_or_409(
+    session: AsyncSession, mensajes: dict[str, str], default: str | None = None
+) -> None:
+    """Hace commit traduciendo IntegrityError a 409 (ver traducir_integrity)."""
+    async with traducir_integrity(session, mensajes, default):
+        await session.commit()
