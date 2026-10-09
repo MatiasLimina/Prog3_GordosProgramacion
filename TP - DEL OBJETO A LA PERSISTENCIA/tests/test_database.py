@@ -22,3 +22,18 @@ async def test_sessionmaker_no_expira_al_commit_y_respeta_echo():
         assert sessionmaker.kw["expire_on_commit"] is False
     finally:
         await engine.dispose()
+
+
+def test_engine_tiene_timeout_de_conexion(monkeypatch):
+    # Sin timeout, /health/ready podría colgar ~60 s si la base no responde.
+    capturado = {}
+    import app.core.database as db
+
+    def falso(url, **kw):
+        capturado.update(kw)
+        return object.__new__(db.AsyncEngine)
+
+    monkeypatch.setattr(db, "create_async_engine", falso)
+    monkeypatch.setattr(db, "async_sessionmaker", lambda *a, **k: None)
+    db.crear_engine_y_sessionmaker("postgresql+asyncpg://u:p@localhost/db")
+    assert capturado["connect_args"] == {"timeout": 5}

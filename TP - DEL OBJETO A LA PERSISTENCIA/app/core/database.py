@@ -24,7 +24,9 @@ SQLModel.metadata.naming_convention = {
 def crear_engine_y_sessionmaker(
     url: str, echo: bool = False
 ) -> tuple[AsyncEngine, async_sessionmaker[AsyncSession]]:
-    engine = create_async_engine(url, echo=echo)
+    # timeout de conexión (s): si la base no responde, /health/ready falla rápido
+    # en vez de colgarse ~60 s.
+    engine = create_async_engine(url, echo=echo, connect_args={"timeout": 5})
     # expire_on_commit=False: los objetos siguen usables tras el commit
     # (en async un refresh implícito sería carga perezosa y fallaría).
     sessionmaker = async_sessionmaker(engine, expire_on_commit=False)
