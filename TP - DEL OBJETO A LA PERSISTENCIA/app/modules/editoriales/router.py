@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_session
 from app.core.pagination import Pagination, pagination_params
 from app.modules.editoriales import service
-from app.modules.editoriales.schemas import EditorialCreate, EditorialRead
+from app.modules.editoriales.schemas import EditorialCreate, EditorialRead, EditorialUpdate
 
 router = APIRouter(prefix="/editoriales", tags=["editoriales"])
 
@@ -24,3 +24,10 @@ async def listar_editoriales(
 @router.get("/{editorial_id}", response_model=EditorialRead, status_code=200)
 async def obtener_editorial(editorial_id: int, session: AsyncSession = Depends(get_session)):
     return await service.obtener(session, editorial_id)
+
+
+@router.patch("/{editorial_id}", response_model=EditorialRead, status_code=200)
+async def actualizar_editorial(
+    editorial_id: int, datos: EditorialUpdate, session: AsyncSession = Depends(get_session)
+):
+    return await service.actualizar(session, editorial_id, datos)
