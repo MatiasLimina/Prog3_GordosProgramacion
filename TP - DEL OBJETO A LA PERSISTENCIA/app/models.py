@@ -11,3 +11,5 @@ Ejemplo cuando existan:
 import app.core.database  # noqa: F401
 
 # B y C agregan acá los imports de sus modelos (un import por modelo, con noqa: F401).
+from app.modules.editoriales.models import Editorial  # noqa: F401,E402
+from app.modules.generos.models import Genero  # noqa: F401,E402
