@@ -40,6 +40,8 @@ async def actualizar_autor(
 
 @router.get("/{autor_id}/libros", response_model=list[AutorLibroRead], status_code=200)
 async def listar_libros_de_autor(
-    autor_id: IdPath, session: AsyncSession = Depends(get_session)
+    autor_id: IdPath,
+    p: Pagination = Depends(pagination_params),
+    session: AsyncSession = Depends(get_session),
 ) -> list[AutorLibroRead]:
-    return await service.listar_libros_de_autor(session, autor_id)
+    return await service.listar_libros_de_autor(session, autor_id, p)

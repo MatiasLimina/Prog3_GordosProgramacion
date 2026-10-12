@@ -1,0 +1,129 @@
+@host = http://localhost:8000
+
+### Crear editorial base (se captura su id)
+# @name editorial1
+# Esperado: 201 {"id": ..., "nombre": "Eterna Cadencia", "pais": "Argentina"}
+POST {{host}}/editoriales/
+Content-Type: application/json
+
+{"nombre": "Eterna Cadencia", "pais": "Argentina"}
+
+### Crear autor 1 (se captura su id)
+# @name autor1
+# Esperado: 201 {"id": ..., "nombre": "Jorge Luis Borges", "nacionalidad": "Argentina"}
+POST {{host}}/autores/
+Content-Type: application/json
+
+{"nombre": "Jorge Luis Borges", "nacionalidad": "Argentina"}
+
+### Crear autor 2 (se captura su id)
+# @name autor2
+# Esperado: 201 {"id": ..., "nombre": "Adolfo Bioy Casares", "nacionalidad": "Argentina"}
+POST {{host}}/autores/
+Content-Type: application/json
+
+{"nombre": "Adolfo Bioy Casares", "nacionalidad": "Argentina"}
+
+### Alta de libro con un autor (se captura su id)
+# @name libro1
+# Esperado: 201 con editorial, genero null y autores=[{autor_id, rol, orden}]
+POST {{host}}/libros/
+Content-Type: application/json
+
+{"isbn": "978-950-00-0001-1", "titulo": "Ficciones", "precio": "25000.00", "stock": 4, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "autor", "orden": 1}]}
+
+### C-02: ISBN repetido
+# Esperado: 409 {"detail": "Ya existe un libro con ese ISBN."}
+POST {{host}}/libros/
+Content-Type: application/json
+
+{"isbn": "978-950-00-0001-1", "titulo": "Otro titulo", "precio": "10000.00", "stock": 1, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "autor", "orden": 1}]}
+
+### C-04 (a): libro con editorial inexistente
+# Esperado: 409 {"detail": "La editorial indicada no existe."} (sin if previo: la FK decide)
+POST {{host}}/libros/
+Content-Type: application/json
+
+{"isbn": "978-950-00-0002-2", "titulo": "Libro fantasma", "precio": "10000.00", "stock": 1, "editorial_id": 999999999, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "autor", "orden": 1}]}
+
+### C-04 (b): libro con autor inexistente
+# Esperado: 409 {"detail": "Uno de los autores indicados no existe."}
+POST {{host}}/libros/
+Content-Type: application/json
+
+{"isbn": "978-950-00-0003-3", "titulo": "Libro huerfano", "precio": "10000.00", "stock": 1, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": 999999999, "rol": "autor", "orden": 1}]}
+
+### Alta de libro con dos autores (se captura su id)
+# @name libro2
+# Esperado: 201 con autores ordenados por orden
+POST {{host}}/libros/
+Content-Type: application/json
+
+{"isbn": "978-950-00-0004-4", "titulo": "Los que aman, odian", "precio": "21000.00", "stock": 4, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "coautor", "orden": 1}, {"autor_id": {{autor2.response.body.id}}, "rol": "coautor", "orden": 2}]}
+
+### Listado paginado de libros
+# Esperado: 200 con lista (editorial precargada en cada elemento)
+GET {{host}}/libros/?limit=10&offset=0
+
+### Listado con limite fuera de rango
+# Esperado: 422 (RN-10: limit de 1 a 100)
+GET {{host}}/libros/?limit=200&offset=0
+
+### Busqueda por parte del titulo
+# Esperado: 200 con "Ficciones" en la lista
+GET {{host}}/libros/?titulo=ficci
+
+### C-08: intento de inyeccion SQL en el filtro de titulo
+# Esperado: 200 con lista vacia (parametro ligado, nunca SQL concatenado)
+GET {{host}}/libros/?titulo=' OR '1'='1
+
+### C-07 (a): detalle de libro con un autor
+# Esperado: 200 con editorial y autores. Con DB_ECHO=true se ven 3 consultas fijas
+# (libro+editorial+genero, autorias, autores), la misma cantidad que en (b)
+GET {{host}}/libros/{{libro1.response.body.id}}
+
+### C-07 (b): detalle de libro con dos autores
+# Esperado: 200 con editorial y 2 autorias. Con DB_ECHO=true la misma cantidad
+# de consultas que en (a): no crece con la cantidad de autores (sin N+1)
+GET {{host}}/libros/{{libro2.response.body.id}}
+
+### Detalle de libro inexistente
+# Esperado: 404 {"detail": "El libro no existe."}
+GET {{host}}/libros/999999999
+
+### Parametro de ruta no entero
+# Esperado: 422, sin ejecutar el handler
+GET {{host}}/libros/abc
+
+### PATCH parcial: solo cambia el precio
+# Esperado: 200 con precio "26000.00" y el resto igual
+PATCH {{host}}/libros/{{libro1.response.body.id}}
+Content-Type: application/json
+
+{"precio": "26000.00"}
+
+### PATCH con precio invalido
+# Esperado: 422 (RN-03: precio mayor a cero)
+PATCH {{host}}/libros/{{libro1.response.body.id}}
+Content-Type: application/json
+
+{"precio": "0"}
+
+### PATCH de libro inexistente
+# Esperado: 404
+PATCH {{host}}/libros/999999999
+Content-Type: application/json
+
+{"stock": 10}
+
+### Libros del autor 1 (paginado)
+# Esperado: 200 con 2 elementos (Ficciones rol autor, Los que aman odian rol coautor)
+GET {{host}}/autores/{{autor1.response.body.id}}/libros?limit=10&offset=0
+
+### Libros del autor 1 con limite fuera de rango
+# Esperado: 422 (RN-10)
+GET {{host}}/autores/{{autor1.response.body.id}}/libros?limit=200&offset=0
+
+### Libros de autor inexistente
+# Esperado: 404 {"detail": "El autor no existe."}
+GET {{host}}/autores/999999999/libros
