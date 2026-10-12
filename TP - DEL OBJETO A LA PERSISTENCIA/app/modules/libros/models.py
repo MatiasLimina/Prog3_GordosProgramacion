@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from app.modules.autores.models import Autor
     from app.modules.editoriales.models import Editorial
     from app.modules.generos.models import Genero
-    from app.modules.ventas.models import RenglonVenta
 
 
 class LibroAutor(SQLModel, table=True):
@@ -51,4 +50,7 @@ class Libro(SQLModel, table=True):
     editorial: Optional["Editorial"] = Relationship(back_populates="libros")
     genero: Optional["Genero"] = Relationship(back_populates="libros")
     autorias: list[LibroAutor] = Relationship(back_populates="libro", cascade_delete=True)
-    renglones: list["RenglonVenta"] = Relationship(back_populates="libro")
+    # TODO(integrante C): restaurar cuando exista app.modules.ventas.models.RenglonVenta
+    # (agregar tambien "from app.modules.ventas.models import RenglonVenta" bajo TYPE_CHECKING):
+    #     renglones: list["RenglonVenta"] = Relationship(back_populates="libro")
+    # Se quito temporalmente porque RenglonVenta aun no existe y el mapper no resuelve el string.
