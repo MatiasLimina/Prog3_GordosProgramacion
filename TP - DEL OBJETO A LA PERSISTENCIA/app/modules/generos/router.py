@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.core.tipos import IdPath
 from app.core.pagination import Pagination, pagination_params
 from app.modules.generos import service
 from app.modules.generos.schemas import GeneroCreate, GeneroRead
@@ -24,7 +25,7 @@ async def listar_generos(
 
 @router.get("/{genero_id}/libros", response_model=list[LibroRead], status_code=200)
 async def listar_libros_de_genero(
-    genero_id: int,
+    genero_id: IdPath,
     p: Pagination = Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
 ):

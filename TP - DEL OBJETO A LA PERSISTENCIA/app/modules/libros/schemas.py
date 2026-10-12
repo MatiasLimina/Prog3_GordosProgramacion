@@ -1,13 +1,15 @@
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.core.tipos import INT32_MAX, IdDto, StockDto
+
 ROLES_PERMITIDOS = {"autor", "coautor", "traductor", "ilustrador"}
 
 
 class LibroAutorCreate(BaseModel):
-    autor_id: int = Field(gt=0, description="ID del autor existente")
+    autor_id: IdDto = Field(description="ID del autor existente")
     rol: str = Field(min_length=1, max_length=50, description="Rol del autor en el libro")
-    orden: int = Field(ge=1, description="Orden de aparición (>= 1)")
+    orden: int = Field(ge=1, le=INT32_MAX, description="Orden de aparición (>= 1)")
 
     @field_validator("rol")
     @classmethod
@@ -29,9 +31,9 @@ class LibroCreate(BaseModel):
         decimal_places=2,  # coincide con Numeric(10,2): evita overflow (500) y redondeo silencioso
         description="El precio debe ser mayor a 0 (RN-03)",
     )
-    stock: int = Field(default=0, ge=0, description="El stock no puede ser negativo (RN-03)")
-    editorial_id: int = Field(gt=0)
-    genero_id: int | None = Field(default=None)
+    stock: StockDto = Field(default=0, description="El stock no puede ser negativo (RN-03)")
+    editorial_id: IdDto
+    genero_id: IdDto | None = None
     autores: list[LibroAutorCreate] = Field(default_factory=list)
 
     @field_validator("isbn", "titulo")
@@ -46,9 +48,9 @@ class LibroUpdate(BaseModel):
     isbn: str | None = Field(default=None, min_length=1, max_length=30)
     titulo: str | None = Field(default=None, min_length=1, max_length=255)
     precio: Decimal | None = Field(default=None, gt=Decimal(0), max_digits=10, decimal_places=2)
-    stock: int | None = Field(default=None, ge=0)
-    editorial_id: int | None = Field(default=None, gt=0)
-    genero_id: int | None = Field(default=None)
+    stock: StockDto | None = None
+    editorial_id: IdDto | None = None
+    genero_id: IdDto | None = None
 
     @field_validator("isbn", "titulo", "precio", "stock", "editorial_id", mode="before")
     @classmethod

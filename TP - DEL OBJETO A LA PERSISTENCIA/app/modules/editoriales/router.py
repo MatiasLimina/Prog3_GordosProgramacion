@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.core.tipos import IdPath
 from app.core.pagination import Pagination, pagination_params
 from app.modules.editoriales import service
 from app.modules.libros.schemas import LibroRead
@@ -23,20 +24,20 @@ async def listar_editoriales(
 
 
 @router.get("/{editorial_id}", response_model=EditorialRead, status_code=200)
-async def obtener_editorial(editorial_id: int, session: AsyncSession = Depends(get_session)):
+async def obtener_editorial(editorial_id: IdPath, session: AsyncSession = Depends(get_session)):
     return await service.obtener(session, editorial_id)
 
 
 @router.patch("/{editorial_id}", response_model=EditorialRead, status_code=200)
 async def actualizar_editorial(
-    editorial_id: int, datos: EditorialUpdate, session: AsyncSession = Depends(get_session)
+    editorial_id: IdPath, datos: EditorialUpdate, session: AsyncSession = Depends(get_session)
 ):
     return await service.actualizar(session, editorial_id, datos)
 
 
 @router.get("/{editorial_id}/libros", response_model=list[LibroRead], status_code=200)
 async def listar_libros_de_editorial(
-    editorial_id: int,
+    editorial_id: IdPath,
     p: Pagination = Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
 ):

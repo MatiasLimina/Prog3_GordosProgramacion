@@ -5,7 +5,7 @@ Sin límite superior, un id o stock gigante llega a la base y revienta con
 """
 from typing import Annotated
 
-from fastapi import Path, Query
+from fastapi import Path
 from pydantic import Field
 
 INT32_MAX = 2_147_483_647
@@ -15,6 +15,5 @@ IdDto = Annotated[int, Field(ge=1, le=INT32_MAX)]
 # Stock: >= 0 y dentro de int32.
 StockDto = Annotated[int, Field(ge=0, le=INT32_MAX)]
 
-# En parámetros de ruta ({id}) y de query (filtros por id).
+# En parámetros de ruta ({id}). Para filtros de query: Query(ge=1, le=INT32_MAX).
 IdPath = Annotated[int, Path(ge=1, le=INT32_MAX)]
-IdQuery = Annotated[int, Query(ge=1, le=INT32_MAX)]

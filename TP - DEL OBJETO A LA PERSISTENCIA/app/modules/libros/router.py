@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.core.tipos import INT32_MAX, IdPath
 from app.core.pagination import Pagination, pagination_params
 from app.modules.libros import service
 from app.modules.libros.schemas import (
@@ -30,6 +31,8 @@ async def listar_libros(
     ),
     genero_id: int | None = Query(
         default=None,
+        ge=1,
+        le=INT32_MAX,
         description="Filtrar por ID de género",
     ),
     session: AsyncSession = Depends(get_session),
@@ -39,13 +42,13 @@ async def listar_libros(
 
 @router.get("/{libro_id}", response_model=LibroDetalleRead, status_code=200)
 async def obtener_libro(
-    libro_id: int, session: AsyncSession = Depends(get_session)
+    libro_id: IdPath, session: AsyncSession = Depends(get_session)
 ) -> LibroDetalleRead:
     return await service.obtener(session, libro_id)
 
 
 @router.patch("/{libro_id}", response_model=LibroDetalleRead, status_code=200)
 async def actualizar_libro(
-    libro_id: int, datos: LibroUpdate, session: AsyncSession = Depends(get_session)
+    libro_id: IdPath, datos: LibroUpdate, session: AsyncSession = Depends(get_session)
 ) -> LibroDetalleRead:
     return await service.actualizar(session, libro_id, datos)
