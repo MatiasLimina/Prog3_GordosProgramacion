@@ -1,7 +1,12 @@
 # Antes que SQLModel defina la tabla: fija la naming convention de constraints,
 # así uq_<tabla>_<col> no depende del orden de imports.
 import app.core.base  # noqa: F401
-from sqlmodel import Field, SQLModel
+from typing import TYPE_CHECKING
+
+from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from app.modules.libros.models import Libro
 
 
 class Editorial(SQLModel, table=True):
@@ -12,4 +17,4 @@ class Editorial(SQLModel, table=True):
     nombre: str = Field(max_length=150, unique=True)
     pais: str = Field(max_length=100)
 
-    # TODO(fase 2b): libros: list["Libro"] = Relationship(back_populates="editorial")
+    libros: list["Libro"] = Relationship(back_populates="editorial")
