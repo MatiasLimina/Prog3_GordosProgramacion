@@ -27,6 +27,8 @@ class AutorUpdate(BaseModel):
 
 
 class AutorRead(BaseModel):
+    model_config = {"from_attributes": True}
+
     id: int
     nombre: str
     nacionalidad: str

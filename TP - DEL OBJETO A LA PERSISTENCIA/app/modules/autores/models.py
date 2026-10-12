@@ -1,8 +1,5 @@
 # Antes que SQLModel defina la tabla: fija la naming convention de constraints.
-try:
-    import app.core.base  # noqa: F401
-except ImportError:
-    import app.core.database  # noqa: F401
+import app.core.base  # noqa: F401
 
 from typing import TYPE_CHECKING
 from sqlmodel import Field, Relationship, SQLModel
