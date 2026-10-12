@@ -1,11 +1,9 @@
 from decimal import Decimal
-from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Field, Relationship, SQLModel
 
 from app.core.pagination import Pagination
 from app.modules.autores import service as autores_service
@@ -18,28 +16,6 @@ from app.modules.libros.schemas import (
     LibroCreate,
     LibroUpdate,
 )
-
-# En la Fase 2 paralela, si Editorial, Genero o RenglonVenta aún no están mergeados en main,
-# registramos stubs para que SQLAlchemy resuelva los mappers de las relaciones cruzadas.
-if "editorial" not in SQLModel.metadata.tables:
-    class Editorial(SQLModel, table=True):
-        id: int | None = Field(default=None, primary_key=True)
-        nombre: str = Field(unique=True)
-        pais: str
-        libros: list["Libro"] = Relationship(back_populates="editorial")
-
-if "genero" not in SQLModel.metadata.tables:
-    class Genero(SQLModel, table=True):
-        id: int | None = Field(default=None, primary_key=True)
-        nombre: str = Field(unique=True)
-        libros: list["Libro"] = Relationship(back_populates="genero")
-
-if "renglon_venta" not in SQLModel.metadata.tables:
-    class RenglonVenta(SQLModel, table=True):
-        id: int | None = Field(default=None, primary_key=True)
-        libro_id: int = Field(foreign_key="libro.id")
-        libro: Optional["Libro"] = Relationship(back_populates="renglones")
-
 
 def test_mensajes_de_integridad_en_libros():
     esperadas = [
