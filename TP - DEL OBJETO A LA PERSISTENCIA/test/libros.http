@@ -78,8 +78,9 @@ GET {{host}}/libros/?titulo=ficci
 GET {{host}}/libros/?titulo=' OR '1'='1
 
 ### C-07 (a): detalle de libro con un autor
-# Esperado: 200 con editorial y autores. Con DB_ECHO=true se ven 3 consultas fijas
-# (libro+editorial+genero, autorias, autores), la misma cantidad que en (b)
+# Esperado: 200 con editorial y autores. Con DB_ECHO=true se ve en consola un
+# numero fijo de consultas (el joinedload va en la consulta principal y el
+# selectinload de autorias+autor en otra), el mismo que en (b)
 GET {{host}}/libros/{{libro1.response.body.id}}
 
 ### C-07 (b): detalle de libro con dos autores
