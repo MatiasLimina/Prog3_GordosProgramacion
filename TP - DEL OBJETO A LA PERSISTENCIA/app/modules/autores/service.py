@@ -46,7 +46,9 @@ async def actualizar(session: AsyncSession, autor_id: int, datos: AutorUpdate) -
     return AutorRead.model_validate(autor)
 
 
-async def listar_libros_de_autor(session: AsyncSession, autor_id: int) -> list[AutorLibroRead]:
+async def listar_libros_de_autor(
+    session: AsyncSession, autor_id: int, p: Pagination
+) -> list[AutorLibroRead]:
     # Verificar existencia del autor
     await obtener(session, autor_id)
 
@@ -55,6 +57,8 @@ async def listar_libros_de_autor(session: AsyncSession, autor_id: int) -> list[A
         .join(Libro, LibroAutor.libro_id == Libro.id)
         .where(LibroAutor.autor_id == autor_id)
         .order_by(LibroAutor.orden, Libro.id)
+        .limit(p.limit)
+        .offset(p.offset)
     )
     resultado = await session.execute(consulta)
     filas = resultado.all()
