@@ -114,7 +114,8 @@ async with traducir_integrity(session, MENSAJES):
 ```
 
   Si un `IntegrityError` escapa sin envolver, el handler global de `app/main.py` responde 409 con un mensaje genérico (red de seguridad, no reemplaza los mensajes propios).
-- **Registro de modelos**: cada modelo nuevo se importa en `app/models.py` (con `# noqa: F401`); ese archivo importa primero `app.core.database` para fijar la naming convention.
+- **Naming convention primero**: todo `app/modules/*/models.py` arranca con `import app.core.base  # noqa: F401`. La convención se aplica al definir la tabla; si el modelo se importa antes que `app.core.base` (p. ej. desde el seed o un script), las constraints quedan sin nombre (`editorial_nombre_key`) y el 409 cae en el mensaje genérico.
+- **Registro de modelos**: cada modelo nuevo se importa en `app/models.py` (con `# noqa: F401`); ese archivo importa primero `app.core.base`.
 - **Relaciones entre módulos**: type hints cruzados bajo `if TYPE_CHECKING:` y `Relationship` con el nombre de la clase como string (`list["RenglonVenta"]`), para evitar imports circulares.
 - **Navegación en los dos extremos** con `Relationship(back_populates=...)`, según esta tabla:
 

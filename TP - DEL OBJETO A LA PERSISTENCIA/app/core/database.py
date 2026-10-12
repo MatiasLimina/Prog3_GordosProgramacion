@@ -7,18 +7,8 @@ from collections.abc import AsyncIterator
 
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
-from sqlmodel import SQLModel
 
-# Nombres predecibles para constraints: los mensajes 409 se eligen por nombre
-# y Alembic puede crearlos/borrarlos sin depender de nombres autogenerados.
-# Se fija al importar este módulo, antes de que se definan las tablas.
-SQLModel.metadata.naming_convention = {
-    "ix": "ix_%(column_0_label)s",
-    "uq": "uq_%(table_name)s_%(column_0_name)s",
-    "ck": "ck_%(table_name)s_%(constraint_name)s",
-    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s",
-}
+import app.core.base  # noqa: F401  (fija la naming convention)
 
 
 def crear_engine_y_sessionmaker(
