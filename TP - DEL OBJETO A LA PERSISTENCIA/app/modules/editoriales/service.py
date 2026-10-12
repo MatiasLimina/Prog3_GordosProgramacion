@@ -1,10 +1,13 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from sqlmodel import select
 
 from app.core.errors import commit_or_409
 from app.core.pagination import Pagination
 from app.modules.editoriales.models import Editorial
+from app.modules.libros.models import Libro
+from app.modules.libros.schemas import LibroRead
 from app.modules.editoriales.schemas import EditorialCreate, EditorialUpdate
 
 MENSAJES = {
@@ -38,3 +41,21 @@ async def actualizar(session: AsyncSession, editorial_id: int, datos: EditorialU
     session.add(editorial)
     await commit_or_409(session, MENSAJES)
     return editorial
+
+
+async def listar_libros(session: AsyncSession, editorial_id: int, p: Pagination) -> list[LibroRead]:
+    """Libros de una editorial (404 si la editorial no existe), paginados.
+
+    Precarga editorial y género en la misma consulta (joinedload): sin lazy loading.
+    """
+    await obtener(session, editorial_id)
+    consulta = (
+        select(Libro)
+        .where(Libro.editorial_id == editorial_id)
+        .options(joinedload(Libro.editorial), joinedload(Libro.genero))
+        .order_by(Libro.id)
+        .limit(p.limit)
+        .offset(p.offset)
+    )
+    libros = (await session.execute(consulta)).scalars().all()
+    return [LibroRead.model_validate(libro) for libro in libros]

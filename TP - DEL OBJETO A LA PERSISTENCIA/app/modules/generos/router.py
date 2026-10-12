@@ -5,6 +5,7 @@ from app.core.database import get_session
 from app.core.pagination import Pagination, pagination_params
 from app.modules.generos import service
 from app.modules.generos.schemas import GeneroCreate, GeneroRead
+from app.modules.libros.schemas import LibroRead
 
 router = APIRouter(prefix="/generos", tags=["generos"])
 
@@ -19,3 +20,12 @@ async def listar_generos(
     p: Pagination = Depends(pagination_params), session: AsyncSession = Depends(get_session)
 ):
     return await service.listar(session, p)
+
+
+@router.get("/{genero_id}/libros", response_model=list[LibroRead], status_code=200)
+async def listar_libros_de_genero(
+    genero_id: int,
+    p: Pagination = Depends(pagination_params),
+    session: AsyncSession = Depends(get_session),
+):
+    return await service.listar_libros(session, genero_id, p)
