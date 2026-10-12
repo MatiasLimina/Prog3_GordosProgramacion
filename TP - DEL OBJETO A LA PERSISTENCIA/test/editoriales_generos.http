@@ -91,3 +91,47 @@ Content-Type: application/json
 ### Listado de géneros paginado
 # Esperado: 200
 GET {{host}}/generos/?limit=10&offset=0
+
+### Género para los libros (se captura su id)
+# @name generoLibros
+# Esperado: 201
+POST {{host}}/generos/
+Content-Type: application/json
+
+{"nombre": "Ensayo"}
+
+### Libro de la primera editorial con género (se captura su id)
+# @name libroConGenero
+# Esperado: 201 con editorial, género y autores []
+POST {{host}}/libros/
+Content-Type: application/json
+
+{"isbn": "978-0-00-000001-0", "titulo": "Libro A", "precio": "1500.00", "stock": 3, "editorial_id": {{editorial1.response.body.id}}, "genero_id": {{generoLibros.response.body.id}}}
+
+### Libros de una editorial
+# Esperado: 200 con la lista de libros de la primera editorial (cada uno con editorial y género)
+GET {{host}}/editoriales/{{editorial1.response.body.id}}/libros?limit=10&offset=0
+
+### Libros de una editorial sin libros
+# Esperado: 200 []
+GET {{host}}/editoriales/{{editorial2.response.body.id}}/libros
+
+### Libros de una editorial inexistente
+# Esperado: 404 {"detail": "La editorial no existe."}
+GET {{host}}/editoriales/999999999/libros
+
+### Libros de editorial con id no numérico
+# Esperado: 422
+GET {{host}}/editoriales/abc/libros
+
+### Libros de un género
+# Esperado: 200 con los libros de ese género (no aparecen los libros sin género)
+GET {{host}}/generos/{{generoLibros.response.body.id}}/libros
+
+### Libros de un género inexistente
+# Esperado: 404 {"detail": "El género no existe."}
+GET {{host}}/generos/999999999/libros
+
+### Libros de género con id no numérico
+# Esperado: 422
+GET {{host}}/generos/abc/libros

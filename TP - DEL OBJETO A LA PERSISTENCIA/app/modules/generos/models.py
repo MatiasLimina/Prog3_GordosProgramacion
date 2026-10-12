@@ -1,7 +1,12 @@
 # Antes que SQLModel defina la tabla: fija la naming convention de constraints,
 # así uq_<tabla>_<col> no depende del orden de imports.
 import app.core.base  # noqa: F401
-from sqlmodel import Field, SQLModel
+from typing import TYPE_CHECKING
+
+from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from app.modules.libros.models import Libro
 
 
 class Genero(SQLModel, table=True):
@@ -11,4 +16,4 @@ class Genero(SQLModel, table=True):
     # unique SIN index: así se crea la constraint uq_genero_nombre (clave del 409).
     nombre: str = Field(max_length=100, unique=True)
 
-    # TODO(fase 2b): libros: list["Libro"] = Relationship(back_populates="genero")
+    libros: list["Libro"] = Relationship(back_populates="genero")
