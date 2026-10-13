@@ -117,4 +117,5 @@ Convenciones, reglas y nombres de constraints: [AGENTS.md](AGENTS.md).
 
 ## Estado actual
 - Hecho: infraestructura, `health`, `editoriales`, `generos`, `autores`, `libros`, seed.
-- Pendiente: migraciones de Alembic (Fase 3), `clientes` y `ventas`, evidencia C-07.
+- Hecho: migraciones de Alembic del catálogo (1: todo menos `genero`; 2: `genero` + `libro.genero_id`).
+- Pendiente: `clientes` y `ventas` (con su migración), evidencia C-07.
