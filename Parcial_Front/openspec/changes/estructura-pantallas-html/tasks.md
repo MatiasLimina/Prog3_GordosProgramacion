@@ -1,5 +1,7 @@
 # Tasks
 
+> ⚠️ **Pendiente de decisión antes del apply** (ver `design.md` § Open Questions): (1) nombre de la librería — supuesto "Librería Papel y Tinta"; (2) formato del id y la fecha de venta en la maqueta — supuesto ids numéricos y `DD/MM/AAAA`.
+
 > Sin tests automáticos (regla dura 1): cada tarea se verifica a mano o con el W3C Nu HTML Checker (https://validator.w3.org/nu/, subiendo el archivo). Contrato de ids/`name`/`data-*`: `design.md` §D2. Datos de ejemplo: `design.md` §D4. Ninguna página incluye `<script>`.
 
 ## 1. Base compartida

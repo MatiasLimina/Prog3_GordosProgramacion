@@ -236,5 +236,7 @@ No aplica (archivos nuevos). Rollback: borrar los 5 HTML y `css/`.
 
 ## Open Questions
 
+> **PENDIENTE DE DECISIÓN DEL USUARIO — resolver antes de `/opsx:apply`.** Estas dos preguntas quedaron abiertas al aprobar el propose (2026-10-13). Cuando se decidan, reemplazar cada ítem por la decisión tomada y ajustar §D4 si cambia algo.
+
 - Nombre definitivo de la librería ("Librería Papel y Tinta" es un supuesto; cambiarlo solo afecta textos).
 - Formato definitivo del identificador y la fecha de venta (KB 10 #2): la maqueta usa ids numéricos y `DD/MM/AAAA`; lo fija C-05 sin cambiar la estructura.
