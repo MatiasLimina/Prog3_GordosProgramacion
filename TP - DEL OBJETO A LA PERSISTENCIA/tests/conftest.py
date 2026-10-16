@@ -10,6 +10,9 @@ Sólo los errores de conexión causan skip; cualquier otro error (esquema, TRUNC
 hace fallar el test.
 """
 import os
+import subprocess
+import sys
+from pathlib import Path
 
 import asyncpg
 import pytest
@@ -55,12 +58,30 @@ def _url_test():
     return url
 
 
+def _alembic_upgrade_head(url) -> None:
+    """Corre `alembic upgrade head` contra la base de test en un subproceso.
+
+    `migrations/env.py` toma DATABASE_URL del entorno (load_dotenv no pisa las
+    variables ya definidas), así que alcanza con apuntarla a libreria_test.
+    """
+    assert url.database == "libreria_test"
+    env = {**os.environ, "DATABASE_URL": url.render_as_string(hide_password=False)}
+    proyecto = Path(__file__).resolve().parent.parent
+    resultado = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd=proyecto, env=env, capture_output=True, text=True,
+    )
+    if resultado.returncode != 0:
+        pytest.fail(f"alembic upgrade head falló en libreria_test:\n{resultado.stdout}\n{resultado.stderr}")
+
+
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def esquema_test():
     """Deja el esquema de test limpio y actualizado, una vez por corrida.
 
-    TEMPORAL: DROP SCHEMA + create_all SÓLO acá. En la Fase 3 se reemplaza por
-    `alembic upgrade head` sobre el esquema vacío. La app NUNCA usa create_all.
+    Vacía el esquema `public` de `libreria_test` y corre `alembic upgrade head`
+    sobre él, así los tests ejercitan las migraciones reales. Nunca se usa
+    `create_all`: el esquema sólo se crea con Alembic.
     """
     url = _url_test()
     assert url.database == "libreria_test"  # nunca borrar otra base
@@ -76,9 +97,9 @@ async def esquema_test():
         async with engine.begin() as conn:
             await conn.execute(text("DROP SCHEMA public CASCADE"))
             await conn.execute(text("CREATE SCHEMA public"))
-            await conn.run_sync(SQLModel.metadata.create_all)
     finally:
         await engine.dispose()
+    _alembic_upgrade_head(url)
     return url
 
 
