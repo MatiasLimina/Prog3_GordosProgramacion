@@ -18,6 +18,10 @@ assert "{esperada}" in nombres, nombres
     [
         ("app.modules.editoriales.models", "Editorial", "uq_editorial_nombre"),
         ("app.modules.generos.models", "Genero", "uq_genero_nombre"),
+        ("app.modules.clientes.models", "Cliente", "uq_cliente_email"),
+        ("app.modules.clientes.models", "PerfilCliente", "uq_perfil_cliente_cliente_id"),
+        ("app.modules.ventas.models", "Venta", "ck_venta_total_no_negativo"),
+        ("app.modules.ventas.models", "RenglonVenta", "ck_renglon_venta_cantidad_positiva"),
     ],
 )
 def test_importar_solo_un_modelo_ya_aplica_la_naming_convention(modulo, clase, esperada):
