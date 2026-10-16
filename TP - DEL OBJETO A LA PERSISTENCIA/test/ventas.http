@@ -1,0 +1,105 @@
+@host = http://localhost:8000
+
+# Antes de correr: `python -m scripts.seed`.
+# Datos sembrados: cliente 2 = Tomás Ríos; libro 1 = Rayuela (25000.00, stock 10),
+# libro 4 = Respiración artificial (27000.00, stock 6); la venta 1 ya existe,
+# por eso la primera venta de esta corrida recibe el id 2.
+# Cada venta válida DESCUENTA stock: para repetir el caso C-06 hay que volver a sembrar.
+# C-06 va primero a propósito: un 409 por FK (cliente inexistente) ya consumió un id de
+# la secuencia (las secuencias no se revierten con el rollback), así que cualquier venta
+# creada después de ese caso recibe un id mayor. Correr los casos en este orden.
+
+### C-06: venta válida con dos renglones (ejemplo de la consigna)
+# @name venta2renglones
+# Esperado: 201 {"id": 2, "fecha": "...", "total": "77000.00", "cliente": {"id": 2, "nombre": "Tomás Ríos", "email": "tomas@example.com"}, "renglones": [{"libro_id": 1, "titulo": "Rayuela", "cantidad": 2, "precio_unitario": "25000.00", "subtotal": "50000.00"}, {"libro_id": 4, "titulo": "Respiración artificial", "cantidad": 1, "precio_unitario": "27000.00", "subtotal": "27000.00"}]}
+# En la consola del servidor, ~0,5 s después: "Comprobante de la venta 2 enviado a tomas@example.com."
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 2}, {"libro_id": 4, "cantidad": 1}]}
+
+### C-05 (a): venta con libro inexistente
+# Esperado: 409 {"detail": "El libro indicado no existe."} (no queda stock descontado)
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 1}, {"libro_id": 999999, "cantidad": 1}]}
+
+### C-05 (b): venta con cliente inexistente
+# Esperado: 409 {"detail": "El cliente indicado no existe."}
+# Nota: esta falla es una FK al insertar la venta y consume un id de la secuencia (el id 3).
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 999999, "renglones": [{"libro_id": 1, "cantidad": 1}]}
+
+### Stock insuficiente
+# Esperado: 409 {"detail": "No hay stock suficiente para el libro indicado."}
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 1}, {"libro_id": 4, "cantidad": 100}]}
+
+### RN-05: sin renglones
+# Esperado: 422
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 2, "renglones": []}
+
+### RN-05: libro repetido
+# Esperado: 422
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 1}, {"libro_id": 1, "cantidad": 2}]}
+
+### Cantidad cero
+# Esperado: 422
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 0}]}
+
+### El precio unitario no se envía: lo calcula el servidor (RN-06)
+# Esperado: 422
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 1, "precio_unitario": "1.00"}]}
+
+### El total no se envía: lo calcula el servidor (RN-07)
+# Esperado: 422
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 2, "total": "1.00", "renglones": [{"libro_id": 1, "cantidad": 1}]}
+
+### Venta con un solo renglón (se captura su id)
+# @name venta1renglon
+# Esperado: 201 con 1 renglón; total = 18500.50 (libro 3, El Aleph); id 4 (el 3 lo consumió el 409 por FK)
+POST {{host}}/ventas/
+Content-Type: application/json
+
+{"cliente_id": 2, "renglones": [{"libro_id": 3, "cantidad": 1}]}
+
+### Listado paginado de ventas
+# Esperado: 200 lista ordenada por id (1, 2, 4; el 3 quedó vacío por el 409 por FK)
+GET {{host}}/ventas/?limit=10&offset=0
+
+### Listado con limit fuera de rango
+# Esperado: 422
+GET {{host}}/ventas/?limit=0
+
+### Venta inexistente
+# Esperado: 404 {"detail": "La venta no existe."}
+GET {{host}}/ventas/999999
+
+### C-07 (a): detalle de la venta con 1 renglón
+# Con DB_ECHO=true en .env (reiniciando el servidor) contar las consultas emitidas en la consola.
+# Esperado: 200 con 1 renglón. Anotar la cantidad de SELECT: debe ser igual a la del caso (b).
+GET {{host}}/ventas/{{venta1renglon.response.body.id}}
+
+### C-07 (b): detalle de la venta con 2 renglones
+# Esperado: 200 con 2 renglones y la MISMA cantidad de SELECT que el caso (a) (sin N+1).
+GET {{host}}/ventas/{{venta2renglones.response.body.id}}

@@ -1,0 +1,100 @@
+@host = http://localhost:8000
+
+# Antes de correr: `python -m scripts.seed` (clientes 1 y 2 ya existen; el 1 ya tiene perfil).
+# Los emails de abajo son nuevos: si se repite la corrida sin re-sembrar, el alta da 409.
+
+### Alta de cliente (se captura su id)
+# @name cliente1
+# Esperado: 201 {"id": ..., "nombre": "Ana Pérez", "email": "ana.perez@example.com"}
+POST {{host}}/clientes/
+Content-Type: application/json
+
+{"nombre": "Ana Pérez", "email": "ana.perez@example.com"}
+
+### C-02: email repetido
+# Esperado: 409 {"detail": "Ya existe un cliente con ese email."}
+POST {{host}}/clientes/
+Content-Type: application/json
+
+{"nombre": "Otra Ana", "email": "ana.perez@example.com"}
+
+### Alta con email inválido
+# Esperado: 422
+POST {{host}}/clientes/
+Content-Type: application/json
+
+{"nombre": "Sin Arroba", "email": "no-es-un-email"}
+
+### Detalle del cliente sin perfil
+# Esperado: 200 con "perfil": null
+GET {{host}}/clientes/{{cliente1.response.body.id}}
+
+### Cliente inexistente
+# Esperado: 404 {"detail": "El cliente no existe."}
+GET {{host}}/clientes/999999
+
+### PATCH parcial: sólo cambia el nombre
+# Esperado: 200, el email no cambia
+PATCH {{host}}/clientes/{{cliente1.response.body.id}}
+Content-Type: application/json
+
+{"nombre": "Ana María Pérez"}
+
+### PATCH con el email de otro cliente (sembrado)
+# Esperado: 409 {"detail": "Ya existe un cliente con ese email."}
+PATCH {{host}}/clientes/{{cliente1.response.body.id}}
+Content-Type: application/json
+
+{"email": "tomas@example.com"}
+
+### PATCH con null explícito
+# Esperado: 422
+PATCH {{host}}/clientes/{{cliente1.response.body.id}}
+Content-Type: application/json
+
+{"nombre": null}
+
+### Alta de perfil
+# Esperado: 201 {"id": ..., "cliente_id": ..., "telefono": "11 4444-0000", "direccion": "Calle Falsa 123"}
+POST {{host}}/clientes/{{cliente1.response.body.id}}/perfil
+Content-Type: application/json
+
+{"telefono": "11 4444-0000", "direccion": "Calle Falsa 123"}
+
+### C-03: segundo perfil para el mismo cliente
+# Esperado: 409 {"detail": "El cliente ya tiene un perfil."}
+POST {{host}}/clientes/{{cliente1.response.body.id}}/perfil
+Content-Type: application/json
+
+{"telefono": "11 9999-9999", "direccion": "Otra calle 456"}
+
+### Perfil de un cliente inexistente
+# Esperado: 404 {"detail": "El cliente no existe."} (sin if previo: la FK decide)
+POST {{host}}/clientes/999999/perfil
+Content-Type: application/json
+
+{"telefono": "11 4444-0000", "direccion": "Calle Falsa 123"}
+
+### Detalle del cliente con perfil
+# Esperado: 200 con "perfil": {...}
+GET {{host}}/clientes/{{cliente1.response.body.id}}
+
+### Listado paginado de clientes
+# Esperado: 200 lista (máx. 2 elementos)
+GET {{host}}/clientes/?limit=2&offset=0
+
+### Listado con limit fuera de rango
+# Esperado: 422
+GET {{host}}/clientes/?limit=101
+
+### Ventas del cliente 1 (sembrado)
+# Esperado: 200 con la venta 1 (renglones con titulo, precio_unitario y subtotal)
+GET {{host}}/clientes/1/ventas
+
+### Ventas del cliente 1 paginadas
+# Esperado: 200 []
+GET {{host}}/clientes/1/ventas?limit=5&offset=10
+
+### Ventas de un cliente inexistente
+# Esperado: 404 {"detail": "El cliente no existe."}
+GET {{host}}/clientes/999999/ventas

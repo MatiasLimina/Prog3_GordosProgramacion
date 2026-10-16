@@ -4,9 +4,11 @@ Uso:  python -m scripts.seed     (después de `alembic upgrade head`)
 
 Vacía TODAS las tablas con TRUNCATE ... RESTART IDENTITY y vuelve a cargar los
 mismos datos, así los ids son siempre los mismos (los casos .http y la
-corrección dependen de ellos: editorial 1, género 1, autores 3 y 4, libros 1 y 4).
+corrección dependen de ellos: editorial 1, género 1, autores 3 y 4, libros 1 y 4,
+cliente 2 = Tomás Ríos, y una venta 1 ya cargada, así que la próxima venta es la 2).
 """
 import asyncio
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select, text
@@ -14,17 +16,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 import app.core.base  # noqa: F401  (naming convention primero)
-import app.models  # noqa: F401  (todo el metadata, incluidas las tablas que agreguen B y C)
+import app.models  # noqa: F401  (todo el metadata)
 from app.core.config import get_settings
 from app.core.database import crear_engine_y_sessionmaker
 from app.modules.autores.models import Autor
+from app.modules.clientes.models import Cliente, PerfilCliente
 from app.modules.editoriales.models import Editorial
 from app.modules.generos.models import Genero
 from app.modules.libros.models import Libro, LibroAutor
+from app.modules.ventas.models import RenglonVenta, Venta
 
 
 async def _vaciar_tablas(session: AsyncSession) -> None:
-    # La lista sale del metadata: cuando C agregue cliente, venta, etc., entran solas.
+    # La lista sale del metadata: toda tabla registrada entra sola.
     tablas = ", ".join(f'"{t.name}"' for t in SQLModel.metadata.sorted_tables)
     await session.execute(text(f"TRUNCATE {tablas} RESTART IDENTITY CASCADE"))
 
@@ -84,10 +88,36 @@ async def _cargar_catalogo(session: AsyncSession) -> None:
 
 
 async def _cargar_clientes(session: AsyncSession) -> None:
-    # TODO(integrante C): cuando exista Cliente (y PerfilCliente), cargar clientes.
-    # El cliente id 2 tiene que ser "Tomás Ríos" / tomas@example.com (lo pide el
-    # ejemplo de POST /ventas de la consigna), por lo que el id 1 va antes.
-    return None
+    # El cliente id 2 es "Tomás Ríos" / tomas@example.com (lo pide el ejemplo de
+    # POST /ventas de la consigna), por lo que el id 1 va antes.
+    session.add_all(
+        [
+            Cliente(nombre="Lucía Fernández", email="lucia@example.com"),  # id 1
+            Cliente(nombre="Tomás Ríos", email="tomas@example.com"),  # id 2
+        ]
+    )
+    await session.flush()
+
+    session.add(
+        PerfilCliente(cliente_id=1, telefono="11 5555-0101", direccion="Av. Corrientes 1234, CABA")
+    )
+
+    # Venta id 1 (cliente 1): precios copiados del libro (RN-06), total = suma (RN-07)
+    # y stock ya descontado en el catálogo sembrado (Antología: 5 -> 4, El Aleph: 8 -> 6).
+    # Usa los libros 2 y 3 para que el ejemplo de la consigna (libros 1 y 4) tenga stock completo.
+    venta = Venta(
+        cliente_id=1,
+        fecha=datetime(2026, 10, 1, 15, 30, tzinfo=timezone.utc),
+        total=Decimal("22000.00") + 2 * Decimal("18500.50"),  # 59001.00
+    )
+    venta.renglones.append(RenglonVenta(libro_id=2, cantidad=1, precio_unitario=Decimal("22000.00")))
+    venta.renglones.append(RenglonVenta(libro_id=3, cantidad=2, precio_unitario=Decimal("18500.50")))
+    session.add(venta)
+    await session.flush()
+    for libro_id, cantidad in ((2, 1), (3, 2)):
+        libro = await session.get(Libro, libro_id)
+        libro.stock -= cantidad
+    await session.flush()
 
 
 async def cargar_datos(session: AsyncSession) -> dict[str, int]:
@@ -101,7 +131,8 @@ async def cargar_datos(session: AsyncSession) -> dict[str, int]:
 
 async def _contar(session: AsyncSession) -> dict[str, int]:
     modelos = {"editoriales": Editorial, "generos": Genero, "autores": Autor,
-               "libros": Libro, "autorias": LibroAutor}
+               "libros": Libro, "autorias": LibroAutor, "clientes": Cliente,
+               "perfiles": PerfilCliente, "ventas": Venta, "renglones": RenglonVenta}
     return {
         nombre: (await session.execute(select(func.count()).select_from(modelo))).scalar_one()
         for nombre, modelo in modelos.items()
@@ -118,7 +149,9 @@ async def main() -> None:
         await engine.dispose()
     print(
         f"Seed cargado: {c['editoriales']} editoriales, {c['generos']} géneros, "
-        f"{c['autores']} autores, {c['libros']} libros, {c['autorias']} autorías."
+        f"{c['autores']} autores, {c['libros']} libros, {c['autorias']} autorías, "
+        f"{c['clientes']} clientes, {c['perfiles']} perfiles, {c['ventas']} ventas, "
+        f"{c['renglones']} renglones."
     )
 
 
