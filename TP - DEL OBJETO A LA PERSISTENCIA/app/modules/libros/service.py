@@ -92,6 +92,10 @@ async def obtener(session: AsyncSession, libro_id: int) -> LibroDetalleRead:
             joinedload(Libro.genero),
             selectinload(Libro.autorias).joinedload(LibroAutor.autor),
         )
+        # populate_existing: si el Libro ya está en el identity map (p. ej. recién
+        # creado o modificado en esta sesión), se recargan también sus relaciones;
+        # sin esto la precarga se saltea y la respuesta puede salir desactualizada.
+        .execution_options(populate_existing=True)
     )
     resultado = await session.execute(consulta)
     libro = resultado.scalars().first()
@@ -149,11 +153,9 @@ async def actualizar(
     datos: LibroUpdate,
 ) -> LibroDetalleRead:
     """Actualización parcial de libro (PATCH con exclude_unset)."""
-    # Verificar existencia (lanza 404 si no existe)
-    await obtener(session, libro_id)
-
     libro = await session.get(Libro, libro_id)
-    assert libro is not None
+    if libro is None:
+        raise HTTPException(status_code=404, detail="El libro no existe.")
 
     cambios = datos.model_dump(exclude_unset=True)
     if cambios:
