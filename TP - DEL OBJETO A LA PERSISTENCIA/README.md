@@ -60,7 +60,6 @@ Levanta PostgreSQL 16 con las credenciales de `.env`. Podés ver el estado con `
 ```bash
 alembic upgrade head
 ```
-> **Pendiente:** las migraciones todavía no existen; se agregan en la Fase 3. Hasta entonces este paso no crea tablas y la app y el seed no funcionan contra la base de desarrollo. (Quitar esta nota cuando estén las migraciones.)
 
 El esquema se crea sólo con Alembic; la app nunca usa `create_all`.
 
@@ -68,7 +67,7 @@ El esquema se crea sólo con Alembic; la app nunca usa `create_all`.
 ```bash
 python -m scripts.seed
 ```
-Deja la base en un estado inicial conocido (vacía las tablas y carga editoriales, géneros, autores y libros con ids fijos). Se puede correr las veces que haga falta.
+Deja la base en un estado inicial conocido (vacía las tablas y carga editoriales, géneros, autores, libros, 2 clientes —el 2 es Tomás Ríos—, un perfil y una venta, con ids fijos). Se puede correr las veces que haga falta.
 
 ### 9. Servidor
 ```bash
@@ -93,6 +92,24 @@ Probar:
 
 Los casos de prueba HTTP (C-01 a C-08) están en la carpeta `test/` y se ejecutan con la extensión **REST Client** de VS Code; cada caso indica en un comentario el resultado esperado.
 
+## Endpoints de clientes y ventas
+
+| Método y ruta | Códigos | Notas |
+|---|---|---|
+| `POST /clientes/` | 201, 409, 422 | 409 si el email ya existe (C-02) |
+| `GET /clientes/` | 200, 422 | paginado (`limit` 1–100, `offset` ≥ 0) |
+| `GET /clientes/{id}` | 200, 404 | incluye el perfil (o `null`) |
+| `PATCH /clientes/{id}` | 200, 404, 409, 422 | sólo cambia lo enviado |
+| `POST /clientes/{id}/perfil` | 201, 404, 409 | 409 si ya tiene perfil (C-03); 404 si el cliente no existe |
+| `GET /clientes/{id}/ventas` | 200, 404 | paginado, con renglones |
+| `POST /ventas/` | 201, 409, 422 | renglones dentro del cuerpo; ver abajo |
+| `GET /ventas/` | 200, 422 | paginado |
+| `GET /ventas/{id}` | 200, 404 | cliente y renglones con precarga (C-07) |
+
+No existen `PATCH`/`DELETE` de ventas ni el alta de renglones por separado.
+
+**`POST /ventas/`** recibe `{"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 2}, ...]}`. Precio unitario, subtotal, total y fecha los calcula el servidor (RN-06, RN-07): enviarlos es un **422**. Al confirmarse la venta se **descuenta el stock** de cada libro en una sola transacción: si un libro o el cliente no existen, o el stock no alcanza (C-05), responde **409** y no queda ningún descuento. Tras el alta se agenda una `BackgroundTask` que simula el envío del comprobante y lo deja en el log (`uvicorn.error`) unos 0,5 s después de responder.
+
 ## Diagnóstico de consultas (C-07)
 
 Con `DB_ECHO=true` en `.env` (y reiniciando el servidor) la consola muestra cada consulta SQL emitida. Sirve para comprobar que el detalle de un libro y de una venta emiten la misma cantidad de consultas con 1 o con N autores/renglones.
@@ -112,9 +129,9 @@ scripts/seed.py        # carga inicial
 test/*.http            # casos de prueba C-01 a C-08
 tests/                 # pytest
 ```
-Módulos: `health`, `editoriales`, `generos`, `autores`, `libros` (y, próximamente, `clientes` y `ventas`).
+Módulos: `health`, `editoriales`, `generos`, `autores`, `libros`, `clientes`, `ventas`.
 Convenciones, reglas y nombres de constraints: [AGENTS.md](AGENTS.md).
 
 ## Estado actual
-- Hecho: infraestructura, `health`, `editoriales`, `generos`, `autores`, `libros`, seed.
-- Pendiente: migraciones de Alembic (Fase 3), `clientes` y `ventas`, evidencia C-07.
+- Hecho: infraestructura, `health`, `editoriales`, `generos`, `autores`, `libros`, `clientes`, `ventas`, migraciones, seed.
+- Pendiente: evidencia C-07 (captura con `DB_ECHO=true`).

@@ -4,9 +4,11 @@ import pytest
 from sqlalchemy import func, select
 
 from app.modules.autores.models import Autor
+from app.modules.clientes.models import Cliente, PerfilCliente
 from app.modules.editoriales.models import Editorial
 from app.modules.generos.models import Genero
 from app.modules.libros.models import Libro, LibroAutor
+from app.modules.ventas.models import RenglonVenta, Venta
 from scripts.seed import cargar_datos
 
 pytestmark = pytest.mark.db
@@ -15,7 +17,7 @@ pytestmark = pytest.mark.db
 async def conteos(session):
     return {
         m.__name__: (await session.execute(select(func.count()).select_from(m))).scalar()
-        for m in (Editorial, Genero, Autor, Libro, LibroAutor)
+        for m in (Editorial, Genero, Autor, Libro, LibroAutor, Cliente, PerfilCliente, Venta, RenglonVenta)
     }
 
 
@@ -71,6 +73,8 @@ async def test_devuelve_conteos_reales_para_el_resumen(sessionmaker_test):
     assert devuelto == {
         "editoriales": reales["Editorial"], "generos": reales["Genero"], "autores": reales["Autor"],
         "libros": reales["Libro"], "autorias": reales["LibroAutor"],
+        "clientes": reales["Cliente"], "perfiles": reales["PerfilCliente"],
+        "ventas": reales["Venta"], "renglones": reales["RenglonVenta"],
     }
 
 
@@ -118,3 +122,48 @@ async def test_post_libro_del_ejemplo_de_la_consigna_da_201(client, sessionmaker
     )
     assert r.status_code == 201, r.text
     assert [a["autor_id"] for a in r.json()["autores"]] == [3, 4]
+
+
+async def test_clientes_con_ids_clave_y_perfil(sessionmaker_test):
+    await correr_seed(sessionmaker_test)
+    async with sessionmaker_test() as s:
+        tomas = await s.get(Cliente, 2)
+        assert (tomas.nombre, tomas.email) == ("Tomás Ríos", "tomas@example.com")
+        assert (await s.get(Cliente, 1)).email != tomas.email
+        perfiles = (await s.execute(select(PerfilCliente))).scalars().all()
+        assert len(perfiles) == 1
+        assert all(p.telefono and p.direccion for p in perfiles)
+
+
+async def test_venta_sembrada_es_coherente(sessionmaker_test):
+    await correr_seed(sessionmaker_test)
+    async with sessionmaker_test() as s:
+        venta = await s.get(Venta, 1)
+        assert venta.cliente_id == 1
+        assert venta.fecha.tzinfo is not None
+        renglones = (await s.execute(select(RenglonVenta).where(RenglonVenta.venta_id == 1))).scalars().all()
+        assert len(renglones) == 2
+        assert venta.total == sum(r.precio_unitario * r.cantidad for r in renglones)
+        for r in renglones:
+            libro = await s.get(Libro, r.libro_id)
+            assert r.precio_unitario == libro.precio
+        # El stock sembrado ya descuenta la venta: Aleph (id 3) 8 -> 6, Antología (id 2) 5 -> 4.
+        assert (await s.get(Libro, 3)).stock == 6
+        assert (await s.get(Libro, 2)).stock == 4
+
+
+async def test_post_venta_del_ejemplo_de_la_consigna_da_201(client, sessionmaker_test):
+    await correr_seed(sessionmaker_test)
+    r = await client.post(
+        "/ventas/",
+        json={"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 2}, {"libro_id": 4, "cantidad": 1}]},
+    )
+    assert r.status_code == 201, r.text
+    datos = r.json()
+    assert datos["id"] == 2
+    assert datos["total"] == "77000.00"
+    assert datos["cliente"] == {"id": 2, "nombre": "Tomás Ríos", "email": "tomas@example.com"}
+    assert [(x["titulo"], x["subtotal"]) for x in datos["renglones"]] == [
+        ("Rayuela", "50000.00"),
+        ("Respiración artificial", "27000.00"),
+    ]
