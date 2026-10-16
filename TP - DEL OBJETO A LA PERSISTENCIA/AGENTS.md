@@ -25,10 +25,11 @@ API para una librería: catálogo (editoriales, géneros, autores, libros), clie
 ## 2. Comandos
 
 ```bash
-docker compose up -d                 # levanta PostgreSQL 16
+cp env.example .env                  # completar con valores locales (antes de levantar Docker)
+docker compose up -d                 # levanta PostgreSQL 16 con las credenciales de .env
 python -m venv .venv                 # entorno virtual
-pip install -r requirements.txt      # dependencias
-cp env.example .env                  # completar con valores locales
+source .venv/Scripts/activate        # activarlo (Linux/macOS: source .venv/bin/activate)
+pip install -r requirements-dev.txt  # app + pytest, pytest-asyncio y httpx
 alembic upgrade head                 # crea el esquema (única forma permitida)
 python -m scripts.seed               # deja la base en estado inicial conocido
 uvicorn app.main:app --reload        # servidor
@@ -45,8 +46,10 @@ app/
 ├── main.py                 # app, lifespan y registro de routers
 ├── models.py               # importa TODOS los modelos (metadata completo para Alembic)
 ├── core/
+│   ├── base.py             # naming convention de constraints (se importa antes que los modelos)
 │   ├── config.py           # DATABASE_URL y DB_ECHO desde el entorno
-│   ├── database.py         # motor, sessionmaker, get_session, naming convention
+│   ├── database.py         # motor, sessionmaker, get_session
+│   ├── tipos.py            # tipos int32 para ids, stock y cantidades (fuera de rango -> 422)
 │   ├── pagination.py       # dependencia limit/offset (RN-10)
 │   └── errors.py           # IntegrityError -> 409 con mensaje propio (RN-12)
 └── modules/<módulo>/
@@ -71,7 +74,7 @@ Módulos: `health`, `editoriales`, `generos`, `autores`, `libros`, `clientes`, `
 | B | `autores`, `libros` (`Libro`, `LibroAutor`), C-02 (ISBN), C-04, C-07 (libro), C-08 |
 | C | `clientes` (`Cliente`, `PerfilCliente`), `ventas` (`Venta`, `RenglonVenta`), BackgroundTasks, C-02 (email), C-03, C-05, C-06, C-07 (venta) |
 
-**Archivos compartidos** (`main.py`, `app/models.py`, `requirements.txt`, `core/`, `migrations/env.py`, `AGENTS.md`): sólo los modifica A. B y C piden el cambio en su PR.
+**Archivos compartidos** (`main.py`, `app/models.py`, `requirements.txt`, `core/` (incluido `core/base.py`), `migrations/env.py`, `AGENTS.md`): sólo los modifica A. B y C piden el cambio en su PR.
 
 ## 5. Convenciones
 

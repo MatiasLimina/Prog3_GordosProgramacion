@@ -1,7 +1,7 @@
 # Reparto del TP "Del objeto a la persistencia" — Librería (FastAPI + PostgreSQL)
 
 ## Contexto
-La carpeta del TP sólo tiene la consigna (`TP_Cap1a4_Consigna.pdf`); el proyecto arranca de cero.
+Este documento es el plan de reparto con el que se organizó el trabajo; el proyecto ya está implementado (ver `README.md` y `AGENTS.md`). La consigna está en `TP_Cap1a4_Consigna.pdf`.
 Hay que repartir el trabajo entre 3 integrantes de forma que:
 - cada uno sea dueño de un **módulo vertical** completo (models → schemas → service → router → .http), así se evalúa todo el temario en cada persona y se minimizan los conflictos de merge;
 - las piezas compartidas (core, Alembic, helpers) tengan **un solo dueño**;
@@ -69,7 +69,7 @@ Hay que repartir el trabajo entre 3 integrantes de forma que:
 - A sube `main`, `core/`, `health`, helpers de paginación/errores y Alembic inicializado. B y C pueden ir escribiendo modelos en sus ramas mientras tanto.
 
 **Fase 2 — Modelos (B y C en paralelo, A con editorial/genero)**
-- Cada uno entrega su `models.py` primero (PR chico). Todos los modelos se importan en un único lugar (p. ej. `app/models.py` o `migrations/env.py`) que mantiene A.
+- Cada uno entrega su `models.py` primero (PR chico). Todos los modelos se importan en `app/models.py`, que mantiene A (así quedó resuelto).
 
 **Fase 3 — Migraciones (A, cuando estén mergeados todos los modelos)**
 - Migración 1: autogenerar con `Genero` y `Libro.genero_id` temporalmente fuera del metadata.
@@ -91,5 +91,5 @@ Hay que repartir el trabajo entre 3 integrantes de forma que:
 1. Base vacía → `alembic upgrade head` OK; `alembic downgrade -1` + `upgrade head` OK.
 2. Seed + `uvicorn` levanta; `/health/live` y `/health/ready` responden 200.
 3. Todos los `.http` de `test/` (C-01 a C-08) dan el código esperado.
-4. Con `echo=True`, el detalle de libro y de venta emite la misma cantidad de consultas con 1 o N autores/renglones.
+4. Con `DB_ECHO=true` en `.env`, el detalle de libro y de venta emite la misma cantidad de consultas con 1 o N autores/renglones.
 5. `grep` sin contraseñas en repo; `.env` ignorado; `env.example` presente.
