@@ -69,7 +69,7 @@ def _alembic_upgrade_head(url) -> None:
     proyecto = Path(__file__).resolve().parent.parent
     resultado = subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=proyecto, env=env, capture_output=True, text=True,
+        cwd=proyecto, env=env, capture_output=True, text=True, timeout=120,
     )
     if resultado.returncode != 0:
         pytest.fail(f"alembic upgrade head falló en libreria_test:\n{resultado.stdout}\n{resultado.stderr}")

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from sqlmodel import select
 
-from app.core.errors import traducir_integrity
+from app.core.errors import _buscar_atributo, traducir_integrity
 from app.core.pagination import Pagination
 from app.modules.libros.models import Libro
 from app.modules.ventas.models import RenglonVenta, Venta
@@ -113,7 +113,8 @@ async def crear(session: AsyncSession, datos: VentaCreate) -> VentaRead:
             session.add(venta)
             await session.commit()
     except DBAPIError as e:
-        if getattr(e.orig, "sqlstate", None) != SQLSTATE_NUMERO_FUERA_DE_RANGO:
+        sqlstate = _buscar_atributo(e, "sqlstate") or _buscar_atributo(e, "pgcode")
+        if sqlstate != SQLSTATE_NUMERO_FUERA_DE_RANGO:
             raise
         # traducir_integrity sólo atrapa IntegrityError: el rollback va acá.
         await session.rollback()

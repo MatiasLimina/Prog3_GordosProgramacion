@@ -84,7 +84,7 @@ Módulos: `health`, `editoriales`, `generos`, `autores`, `libros`, `clientes`, `
 - **Routers**: un `APIRouter(prefix="/<módulo>", tags=[...])` por módulo; declaran `response_model` y `status_code`; no tienen lógica.
 - **Services**: funciones `async` que reciben `session: AsyncSession` como parámetro. Toda la lógica y las consultas viven acá.
 - **Sesión**: siempre con `Depends(get_session)`; una por petición; `expire_on_commit=False`.
-- **Constraints con nombre**: `SQLModel.metadata` usa una naming convention (en `app/core/database.py`); los mensajes de 409 se eligen por nombre de constraint.
+- **Constraints con nombre**: `SQLModel.metadata` usa una naming convention (en `app/core/base.py`); los mensajes de 409 se eligen por nombre de constraint.
 - **Mensajes de error** propios y en español.
 - **Columnas únicas**: `Field(unique=True)` **sin** `index=True`. El UNIQUE ya crea su índice; con `unique=True, index=True` SQLAlchemy genera un índice `ix_...` en vez de la constraint `uq_...` y el 409 cae en el mensaje genérico.
 - **CHECK con nombre**: todo `CheckConstraint` lleva `name="..."` corto (p. ej. `CheckConstraint("precio > 0", name="precio_positivo")`). La naming convention lo exige; sin `name` falla al definir la tabla.
