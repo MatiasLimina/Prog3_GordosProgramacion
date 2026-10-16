@@ -142,6 +142,19 @@ async def test_stock_insuficiente_409_sin_descontar_ningun_stock(client, session
     assert (await client.get("/ventas/")).json() == []
 
 
+async def test_total_que_supera_numeric_12_2_da_409_y_no_descuenta_stock(client, sessionmaker_test):
+    c, l1, l2, _ = await escenario(client)
+    r = await client.patch(f"/libros/{l1}", json={"stock": 2_000_000_000})
+    assert r.status_code == 200, r.text
+    antes = await stocks(sessionmaker_test)
+    # 25000.00 * 1.000.000.000 = 2,5e13: no entra en Numeric(12,2)
+    r = await client.post("/ventas/", json=cuerpo(c, (l2, 1), (l1, 1_000_000_000)))
+    assert r.status_code == 409, r.text
+    assert r.json() == {"detail": "El total de la venta supera el máximo permitido."}
+    assert await stocks(sessionmaker_test) == antes
+    assert (await client.get("/ventas/")).json() == []
+
+
 async def test_el_servicio_sigue_usable_tras_un_409(client):
     c, l1, _, _ = await escenario(client)
     assert (await client.post("/ventas/", json=cuerpo(c, (999999, 1)))).status_code == 409
