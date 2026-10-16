@@ -1,6 +1,7 @@
 @host = http://localhost:8000
 
-# Antes de correr: `python -m scripts.seed`.
+# Antes de correr: `python -m scripts.seed` (deja la base en el estado inicial conocido,
+# así los ids y los códigos esperados de abajo coinciden).
 # Datos sembrados: cliente 2 = Tomás Ríos; libro 1 = Rayuela (25000.00, stock 10),
 # libro 4 = Respiración artificial (27000.00, stock 6); la venta 1 ya existe,
 # por eso la primera venta de esta corrida recibe el id 2.

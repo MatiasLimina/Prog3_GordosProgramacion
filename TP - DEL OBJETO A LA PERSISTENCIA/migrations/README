@@ -1,1 +1,18 @@
-Generic single-database configuration with an async dbapi.
+# Migraciones (Alembic, plantilla async)
+
+El esquema se crea **sólo** con Alembic (nunca con `create_all`). La URL de la base sale de `DATABASE_URL` en `.env`; `alembic.ini` no la contiene.
+
+Dos migraciones, en orden:
+
+1. `5600df0fc99c` — catálogo, clientes y ventas **sin género**: crea `editorial`, `autor`, `libro`, `libro_autor`, `cliente`, `perfil_cliente`, `venta` y `renglon_venta`, con sus restricciones, índices y claves foráneas.
+2. `9df0eb6a1dd6` — agrega el género: crea la tabla `genero` y la columna `libro.genero_id` (opcional, con FK e índice).
+
+Comandos (desde la raíz del proyecto):
+
+```bash
+alembic upgrade head      # aplica todo el esquema
+alembic downgrade -1      # deshace la última migración (género)
+alembic upgrade head      # vuelve a aplicarla
+alembic downgrade base    # deja la base sin tablas
+alembic history           # lista las migraciones
+```

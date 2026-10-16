@@ -5,11 +5,12 @@ from decimal import Decimal
 
 from fastapi import HTTPException
 from sqlalchemy import update
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from sqlmodel import select
 
-from app.core.errors import traducir_integrity
+from app.core.errors import _buscar_atributo, traducir_integrity
 from app.core.pagination import Pagination
 from app.modules.libros.models import Libro
 from app.modules.ventas.models import RenglonVenta, Venta
@@ -33,12 +34,15 @@ MENSAJES = {
     "ck_libro_stock_no_negativo": "No hay stock suficiente para el libro indicado.",
 }
 MENSAJE_LIBRO_INEXISTENTE = "El libro indicado no existe."
+MENSAJE_TOTAL_EXCEDIDO = "El total de la venta supera el máximo permitido."
+# SQLSTATE 22003: numeric_value_out_of_range (el total no entra en Numeric(12,2)).
+SQLSTATE_NUMERO_FUERA_DE_RANGO = "22003"
 
 
 def _consulta_con_precarga():
     """Venta con cliente (a uno: joinedload) y renglones+libro (colección: selectinload).
 
-    Cantidad fija de consultas sin importar cuántos renglones tenga (RN-11, C-07).
+    Cantidad fija de consultas sin importar cuántos renglones tenga (Ejercicio 6, C-07).
     """
     return select(Venta).options(
         joinedload(Venta.cliente),
@@ -75,38 +79,47 @@ async def crear(session: AsyncSession, datos: VentaCreate) -> VentaRead:
     inexistente; FK -> cliente inexistente; CHECK de stock -> sin stock).
     Cualquier fallo hace rollback de TODO, incluidos los descuentos previos.
     """
-    async with traducir_integrity(session, MENSAJES):
-        venta = Venta(cliente_id=datos.cliente_id, fecha=datetime.now(timezone.utc), total=Decimal("0.00"))
-        # Los UPDATE se emiten en orden ascendente de libro_id: dos ventas
-        # concurrentes que comparten libros toman los bloqueos de fila en el mismo
-        # orden y no pueden quedar en deadlock cruzado.
-        precios: dict[int, Decimal] = {}
-        for r in sorted(datos.renglones, key=lambda r: r.libro_id):
-            resultado = await session.execute(
-                update(Libro)
-                .where(Libro.id == r.libro_id)
-                .values(stock=Libro.stock - r.cantidad)
-                .returning(Libro.precio)
-                .execution_options(synchronize_session=False)
-            )
-            precio = resultado.scalar_one_or_none()
-            if precio is None:
-                # traducir_integrity sólo atrapa IntegrityError: el rollback de
-                # los descuentos ya hechos se hace acá, antes de salir con 409.
-                await session.rollback()
-                raise HTTPException(status_code=409, detail=MENSAJE_LIBRO_INEXISTENTE)
-            precios[r.libro_id] = precio
-        # Los renglones se guardan en el orden de entrada.
-        total = Decimal("0.00")
-        for r in datos.renglones:
-            precio = precios[r.libro_id]
-            total += (precio * r.cantidad).quantize(CENTAVOS)
-            venta.renglones.append(
-                RenglonVenta(libro_id=r.libro_id, cantidad=r.cantidad, precio_unitario=precio)
-            )
-        venta.total = total
-        session.add(venta)
-        await session.commit()
+    try:
+        async with traducir_integrity(session, MENSAJES):
+            venta = Venta(cliente_id=datos.cliente_id, fecha=datetime.now(timezone.utc), total=Decimal("0.00"))
+            # Los UPDATE se emiten en orden ascendente de libro_id: dos ventas
+            # concurrentes que comparten libros toman los bloqueos de fila en el mismo
+            # orden y no pueden quedar en deadlock cruzado.
+            precios: dict[int, Decimal] = {}
+            for r in sorted(datos.renglones, key=lambda r: r.libro_id):
+                resultado = await session.execute(
+                    update(Libro)
+                    .where(Libro.id == r.libro_id)
+                    .values(stock=Libro.stock - r.cantidad)
+                    .returning(Libro.precio)
+                    .execution_options(synchronize_session=False)
+                )
+                precio = resultado.scalar_one_or_none()
+                if precio is None:
+                    # traducir_integrity sólo atrapa IntegrityError: el rollback de
+                    # los descuentos ya hechos se hace acá, antes de salir con 409.
+                    await session.rollback()
+                    raise HTTPException(status_code=409, detail=MENSAJE_LIBRO_INEXISTENTE)
+                precios[r.libro_id] = precio
+            # Los renglones se guardan en el orden de entrada.
+            total = Decimal("0.00")
+            for r in datos.renglones:
+                precio = precios[r.libro_id]
+                total += (precio * r.cantidad).quantize(CENTAVOS)
+                venta.renglones.append(
+                    RenglonVenta(libro_id=r.libro_id, cantidad=r.cantidad, precio_unitario=precio)
+                )
+            venta.total = total
+            session.add(venta)
+            await session.commit()
+    except DBAPIError as e:
+        sqlstate = _buscar_atributo(e, "sqlstate") or _buscar_atributo(e, "pgcode")
+        if sqlstate != SQLSTATE_NUMERO_FUERA_DE_RANGO:
+            raise
+        # traducir_integrity sólo atrapa IntegrityError: el rollback va acá.
+        await session.rollback()
+        # `from None`: no se filtra el texto interno de la base.
+        raise HTTPException(status_code=409, detail=MENSAJE_TOTAL_EXCEDIDO) from None
 
     return await obtener(session, venta.id)
 

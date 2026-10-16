@@ -1,7 +1,8 @@
 @host = http://localhost:8000
 
-# Antes de correr: `python -m scripts.seed` (clientes 1 y 2 ya existen; el 1 ya tiene perfil).
-# Los emails de abajo son nuevos: si se repite la corrida sin re-sembrar, el alta da 409.
+# Antes de correr: `python -m scripts.seed` (deja la base en el estado inicial conocido,
+# así los ids y los códigos esperados de abajo coinciden; clientes 1 y 2 ya existen y el 1 ya tiene perfil).
+# El alta de "ana.perez@example.com" es nueva: si se repite la corrida sin re-sembrar, da 409.
 
 ### Alta de cliente (se captura su id)
 # @name cliente1
@@ -11,12 +12,12 @@ Content-Type: application/json
 
 {"nombre": "Ana Pérez", "email": "ana.perez@example.com"}
 
-### C-02: email repetido
+### C-02: email repetido (tomas@example.com es el cliente 2 sembrado)
 # Esperado: 409 {"detail": "Ya existe un cliente con ese email."}
 POST {{host}}/clientes/
 Content-Type: application/json
 
-{"nombre": "Otra Ana", "email": "ana.perez@example.com"}
+{"nombre": "Otro Tomás", "email": "tomas@example.com"}
 
 ### Alta con email inválido
 # Esperado: 422
@@ -61,9 +62,9 @@ Content-Type: application/json
 
 {"telefono": "11 4444-0000", "direccion": "Calle Falsa 123"}
 
-### C-03: segundo perfil para el mismo cliente
+### C-03: segundo perfil para el mismo cliente (el cliente 1 sembrado ya tiene perfil)
 # Esperado: 409 {"detail": "El cliente ya tiene un perfil."}
-POST {{host}}/clientes/{{cliente1.response.body.id}}/perfil
+POST {{host}}/clientes/1/perfil
 Content-Type: application/json
 
 {"telefono": "11 9999-9999", "direccion": "Otra calle 456"}
