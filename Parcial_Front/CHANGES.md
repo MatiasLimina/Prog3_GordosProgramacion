@@ -70,7 +70,7 @@ GATE 4: C-02 ✓ + C-05 ✓
 ## FASE 1 — Estructura y presentación (Ej. 1–2)
 
 ### [C-01] `estructura-pantallas-html`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**:
   - `index.html` como entrada con navegación `<nav>` clara entre las 5 vistas (multipágina o secciones; decidir y documentar, ver KB 10 #1)
   - Vistas: Catálogo (título de la librería, buscador por título, listado), Libros (form alta + listado), Clientes (form alta + listado), Ventas (select cliente, renglones, resumen/total), Historial (listado + "Ver detalle")
@@ -91,7 +91,7 @@ GATE 4: C-02 ✓ + C-05 ✓
   - `knowledge-base/10_preguntas_abiertas.md` §Prioridad media
 
 ### [C-02] `presentacion-css-adaptable`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**:
   - Identidad visual propia en `css/` externo: variables de color, tipografía, espaciado, tarjetas, formularios, botones; clases reutilizadas
   - Layout con Flexbox/Grid; sin scroll horizontal de página a 320 px y 1280 px
