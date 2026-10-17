@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo — Librería Papel y Tinta</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-vista="catalogo">
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <header class="encabezado">
+    <p class="encabezado__marca"><a href="index.html">Librería Papel y Tinta</a></p>
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html" aria-current="page">Catálogo</a></li>
+        <li><a href="libros.html">Libros</a></li>
+        <li><a href="clientes.html">Clientes</a></li>
+        <li><a href="ventas.html">Ventas</a></li>
+        <li><a href="historial.html">Historial</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenido" tabindex="-1">
+    <h1>Librería Papel y Tinta</h1>
+
+    <p id="aviso-maqueta" class="aviso-maqueta">
+      Maqueta de la etapa 1: los datos mostrados son de ejemplo y las operaciones todavía no se guardan.
+    </p>
+
+    <section aria-labelledby="titulo-busqueda">
+      <h2 id="titulo-busqueda">Buscador de libros</h2>
+      <form id="catalogo-busqueda" role="search" action="index.html" method="get">
+        <div class="campo">
+          <label for="catalogo-buscar">Buscar por título</label>
+          <input type="search" id="catalogo-buscar" name="busqueda" spellcheck="false">
+        </div>
+        <button type="submit">Buscar</button>
+      </form>
+    </section>
+
+    <section aria-labelledby="titulo-catalogo">
+      <h2 id="titulo-catalogo">Catálogo de libros</h2>
+
+      <p id="catalogo-mensaje-vacio" class="mensaje mensaje--info" data-estado="vacio" role="status" hidden>
+        No hay libros en el catálogo.
+      </p>
+      <p id="catalogo-mensaje-sin-resultados" class="mensaje mensaje--info" data-estado="sin-resultados" role="status" hidden>
+        No se encontraron libros con ese título.
+      </p>
+
+      <ul id="catalogo-lista" class="catalogo-lista">
+        <li data-libro-id="1">
+          <article class="tarjeta-libro">
+            <h3 data-campo="titulo">El jardín de las horas</h3>
+            <dl>
+              <dt>ISBN</dt>
+              <dd data-campo="isbn">978-950-000-001-1</dd>
+              <dt>Editorial</dt>
+              <dd data-campo="editorial">Ediciones del Sur</dd>
+              <dt>Género</dt>
+              <dd data-campo="genero">Novela</dd>
+              <dt>Autores</dt>
+              <dd data-campo="autores">Ana Ríos</dd>
+              <dt>Precio</dt>
+              <dd data-campo="precio">1500.00</dd>
+            </dl>
+          </article>
+        </li>
+        <li data-libro-id="2">
+          <article class="tarjeta-libro">
+            <h3 data-campo="titulo">Mapas del silencio</h3>
+            <dl>
+              <dt>ISBN</dt>
+              <dd data-campo="isbn">978-950-000-002-8</dd>
+              <dt>Editorial</dt>
+              <dd data-campo="editorial">Editorial Faro</dd>
+              <dt>Género</dt>
+              <dd data-campo="genero">Ensayo</dd>
+              <dt>Autores</dt>
+              <dd data-campo="autores">Bruno Paz, Carla Vega</dd>
+              <dt>Precio</dt>
+              <dd data-campo="precio">2000.00</dd>
+            </dl>
+          </article>
+        </li>
+        <li data-libro-id="3">
+          <article class="tarjeta-libro">
+            <h3 data-campo="titulo">Cuentos de medianoche</h3>
+            <dl>
+              <dt>ISBN</dt>
+              <dd data-campo="isbn">978-950-000-003-5</dd>
+              <dt>Editorial</dt>
+              <dd data-campo="editorial">Ediciones del Sur</dd>
+              <dt>Género</dt>
+              <dd data-campo="genero">Sin clasificar</dd>
+              <dt>Autores</dt>
+              <dd data-campo="autores">Carla Vega</dd>
+              <dt>Precio</dt>
+              <dd data-campo="precio">3200.50</dd>
+            </dl>
+          </article>
+        </li>
+        <li data-libro-id="4">
+          <article class="tarjeta-libro">
+            <h3 data-campo="titulo">La ciudad invisible</h3>
+            <dl>
+              <dt>ISBN</dt>
+              <dd data-campo="isbn">978-950-000-004-2</dd>
+              <dt>Editorial</dt>
+              <dd data-campo="editorial">Editorial Faro</dd>
+              <dt>Género</dt>
+              <dd data-campo="genero">Novela</dd>
+              <dt>Autores</dt>
+              <dd data-campo="autores">Ana Ríos, Bruno Paz</dd>
+              <dt>Precio</dt>
+              <dd data-campo="precio">2750.00</dd>
+            </dl>
+          </article>
+        </li>
+      </ul>
+    </section>
+
+    <template id="plantilla-tarjeta-libro">
+      <li data-libro-id="">
+        <article class="tarjeta-libro">
+          <h3 data-campo="titulo"></h3>
+          <dl>
+            <dt>ISBN</dt>
+            <dd data-campo="isbn"></dd>
+            <dt>Editorial</dt>
+            <dd data-campo="editorial"></dd>
+            <dt>Género</dt>
+            <dd data-campo="genero"></dd>
+            <dt>Autores</dt>
+            <dd data-campo="autores"></dd>
+            <dt>Precio</dt>
+            <dd data-campo="precio"></dd>
+          </dl>
+        </article>
+      </li>
+    </template>
+  </main>
+
+  <footer class="pie">
+    <p>TPI Programación III — datos ficticios, sin backend.</p>
+  </footer>
+</body>
+</html>

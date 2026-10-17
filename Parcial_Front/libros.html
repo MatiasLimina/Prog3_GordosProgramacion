@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Libros — Librería Papel y Tinta</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-vista="libros">
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <header class="encabezado">
+    <p class="encabezado__marca"><a href="index.html">Librería Papel y Tinta</a></p>
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html">Catálogo</a></li>
+        <li><a href="libros.html" aria-current="page">Libros</a></li>
+        <li><a href="clientes.html">Clientes</a></li>
+        <li><a href="ventas.html">Ventas</a></li>
+        <li><a href="historial.html">Historial</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenido" tabindex="-1">
+    <h1>Libros</h1>
+
+    <p id="aviso-maqueta" class="aviso-maqueta">
+      Maqueta de la etapa 1: los datos mostrados son de ejemplo y las operaciones todavía no se guardan.
+    </p>
+
+    <section aria-labelledby="titulo-alta-libro">
+      <h2 id="titulo-alta-libro">Registrar nuevo libro</h2>
+      <form id="form-libro" action="libros.html" method="get" novalidate>
+        <div class="campo">
+          <label for="libro-titulo">Título</label>
+          <input type="text" id="libro-titulo" name="titulo" required>
+        </div>
+
+        <div class="campo">
+          <label for="libro-isbn">ISBN</label>
+          <input type="text" id="libro-isbn" name="isbn" spellcheck="false" autocomplete="off" required>
+        </div>
+
+        <div class="campo">
+          <label for="libro-precio">Precio</label>
+          <input type="number" id="libro-precio" name="precio" min="0.01" step="0.01" required>
+        </div>
+
+        <div class="campo">
+          <label for="libro-editorial">Editorial</label>
+          <select id="libro-editorial" name="editorialId" required>
+            <option value="">Elegí una editorial</option>
+            <option value="1">Ediciones del Sur</option>
+            <option value="2">Editorial Faro</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label for="libro-genero">Género</label>
+          <select id="libro-genero" name="generoId">
+            <option value="">Sin clasificar</option>
+            <option value="1">Novela</option>
+            <option value="2">Ensayo</option>
+          </select>
+        </div>
+
+        <fieldset id="libro-autores">
+          <legend>Autores (elegí al menos uno)</legend>
+          <div id="libro-autores-opciones">
+            <div class="opcion-casilla">
+              <input type="checkbox" id="libro-autor-1" name="autorIds" value="1">
+              <label for="libro-autor-1">Ana Ríos</label>
+            </div>
+            <div class="opcion-casilla">
+              <input type="checkbox" id="libro-autor-2" name="autorIds" value="2">
+              <label for="libro-autor-2">Bruno Paz</label>
+            </div>
+            <div class="opcion-casilla">
+              <input type="checkbox" id="libro-autor-3" name="autorIds" value="3">
+              <label for="libro-autor-3">Carla Vega</label>
+            </div>
+          </div>
+        </fieldset>
+
+        <p id="libros-mensaje-ok" class="mensaje mensaje--ok" data-estado="ok" role="status" hidden>
+          Libro registrado correctamente.
+        </p>
+
+        <div id="libros-mensaje-error" class="mensaje mensaje--error" data-estado="error" role="alert" hidden>
+          <p>Error: no se pudo registrar el libro. Revisá:</p>
+          <ul id="libros-errores"></ul>
+        </div>
+
+        <button type="submit">Registrar libro</button>
+      </form>
+    </section>
+
+    <section aria-labelledby="titulo-listado-libros">
+      <h2 id="titulo-listado-libros">Libros registrados</h2>
+
+      <p id="libros-mensaje-vacio" class="mensaje mensaje--info" data-estado="vacio" role="status" hidden>
+        Todavía no hay libros registrados.
+      </p>
+
+      <div class="tabla-contenedor">
+        <table>
+          <caption>Listado de libros registrados</caption>
+          <thead>
+            <tr>
+              <th scope="col">Título</th>
+              <th scope="col">ISBN</th>
+              <th scope="col">Editorial</th>
+              <th scope="col">Género</th>
+              <th scope="col">Autores</th>
+              <th scope="col">Precio</th>
+            </tr>
+          </thead>
+          <tbody id="libros-lista">
+            <tr data-libro-id="1">
+              <td data-campo="titulo">El jardín de las horas</td>
+              <td data-campo="isbn">978-950-000-001-1</td>
+              <td data-campo="editorial">Ediciones del Sur</td>
+              <td data-campo="genero">Novela</td>
+              <td data-campo="autores">Ana Ríos</td>
+              <td data-campo="precio">1500.00</td>
+            </tr>
+            <tr data-libro-id="2">
+              <td data-campo="titulo">Mapas del silencio</td>
+              <td data-campo="isbn">978-950-000-002-8</td>
+              <td data-campo="editorial">Editorial Faro</td>
+              <td data-campo="genero">Ensayo</td>
+              <td data-campo="autores">Bruno Paz, Carla Vega</td>
+              <td data-campo="precio">2000.00</td>
+            </tr>
+            <tr data-libro-id="3">
+              <td data-campo="titulo">Cuentos de medianoche</td>
+              <td data-campo="isbn">978-950-000-003-5</td>
+              <td data-campo="editorial">Ediciones del Sur</td>
+              <td data-campo="genero">Sin clasificar</td>
+              <td data-campo="autores">Carla Vega</td>
+              <td data-campo="precio">3200.50</td>
+            </tr>
+            <tr data-libro-id="4">
+              <td data-campo="titulo">La ciudad invisible</td>
+              <td data-campo="isbn">978-950-000-004-2</td>
+              <td data-campo="editorial">Editorial Faro</td>
+              <td data-campo="genero">Novela</td>
+              <td data-campo="autores">Ana Ríos, Bruno Paz</td>
+              <td data-campo="precio">2750.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <template id="plantilla-fila-libro">
+      <tr data-libro-id="">
+        <td data-campo="titulo"></td>
+        <td data-campo="isbn"></td>
+        <td data-campo="editorial"></td>
+        <td data-campo="genero"></td>
+        <td data-campo="autores"></td>
+        <td data-campo="precio"></td>
+      </tr>
+    </template>
+  </main>
+
+  <footer class="pie">
+    <p>TPI Programación III — datos ficticios, sin backend.</p>
+  </footer>
+</body>
+</html>

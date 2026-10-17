@@ -188,7 +188,7 @@ Importes: texto con dos decimales y punto, sin símbolo de moneda (KB 09), igual
 
 ### D4. Datos de ejemplo (coherentes en las 5 vistas)
 
-Ilustrativos: C-03 define el seed definitivo (≥ 6 libros) y puede reutilizarlos. Nombre de la librería "Librería Papel y Tinta" (supuesto, cambiable).
+Ilustrativos: C-03 define el seed definitivo (≥ 6 libros) y puede reutilizarlos. Nombre de la librería confirmado: "Librería Papel y Tinta".
 
 - Editoriales: 1 Ediciones del Sur, 2 Editorial Faro. Géneros: 1 Novela, 2 Ensayo. Autores: 1 Ana Ríos, 2 Bruno Paz, 3 Carla Vega.
 - Libros:
@@ -236,7 +236,6 @@ No aplica (archivos nuevos). Rollback: borrar los 5 HTML y `css/`.
 
 ## Open Questions
 
-> **PENDIENTE DE DECISIÓN DEL USUARIO — resolver antes de `/opsx:apply`.** Estas dos preguntas quedaron abiertas al aprobar el propose (2026-10-13). Cuando se decidan, reemplazar cada ítem por la decisión tomada y ajustar §D4 si cambia algo.
-
-- Nombre definitivo de la librería ("Librería Papel y Tinta" es un supuesto; cambiarlo solo afecta textos).
-- Formato definitivo del identificador y la fecha de venta (KB 10 #2): la maqueta usa ids numéricos y `DD/MM/AAAA`; lo fija C-05 sin cambiar la estructura.
+Decisiones cerradas (2026-10-17):
+- **Nombre definitivo de la librería**: "Librería Papel y Tinta".
+- **Formato de identificador y fecha de venta en la maqueta**: ids numéricos (`1`, `2`, …) y fecha `DD/MM/AAAA` en `<time datetime="AAAA-MM-DD">` (lo fija definitivamente C-05 sin cambiar la estructura).

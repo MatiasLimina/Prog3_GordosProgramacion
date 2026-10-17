@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes — Librería Papel y Tinta</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-vista="clientes">
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <header class="encabezado">
+    <p class="encabezado__marca"><a href="index.html">Librería Papel y Tinta</a></p>
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html">Catálogo</a></li>
+        <li><a href="libros.html">Libros</a></li>
+        <li><a href="clientes.html" aria-current="page">Clientes</a></li>
+        <li><a href="ventas.html">Ventas</a></li>
+        <li><a href="historial.html">Historial</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenido" tabindex="-1">
+    <h1>Clientes</h1>
+
+    <p id="aviso-maqueta" class="aviso-maqueta">
+      Maqueta de la etapa 1: los datos mostrados son de ejemplo y las operaciones todavía no se guardan.
+    </p>
+
+    <section aria-labelledby="titulo-alta-cliente">
+      <h2 id="titulo-alta-cliente">Registrar nuevo cliente</h2>
+      <form id="form-cliente" action="clientes.html" method="get" novalidate>
+        <div class="campo">
+          <label for="cliente-nombre-completo">Nombre completo</label>
+          <input type="text" id="cliente-nombre-completo" name="nombreCompleto" autocomplete="name" required>
+        </div>
+
+        <div class="campo">
+          <label for="cliente-email">Email</label>
+          <input type="email" id="cliente-email" name="email" autocomplete="email" spellcheck="false" required>
+        </div>
+
+        <p id="clientes-mensaje-ok" class="mensaje mensaje--ok" data-estado="ok" role="status" hidden>
+          Cliente registrado correctamente.
+        </p>
+
+        <div id="clientes-mensaje-error" class="mensaje mensaje--error" data-estado="error" role="alert" hidden>
+          <p>Error: no se pudo registrar el cliente. Revisá:</p>
+          <ul id="clientes-errores"></ul>
+        </div>
+
+        <button type="submit">Registrar cliente</button>
+      </form>
+    </section>
+
+    <section aria-labelledby="titulo-listado-clientes">
+      <h2 id="titulo-listado-clientes">Clientes registrados</h2>
+
+      <p id="clientes-mensaje-vacio" class="mensaje mensaje--info" data-estado="vacio" role="status" hidden>
+        Todavía no hay clientes registrados.
+      </p>
+
+      <div class="tabla-contenedor">
+        <table>
+          <caption>Listado de clientes registrados</caption>
+          <thead>
+            <tr>
+              <th scope="col">Nombre completo</th>
+              <th scope="col">Email</th>
+            </tr>
+          </thead>
+          <tbody id="clientes-lista">
+            <tr data-cliente-id="1">
+              <td data-campo="nombreCompleto">María Gómez</td>
+              <td data-campo="email">maria.gomez@example.com</td>
+            </tr>
+            <tr data-cliente-id="2">
+              <td data-campo="nombreCompleto">Juan Pérez</td>
+              <td data-campo="email">juan.perez@example.com</td>
+            </tr>
+            <tr data-cliente-id="3">
+              <td data-campo="nombreCompleto">Lucía Fernández</td>
+              <td data-campo="email">lucia.fernandez@example.com</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <template id="plantilla-fila-cliente">
+      <tr data-cliente-id="">
+        <td data-campo="nombreCompleto"></td>
+        <td data-campo="email"></td>
+      </tr>
+    </template>
+  </main>
+
+  <footer class="pie">
+    <p>TPI Programación III — datos ficticios, sin backend.</p>
+  </footer>
+</body>
+</html>
