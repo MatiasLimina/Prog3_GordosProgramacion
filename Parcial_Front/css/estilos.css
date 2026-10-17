@@ -1,0 +1,276 @@
+/* ==========================================================================
+   Estilos estructurales mínimos — Etapa 1 (C-01: estructura-pantallas-html)
+   Sin paleta de marca ni tipografías externas (identidad visual en C-02).
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  background-color: #ffffff;
+  color: #111111;
+}
+
+/* Foco visible preservado y reforzado en todos los controles */
+:focus-visible {
+  outline: 3px solid #111111;
+  outline-offset: 2px;
+}
+
+/* Utilidad para texto exclusivo de lectores de pantalla */
+.visualmente-oculto {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* Enlace "Saltar al contenido": oculto hasta recibir foco */
+.salto:not(:focus):not(:focus-visible) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+.salto:focus,
+.salto:focus-visible {
+  display: inline-block;
+  margin: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
+  background-color: #ffffff;
+  color: #111111;
+  border: 2px solid #111111;
+  font-weight: 700;
+}
+
+/* Contenedores principales */
+.encabezado,
+main,
+.pie {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+.encabezado {
+  padding-block: 1rem;
+  border-bottom: 1px solid #cccccc;
+}
+
+.encabezado__marca {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.encabezado__marca a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Navegación principal */
+.encabezado nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.encabezado nav a {
+  color: inherit;
+  text-decoration: none;
+  padding-block: 0.25rem;
+}
+
+.encabezado nav a:hover {
+  text-decoration: underline;
+}
+
+.encabezado nav a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25rem;
+}
+
+main {
+  padding-block: 1.5rem;
+}
+
+section {
+  margin-block: 1.5rem;
+}
+
+.pie {
+  padding-block: 1rem;
+  border-top: 1px solid #cccccc;
+  font-size: 0.9375rem;
+}
+
+/* Aviso de maqueta y mensajes de estado */
+.aviso-maqueta,
+.mensaje {
+  padding: 0.75rem 1rem;
+  margin-block: 1rem;
+  border: 1px solid #555555;
+  background-color: #f7f7f7;
+}
+
+.mensaje--info {
+  border-style: solid;
+}
+
+.mensaje--ok {
+  border-width: 2px;
+  border-style: solid;
+}
+
+.mensaje--error {
+  border-width: 2px;
+  border-style: dashed;
+}
+
+/* Formularios y controles */
+.campo {
+  margin-block-end: 1rem;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-block-end: 0.25rem;
+}
+
+.opcion-casilla {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block: 0.375rem;
+}
+
+.opcion-casilla label {
+  display: inline;
+  font-weight: 400;
+  margin-block-end: 0;
+}
+
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="number"],
+select {
+  font: inherit;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #555555;
+  background-color: #ffffff;
+  color: #111111;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid #111111;
+  background-color: #eeeeee;
+  color: #111111;
+  cursor: pointer;
+}
+
+fieldset {
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid #888888;
+}
+
+legend {
+  font-weight: 700;
+  padding-inline: 0.25rem;
+}
+
+/* Listado de tarjetas en catálogo */
+.catalogo-lista {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.tarjeta-libro,
+.detalle-venta {
+  border: 1px solid #888888;
+  padding: 1rem;
+  margin-block-end: 1rem;
+}
+
+.tarjeta-libro h3,
+.detalle-venta h3 {
+  margin-top: 0;
+}
+
+dl {
+  margin: 0.5rem 0;
+}
+
+dt {
+  font-weight: 700;
+  margin-top: 0.35rem;
+}
+
+dd {
+  margin-inline-start: 0;
+}
+
+/* Tablas con contenedor de desplazamiento propio */
+.tabla-contenedor {
+  overflow-x: auto;
+  margin-block: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+caption {
+  text-align: left;
+  font-weight: 700;
+  margin-block-end: 0.5rem;
+}
+
+th,
+td {
+  border: 1px solid #888888;
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th,
+tfoot th {
+  background-color: #f2f2f2;
+}

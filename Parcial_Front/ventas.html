@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ventas — Librería Papel y Tinta</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-vista="ventas">
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+
+  <header class="encabezado">
+    <p class="encabezado__marca"><a href="index.html">Librería Papel y Tinta</a></p>
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="index.html">Catálogo</a></li>
+        <li><a href="libros.html">Libros</a></li>
+        <li><a href="clientes.html">Clientes</a></li>
+        <li><a href="ventas.html" aria-current="page">Ventas</a></li>
+        <li><a href="historial.html">Historial</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenido" tabindex="-1">
+    <h1>Nueva venta</h1>
+
+    <p id="aviso-maqueta" class="aviso-maqueta">
+      Maqueta de la etapa 1: los datos mostrados son de ejemplo y las operaciones todavía no se guardan.
+    </p>
+
+    <section aria-labelledby="titulo-componer-venta">
+      <h2 id="titulo-componer-venta">Composición de la venta</h2>
+
+      <form id="form-venta" action="ventas.html" method="get" novalidate>
+        <fieldset>
+          <legend>Cliente</legend>
+          <div class="campo">
+            <label for="venta-cliente">Cliente</label>
+            <select id="venta-cliente" name="clienteId" required>
+              <option value="">Elegí un cliente</option>
+              <option value="1">María Gómez</option>
+              <option value="2">Juan Pérez</option>
+              <option value="3">Lucía Fernández</option>
+            </select>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Agregar renglón</legend>
+          <div class="campo">
+            <label for="venta-libro">Libro</label>
+            <select id="venta-libro" name="libroId">
+              <option value="">Elegí un libro</option>
+              <option value="1">El jardín de las horas — 1500.00</option>
+              <option value="2">Mapas del silencio — 2000.00</option>
+              <option value="3">Cuentos de medianoche — 3200.50</option>
+              <option value="4">La ciudad invisible — 2750.00</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="venta-cantidad">Cantidad</label>
+            <input type="number" id="venta-cantidad" name="cantidad" min="1" step="1" value="1">
+          </div>
+
+          <button type="button" id="venta-agregar-renglon" data-accion="agregar-renglon">Agregar renglón</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>Renglones</legend>
+
+          <p id="venta-mensaje-vacio" class="mensaje mensaje--info" data-estado="vacio" role="status" hidden>
+            La venta todavía no tiene renglones.
+          </p>
+
+          <div class="tabla-contenedor">
+            <table>
+              <caption>Renglones de la venta en curso y resumen del total</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Libro</th>
+                  <th scope="col">Cantidad</th>
+                  <th scope="col">Precio unitario</th>
+                  <th scope="col">Subtotal</th>
+                  <th scope="col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="venta-renglones">
+                <tr data-libro-id="1">
+                  <td data-campo="titulo">El jardín de las horas</td>
+                  <td>
+                    <label for="venta-renglon-1-cantidad" class="visualmente-oculto">Cantidad de «El jardín de las horas»</label>
+                    <input type="number" id="venta-renglon-1-cantidad" name="cantidadRenglon" min="1" step="1" value="2" data-accion="cambiar-cantidad">
+                  </td>
+                  <td data-campo="precioUnitario">1500.00</td>
+                  <td data-campo="subtotal">3000.00</td>
+                  <td>
+                    <button type="button" data-accion="quitar-renglon">
+                      Quitar renglón <span class="visualmente-oculto">de «El jardín de las horas»</span>
+                    </button>
+                  </td>
+                </tr>
+                <tr data-libro-id="2">
+                  <td data-campo="titulo">Mapas del silencio</td>
+                  <td>
+                    <label for="venta-renglon-2-cantidad" class="visualmente-oculto">Cantidad de «Mapas del silencio»</label>
+                    <input type="number" id="venta-renglon-2-cantidad" name="cantidadRenglon" min="1" step="1" value="1" data-accion="cambiar-cantidad">
+                  </td>
+                  <td data-campo="precioUnitario">2000.00</td>
+                  <td data-campo="subtotal">2000.00</td>
+                  <td>
+                    <button type="button" data-accion="quitar-renglon">
+                      Quitar renglón <span class="visualmente-oculto">de «Mapas del silencio»</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row" colspan="3">Total</th>
+                  <td colspan="2"><output id="venta-total" data-campo="total">5000.00</output></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </fieldset>
+
+        <p id="venta-mensaje-ok" class="mensaje mensaje--ok" data-estado="ok" role="status" hidden>
+          Venta confirmada correctamente.
+        </p>
+
+        <div id="venta-mensaje-error" class="mensaje mensaje--error" data-estado="error" role="alert" hidden>
+          <p>Error: no se pudo confirmar la venta. Revisá:</p>
+          <ul id="venta-errores"></ul>
+        </div>
+
+        <button type="submit" id="venta-confirmar">Confirmar venta</button>
+      </form>
+    </section>
+
+    <template id="plantilla-fila-renglon">
+      <tr data-libro-id="">
+        <td data-campo="titulo"></td>
+        <td>
+          <label class="visualmente-oculto">Cantidad</label>
+          <input type="number" name="cantidadRenglon" min="1" step="1" value="1" data-accion="cambiar-cantidad">
+        </td>
+        <td data-campo="precioUnitario"></td>
+        <td data-campo="subtotal"></td>
+        <td>
+          <button type="button" data-accion="quitar-renglon">
+            Quitar renglón <span class="visualmente-oculto" data-campo="contextoLibro"></span>
+          </button>
+        </td>
+      </tr>
+    </template>
+  </main>
+
+  <footer class="pie">
+    <p>TPI Programación III — datos ficticios, sin backend.</p>
+  </footer>
+</body>
+</html>
