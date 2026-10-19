@@ -114,6 +114,32 @@
     return encontrados;
   }
 
+  // Devuelve max(id) + 1 como número; 1 si la colección está vacía.
+  function siguienteId(coleccion) {
+    var maximo = 0;
+    for (var i = 0; i < coleccion.length; i++) {
+      var id = Number(coleccion[i].id);
+      if (id > maximo) {
+        maximo = id;
+      }
+    }
+    return maximo + 1;
+  }
+
+  // Asigna el id con siguienteId, inserta el libro y lo devuelve.
+  function agregarLibro(libro) {
+    libro.id = siguienteId(libros);
+    libros.push(libro);
+    return libro;
+  }
+
+  // Asigna el id con siguienteId, inserta el cliente y lo devuelve.
+  function agregarCliente(cliente) {
+    cliente.id = siguienteId(clientes);
+    clientes.push(cliente);
+    return cliente;
+  }
+
   window.Datos = {
     libros: libros,
     editoriales: editoriales,
@@ -123,6 +149,9 @@
     buscarLibro: buscarLibro,
     buscarEditorial: buscarEditorial,
     buscarGenero: buscarGenero,
-    buscarAutores: buscarAutores
+    buscarAutores: buscarAutores,
+    siguienteId: siguienteId,
+    agregarLibro: agregarLibro,
+    agregarCliente: agregarCliente
   };
 })();
