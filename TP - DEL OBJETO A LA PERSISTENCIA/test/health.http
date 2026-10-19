@@ -1,5 +1,8 @@
 @host = http://localhost:8000
 
+# Antes de correr: `python -m scripts.seed` (deja la base en el estado inicial conocido,
+# así los ids y los códigos esperados de abajo coinciden).
+
 ### Liveness: no toca la base
 # Esperado: 200 {"estado": "vivo"}
 GET {{host}}/health/live

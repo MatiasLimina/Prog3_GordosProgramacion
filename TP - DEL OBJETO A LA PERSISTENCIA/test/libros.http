@@ -1,5 +1,8 @@
 @host = http://localhost:8000
 
+# Antes de correr: `python -m scripts.seed` (deja la base en el estado inicial conocido,
+# así los ids y los códigos esperados de abajo coinciden).
+
 ### Crear editorial base (se captura su id)
 # @name editorial1
 # Esperado: 201 {"id": ..., "nombre": "Eterna Cadencia", "pais": "Argentina"}
@@ -75,7 +78,8 @@ GET {{host}}/libros/?titulo=ficci
 
 ### C-08: intento de inyeccion SQL en el filtro de titulo
 # Esperado: 200 con lista vacia (parametro ligado, nunca SQL concatenado)
-GET {{host}}/libros/?titulo=' OR '1'='1
+# (' OR '1'='1 con la URL codificada)
+GET {{host}}/libros/?titulo=%27%20OR%20%271%27%3D%271
 
 ### C-07 (a): detalle de libro con un autor
 # Esperado: 200 con editorial y autores. Con DB_ECHO=true se ve en consola un

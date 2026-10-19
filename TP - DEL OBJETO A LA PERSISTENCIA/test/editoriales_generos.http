@@ -1,5 +1,8 @@
 @host = http://localhost:8000
 
+# Antes de correr: `python -m scripts.seed` (deja la base en el estado inicial conocido,
+# así los ids y los códigos esperados de abajo coinciden).
+
 ### Crear editorial (se captura su id)
 # @name editorial1
 # Esperado: 201 {"id": ..., "nombre": "Planeta", "pais": "España"}
@@ -28,7 +31,7 @@ Content-Type: application/json
 POST {{host}}/editoriales/
 Content-Type: application/json
 
-{"nombre": "Sudamericana", "pais": "Argentina"}
+{"nombre": "Tusquets", "pais": "España"}
 
 ### Listado paginado
 # Esperado: 200 con lista (máximo 2 elementos, desde el segundo)
@@ -79,14 +82,14 @@ Content-Type: application/json
 POST {{host}}/generos/
 Content-Type: application/json
 
-{"nombre": "Novela"}
+{"nombre": "Poesía"}
 
 ### Género repetido
 # Esperado: 409 {"detail": "Ya existe un género con ese nombre."}
 POST {{host}}/generos/
 Content-Type: application/json
 
-{"nombre": "Novela"}
+{"nombre": "Poesía"}
 
 ### Listado de géneros paginado
 # Esperado: 200
@@ -98,7 +101,7 @@ GET {{host}}/generos/?limit=10&offset=0
 POST {{host}}/generos/
 Content-Type: application/json
 
-{"nombre": "Ensayo"}
+{"nombre": "Teatro"}
 
 ### Libro de la primera editorial con género (se captura su id)
 # @name libroConGenero
