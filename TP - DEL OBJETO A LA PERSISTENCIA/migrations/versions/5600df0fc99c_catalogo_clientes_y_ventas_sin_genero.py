@@ -1,8 +1,13 @@
-"""init catalogo editorial genero autor libro
+"""catalogo, clientes y ventas sin genero
 
-Revision ID: 057033a1e47d
+Primera de las dos migraciones que pide la consigna (Ej. 3): crea todas las
+tablas MENOS `genero` y SIN la columna `libro.genero_id`. Se dejó fuera a
+propósito; la siguiente migración (agrega genero y libro.genero_id) las suma.
+Se generó con --autogenerate excluyendo temporalmente Genero del metadata.
+
+Revision ID: 5600df0fc99c
 Revises: 
-Create Date: 2026-10-13 08:58:37.905468
+Create Date: 2026-10-16 11:33:30.941740
 
 """
 from typing import Sequence, Union
@@ -15,7 +20,7 @@ import sqlmodel  # noqa: F401
 
 
 # revision identifiers, used by Alembic.
-revision: str = '057033a1e47d'
+revision: str = '5600df0fc99c'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,18 +35,19 @@ def upgrade() -> None:
     sa.Column('nacionalidad', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_autor'))
     )
+    op.create_table('cliente',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('nombre', sqlmodel.sql.sqltypes.AutoString(length=150), nullable=False),
+    sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_cliente')),
+    sa.UniqueConstraint('email', name=op.f('uq_cliente_email'))
+    )
     op.create_table('editorial',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nombre', sqlmodel.sql.sqltypes.AutoString(length=150), nullable=False),
     sa.Column('pais', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_editorial')),
     sa.UniqueConstraint('nombre', name=op.f('uq_editorial_nombre'))
-    )
-    op.create_table('genero',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('nombre', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_genero')),
-    sa.UniqueConstraint('nombre', name=op.f('uq_genero_nombre'))
     )
     op.create_table('libro',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -50,16 +56,32 @@ def upgrade() -> None:
     sa.Column('precio', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('stock', sa.Integer(), nullable=False),
     sa.Column('editorial_id', sa.Integer(), nullable=False),
-    sa.Column('genero_id', sa.Integer(), nullable=True),
     sa.CheckConstraint('precio > 0', name=op.f('ck_libro_precio_positivo')),
     sa.CheckConstraint('stock >= 0', name=op.f('ck_libro_stock_no_negativo')),
     sa.ForeignKeyConstraint(['editorial_id'], ['editorial.id'], name=op.f('fk_libro_editorial_id_editorial')),
-    sa.ForeignKeyConstraint(['genero_id'], ['genero.id'], name=op.f('fk_libro_genero_id_genero')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_libro')),
     sa.UniqueConstraint('isbn', name=op.f('uq_libro_isbn'))
     )
     op.create_index(op.f('ix_libro_editorial_id'), 'libro', ['editorial_id'], unique=False)
-    op.create_index(op.f('ix_libro_genero_id'), 'libro', ['genero_id'], unique=False)
+    op.create_table('perfil_cliente',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('cliente_id', sa.Integer(), nullable=False),
+    sa.Column('telefono', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),
+    sa.Column('direccion', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+    sa.ForeignKeyConstraint(['cliente_id'], ['cliente.id'], name=op.f('fk_perfil_cliente_cliente_id_cliente')),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_perfil_cliente')),
+    sa.UniqueConstraint('cliente_id', name=op.f('uq_perfil_cliente_cliente_id'))
+    )
+    op.create_table('venta',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('cliente_id', sa.Integer(), nullable=False),
+    sa.Column('fecha', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('total', sa.Numeric(precision=12, scale=2), nullable=False),
+    sa.CheckConstraint('total >= 0', name=op.f('ck_venta_total_no_negativo')),
+    sa.ForeignKeyConstraint(['cliente_id'], ['cliente.id'], name=op.f('fk_venta_cliente_id_cliente')),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_venta'))
+    )
+    op.create_index(op.f('ix_venta_cliente_id'), 'venta', ['cliente_id'], unique=False)
     op.create_table('libro_autor',
     sa.Column('libro_id', sa.Integer(), nullable=False),
     sa.Column('autor_id', sa.Integer(), nullable=False),
@@ -73,19 +95,38 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_libro_autor_autor_id'), 'libro_autor', ['autor_id'], unique=False)
     op.create_index(op.f('ix_libro_autor_libro_id'), 'libro_autor', ['libro_id'], unique=False)
+    op.create_table('renglon_venta',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('venta_id', sa.Integer(), nullable=False),
+    sa.Column('libro_id', sa.Integer(), nullable=False),
+    sa.Column('cantidad', sa.Integer(), nullable=False),
+    sa.Column('precio_unitario', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.CheckConstraint('cantidad > 0', name=op.f('ck_renglon_venta_cantidad_positiva')),
+    sa.CheckConstraint('precio_unitario > 0', name=op.f('ck_renglon_venta_precio_unitario_positivo')),
+    sa.ForeignKeyConstraint(['libro_id'], ['libro.id'], name=op.f('fk_renglon_venta_libro_id_libro')),
+    sa.ForeignKeyConstraint(['venta_id'], ['venta.id'], name=op.f('fk_renglon_venta_venta_id_venta')),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_renglon_venta'))
+    )
+    op.create_index(op.f('ix_renglon_venta_libro_id'), 'renglon_venta', ['libro_id'], unique=False)
+    op.create_index(op.f('ix_renglon_venta_venta_id'), 'renglon_venta', ['venta_id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_renglon_venta_venta_id'), table_name='renglon_venta')
+    op.drop_index(op.f('ix_renglon_venta_libro_id'), table_name='renglon_venta')
+    op.drop_table('renglon_venta')
     op.drop_index(op.f('ix_libro_autor_libro_id'), table_name='libro_autor')
     op.drop_index(op.f('ix_libro_autor_autor_id'), table_name='libro_autor')
     op.drop_table('libro_autor')
-    op.drop_index(op.f('ix_libro_genero_id'), table_name='libro')
+    op.drop_index(op.f('ix_venta_cliente_id'), table_name='venta')
+    op.drop_table('venta')
+    op.drop_table('perfil_cliente')
     op.drop_index(op.f('ix_libro_editorial_id'), table_name='libro')
     op.drop_table('libro')
-    op.drop_table('genero')
     op.drop_table('editorial')
+    op.drop_table('cliente')
     op.drop_table('autor')
     # ### end Alembic commands ###
