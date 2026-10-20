@@ -292,6 +292,9 @@
     };
 
     window.Datos.agregarVenta(venta);
+    if (window.Persistencia && typeof window.Persistencia.guardarVentas === "function") {
+      window.Persistencia.guardarVentas();
+    }
     limpiarVenta();
     mostrarExito(mensajes);
   }

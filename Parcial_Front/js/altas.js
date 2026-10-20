@@ -261,6 +261,9 @@
     }
 
     window.Datos.agregarLibro(resultado.datosNormalizados);
+    if (window.Persistencia && typeof window.Persistencia.guardarLibros === "function") {
+      window.Persistencia.guardarLibros();
+    }
     renderLibros(window.Datos.libros);
     regenerarSelectoresLibro();
     limpiarFormularioLibro();
@@ -279,6 +282,9 @@
     }
 
     window.Datos.agregarCliente(resultado.datosNormalizados);
+    if (window.Persistencia && typeof window.Persistencia.guardarClientes === "function") {
+      window.Persistencia.guardarClientes();
+    }
     renderClientes(window.Datos.clientes);
     limpiarFormularioCliente();
     mostrarExito(mensajes);
