@@ -2,26 +2,34 @@
 
 ## Purpose
 
-Permite consultar las ventas confirmadas, con su identificador, fecha, cliente y total, y acceder al detalle de renglones de cada una sin poder editarlas ni eliminarlas.
+Permite consultar las ventas confirmadas, con su identificador, fecha, cliente y total, y acceder al detalle de renglones de cada una sin poder editarlas ni eliminarlas. El detalle muestra los valores confirmados, incluido el precio unitario histórico.
 
 ## Requirements
 
 ### Requirement: Listado de ventas
-La vista Historial MUST mostrar una tabla de ventas con columnas identificador, fecha, cliente, total y acciones, con al menos dos ventas de ejemplo en la etapa 1.
+La vista Historial MUST mostrar una tabla de ventas generada desde los datos locales, con columnas identificador, fecha, cliente, total y acciones, y MUST reemplazar el contenido estático del HTML. El total MUST mostrarse con dos decimales.
 
 #### Scenario: Tabla de ventas
 - **WHEN** se abre la vista Historial
-- **THEN** la tabla lista las ventas de ejemplo con identificador, fecha, cliente y total con dos decimales
+- **THEN** la tabla lista las ventas de los datos locales con identificador, fecha, cliente y total con dos decimales
+
+#### Scenario: Listado generado desde los datos
+- **WHEN** se cuentan las filas visibles al abrir la vista Historial
+- **THEN** hay exactamente una fila por cada venta de los datos locales, sin repetir las filas de ejemplo del HTML
 
 ### Requirement: Acceso al detalle de una venta
-Cada venta del listado MUST tener un control "Ver detalle" que lleve, sin JavaScript, al detalle de esa venta, con un nombre accesible que identifique la venta.
+Cada venta del listado MUST tener un control "Ver detalle" que lleve al detalle de esa venta. El detalle MUST mostrar identificador, fecha, cliente y una tabla de renglones con libro, cantidad, precio unitario y subtotal, más el total, usando los valores confirmados (precio unitario histórico).
 
-#### Scenario: Ver detalle sin JavaScript
-- **WHEN** se activa "Ver detalle" de una venta con JavaScript deshabilitado
-- **THEN** la página se desplaza al detalle de esa venta
+#### Scenario: Ver detalle
+- **WHEN** se activa "Ver detalle" de una venta
+- **THEN** se muestra el detalle con los renglones confirmados y el total
+
+#### Scenario: Detalle con precio histórico
+- **WHEN** se consulta el detalle de una venta
+- **THEN** cada renglón muestra el precio unitario copiado al confirmar, independientemente del precio actual del catálogo
 
 ### Requirement: Contenido del detalle de venta
-El detalle de cada venta MUST mostrar identificador, fecha, cliente y una tabla de renglones con libro, cantidad, precio unitario y subtotal, más el total.
+El detalle de cada venta MUST mostrar identificador, fecha, cliente y una tabla de renglones con libro, cantidad, precio unitario y subtotal, más el total con dos decimales.
 
 #### Scenario: Detalle de la venta de ejemplo
 - **WHEN** se consulta el detalle de la venta de ejemplo de María Gómez
