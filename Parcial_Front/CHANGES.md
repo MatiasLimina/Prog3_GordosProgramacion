@@ -113,7 +113,7 @@ GATE 4: C-02 ✓ + C-05 ✓
 > C-02 puede ejecutarse en paralelo con C-03, C-04 y C-05.
 
 ### [C-03] `datos-locales-catalogo-filtro`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**:
   - `js/` con datos en arrays/objetos con ids estables: ≥ 6 libros, 2 editoriales, 2 géneros, 3 autores, 3 clientes (≥ 1 libro sin género, ≥ 1 con varios autores)
   - Render del catálogo desde el array (título, ISBN, editorial, género o «Sin clasificar», autores, precio); texto de usuario con `textContent`
@@ -129,7 +129,7 @@ GATE 4: C-02 ✓ + C-05 ✓
   - `knowledge-base/08_arquitectura_propuesta.md` §Patrones, §Seguridad
 
 ### [C-04] `alta-libros-clientes`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**:
   - Selects de editorial y género (con «Sin clasificar») y autores (multi-select/checkboxes) generados desde los datos
   - Validaciones puras de libro: título e ISBN no vacíos, ISBN único (sin espacios ni guiones), precio numérico > 0, editorial y autores existentes, ≥ 1 autor, género opcional pero existente si se asigna

@@ -13,3 +13,6 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+
+# Logs locales
+*.log
