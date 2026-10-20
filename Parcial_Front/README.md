@@ -4,7 +4,9 @@ TPI Programación III. Frontend de una librería: catálogo, libros, clientes, v
 
 ## Integrantes
 
-- (Completar con los nombres del equipo antes de la entrega.)
+- Matias Limina
+- Nicolas Monjelardi
+- Lautaro Aguero
 
 ## Cómo abrir la aplicación
 
@@ -38,6 +40,10 @@ Parcial_Front/
 - Venta simulada: selección de cliente, renglones con libro y cantidad entera > 0 (libro repetido suma cantidad), cambio/quita de renglones, subtotales y total con 2 decimales, confirmación con precio unitario histórico.
 - Historial de ventas con listado y detalle de renglones; ventas inmutables (sin editar ni eliminar).
 - Persistencia en `localStorage`: primer inicio carga ejemplos; reaperturas recuperan lo guardado sin duplicar.
+
+## Funcionalidades pendientes
+
+- Ninguna: los seis ejercicios de la consigna están implementados. Por diseño no hay edición ni eliminación de ventas, ni pantalla para editar precios (la consigna no la exige).
 
 ## Ubicación de los datos iniciales
 
