@@ -168,7 +168,7 @@ GATE 4: C-02 ✓ + C-05 ✓
 ## FASE 3 — Cierre (Ej. 6)
 
 ### [C-06] `persistencia-readme`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**:
   - `localStorage` para libros, clientes y ventas; primer inicio carga los ejemplos, reaperturas los recuperan sin duplicar datos iniciales ni ventas
   - Claves y estructura del catálogo guardado documentadas (para la prueba del precio histórico)
