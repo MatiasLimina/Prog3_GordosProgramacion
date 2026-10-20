@@ -23,6 +23,30 @@
     { id: 3, nombre: "Lucía Fernández", email: "lucia.fernandez@example.com" }
   ];
 
+  var ventas = [
+    {
+      id: 1,
+      fecha: "2026-10-01T00:00:00.000Z",
+      clienteId: 1,
+      clienteNombre: "María Gómez",
+      renglones: [
+        { libroId: 1, titulo: "El jardín de las horas", cantidad: 2, precioUnitario: 1500, subtotal: 3000 },
+        { libroId: 2, titulo: "Mapas del silencio", cantidad: 1, precioUnitario: 2000, subtotal: 2000 }
+      ],
+      total: 5000
+    },
+    {
+      id: 2,
+      fecha: "2026-10-05T00:00:00.000Z",
+      clienteId: 2,
+      clienteNombre: "Juan Pérez",
+      renglones: [
+        { libroId: 3, titulo: "Cuentos de medianoche", cantidad: 1, precioUnitario: 3200.5, subtotal: 3200.5 }
+      ],
+      total: 3200.5
+    }
+  ];
+
   var libros = [
     {
       id: 1,
@@ -140,18 +164,27 @@
     return cliente;
   }
 
+  // Asigna el id con siguienteId, inserta la venta y la devuelve.
+  function agregarVenta(venta) {
+    venta.id = siguienteId(ventas);
+    ventas.push(venta);
+    return venta;
+  }
+
   window.Datos = {
     libros: libros,
     editoriales: editoriales,
     generos: generos,
     autores: autores,
     clientes: clientes,
+    ventas: ventas,
     buscarLibro: buscarLibro,
     buscarEditorial: buscarEditorial,
     buscarGenero: buscarGenero,
     buscarAutores: buscarAutores,
     siguienteId: siguienteId,
     agregarLibro: agregarLibro,
-    agregarCliente: agregarCliente
+    agregarCliente: agregarCliente,
+    agregarVenta: agregarVenta
   };
 })();
