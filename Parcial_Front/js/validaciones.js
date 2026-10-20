@@ -154,10 +154,80 @@
     };
   }
 
+  // Valida una venta (RN-15, RN-16, RN-20). Pura: no toca DOM ni datos.
+  function validarVenta(entrada, clientes, libros) {
+    var datos = entrada || {};
+    var coleccionClientes = clientes || [];
+    var coleccionLibros = libros || [];
+    var errores = [];
+
+    var clienteIdTexto = comoTexto(datos.clienteId).trim();
+    if (clienteIdTexto === "") {
+      errores.push("Elegí un cliente.");
+    } else {
+      var clienteEncontrado = null;
+      for (var c = 0; c < coleccionClientes.length; c++) {
+        if (String(coleccionClientes[c].id) === clienteIdTexto) {
+          clienteEncontrado = coleccionClientes[c];
+          break;
+        }
+      }
+      if (!clienteEncontrado) {
+        errores.push("Elegí un cliente.");
+      }
+    }
+
+    var renglonesEntrada = datos.renglones || [];
+    if (!renglonesEntrada || renglonesEntrada.length === 0) {
+      errores.push("La venta debe tener al menos un renglón.");
+    }
+
+    var renglonesNormalizados = [];
+    for (var i = 0; i < renglonesEntrada.length; i++) {
+      var renglon = renglonesEntrada[i] || {};
+      var libroIdTexto = comoTexto(renglon.libroId).trim();
+      var libroEncontrado = null;
+      for (var l = 0; l < coleccionLibros.length; l++) {
+        if (String(coleccionLibros[l].id) === libroIdTexto) {
+          libroEncontrado = coleccionLibros[l];
+          break;
+        }
+      }
+      if (!libroEncontrado) {
+        errores.push("El libro seleccionado no existe.");
+      }
+
+      var cantidadTexto = comoTexto(renglon.cantidad).trim();
+      var cantidad = Number(cantidadTexto);
+      var cantidadValida = cantidadTexto !== "" && !isNaN(cantidad) &&
+        cantidad > 0 && Math.floor(cantidad) === cantidad;
+      if (!cantidadValida) {
+        errores.push("La cantidad debe ser un entero mayor que cero.");
+      }
+
+      renglonesNormalizados.push({
+        libroId: libroIdTexto === "" ? "" : Number(libroIdTexto),
+        cantidad: cantidadValida ? cantidad : Number(cantidadTexto) || 0
+      });
+    }
+
+    var datosNormalizados = {
+      clienteId: clienteIdTexto === "" ? "" : Number(clienteIdTexto),
+      renglones: renglonesNormalizados
+    };
+
+    return {
+      valido: errores.length === 0,
+      errores: errores,
+      datosNormalizados: datosNormalizados
+    };
+  }
+
   window.Validaciones = {
     normalizarIsbn: normalizarIsbn,
     normalizarEmail: normalizarEmail,
     validarLibro: validarLibro,
-    validarCliente: validarCliente
+    validarCliente: validarCliente,
+    validarVenta: validarVenta
   };
 })();

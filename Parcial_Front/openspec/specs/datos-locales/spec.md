@@ -109,3 +109,54 @@ Un alta validada MUST incorporarse a la colección correspondiente de los datos 
 #### Scenario: Género ausente en el libro dado de alta
 - **WHEN** se da de alta un libro sin género
 - **THEN** el libro no presenta referencia a ningún género y se interpreta como «Sin clasificar»
+
+### Requirement: Seed de ventas de ejemplo
+Los datos locales MUST incluir al menos dos ventas de ejemplo con identificador, fecha, cliente, renglones (con título y precio unitario histórico) y total, para que el Historial muestre contenido al abrir.
+
+#### Scenario: Ventas de ejemplo presentes
+- **WHEN** se abren los datos locales por primera vez
+- **THEN** existen al menos dos ventas con id, fecha, cliente, renglones y total
+
+### Requirement: Alta de venta
+Una venta confirmada MUST registrarse en los datos locales con identificador entero incremental, fecha ISO 8601, cliente (id y nombre descriptivo), renglones con libroId, título descriptivo, cantidad, precio unitario histórico y subtotal, y total. El renglón MUST copiar el precio unitario y el título al confirmar, sin releeerlos del catálogo.
+
+#### Scenario: Venta registrada
+- **WHEN** se confirma una venta válida
+- **THEN** la venta se agrega a los datos locales con id, fecha, cliente, renglones y total
+
+#### Scenario: Precio unitario histórico
+- **WHEN** se revisa una venta confirmada
+- **THEN** cada renglón conserva el precio unitario copiado al confirmar, independientemente del precio actual del libro en el catálogo
+
+### Requirement: Inmutabilidad de las ventas confirmadas
+Las ventas confirmadas MUST NOT poder editarse ni eliminarse desde la interfaz.
+
+#### Scenario: Sin controles de edición
+- **WHEN** se recorre la vista Historial con Tab
+- **THEN** no hay campos editables ni botones de editar o eliminar ventas
+
+### Requirement: Persistencia en localStorage
+La aplicación MUST persistir libros, clientes y ventas en `localStorage` bajo las claves `libreria:libros`, `libreria:clientes` y `libreria:ventas`. En el primer inicio MUST cargar los ejemplos; en reaperturas MUST recuperar los datos guardados sin duplicar ejemplos ni ventas.
+
+#### Scenario: Primer inicio
+- **WHEN** se abre la aplicación en un perfil sin datos guardados
+- **THEN** se cargan los ejemplos a `localStorage` y se muestran
+
+#### Scenario: Reapertura
+- **WHEN** se reabre la aplicación tras haber guardado datos
+- **THEN** se recuperan los datos guardados sin duplicar ejemplos ni ventas
+
+#### Scenario: Guardado tras alta
+- **WHEN** se da de alta un libro, cliente o venta
+- **THEN** el cambio se persiste en `localStorage`
+
+#### Scenario: Recuperación tras recarga
+- **WHEN** se recarga la página tras altas y ventas
+- **THEN** los datos se recuperan sin duplicar ejemplos ni ventas
+
+### Requirement: Precio histórico preservado en persistencia
+El precio unitario de una venta confirmada MUST conservarse aunque cambie el precio del libro en el catálogo guardado en `localStorage`.
+
+#### Scenario: Cambio de precio en catálogo
+- **WHEN** se modifica el precio del libro en `localStorage` y se recarga
+- **THEN** la venta conserva su precio unitario, subtotales y total

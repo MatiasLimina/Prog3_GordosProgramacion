@@ -146,7 +146,7 @@ GATE 4: C-02 ✓ + C-05 ✓
   - `knowledge-base/06_funcionalidades.md` §Épica 4
 
 ### [C-05] `venta-simulada-historial`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**:
   - Selección de cliente existente y renglones (libro existente, cantidad entera > 0); libro repetido: sumar cantidad o rechazar (elegir y documentar, KB 10 #4)
   - Cambiar cantidades y quitar renglones antes de confirmar
@@ -168,7 +168,7 @@ GATE 4: C-02 ✓ + C-05 ✓
 ## FASE 3 — Cierre (Ej. 6)
 
 ### [C-06] `persistencia-readme`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado
 - **Scope**:
   - `localStorage` para libros, clientes y ventas; primer inicio carga los ejemplos, reaperturas los recuperan sin duplicar datos iniciales ni ventas
   - Claves y estructura del catálogo guardado documentadas (para la prueba del precio histórico)
