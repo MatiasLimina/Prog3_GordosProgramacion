@@ -26,7 +26,7 @@
   var ventas = [
     {
       id: 1,
-      fecha: "2026-10-01T00:00:00.000Z",
+      fecha: "2026-10-01T15:00:00.000Z",
       clienteId: 1,
       clienteNombre: "María Gómez",
       renglones: [
@@ -37,7 +37,7 @@
     },
     {
       id: 2,
-      fecha: "2026-10-05T00:00:00.000Z",
+      fecha: "2026-10-05T15:00:00.000Z",
       clienteId: 2,
       clienteNombre: "Juan Pérez",
       renglones: [

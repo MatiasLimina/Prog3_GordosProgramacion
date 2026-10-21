@@ -165,11 +165,15 @@
     var libroId = selectLibro.value;
     var cantidadTexto = inputCantidad.value.trim();
     var cantidad = Number(cantidadTexto);
-    if (libroId === "" || cantidadTexto === "" || isNaN(cantidad) || cantidad <= 0 || Math.floor(cantidad) !== cantidad) {
-      mostrarErrores(mensajes, ["La cantidad debe ser un entero mayor que cero."]);
-      if (libroId === "") {
-        mostrarErrores(mensajes, ["Elegí un libro."]);
-      }
+    var errores = [];
+    if (libroId === "") {
+      errores.push("Elegí un libro.");
+    }
+    if (cantidadTexto === "" || isNaN(cantidad) || cantidad <= 0 || Math.floor(cantidad) !== cantidad) {
+      errores.push("La cantidad debe ser un entero mayor que cero.");
+    }
+    if (errores.length > 0) {
+      mostrarErrores(mensajes, errores);
       return;
     }
 
@@ -202,9 +206,15 @@
     renderRenglones();
   }
 
+  // Una cantidad inválida se rechaza: se avisa y el renglón vuelve a su valor anterior.
   function cambiarCantidad(libroId, nuevaCantidadTexto) {
-    var cantidad = Number(nuevaCantidadTexto);
-    if (isNaN(cantidad) || cantidad <= 0 || Math.floor(cantidad) !== cantidad) {
+    var mensajes = obtenerMensajes();
+    ocultarMensajes(mensajes);
+    var texto = String(nuevaCantidadTexto).trim();
+    var cantidad = Number(texto);
+    if (texto === "" || isNaN(cantidad) || cantidad <= 0 || Math.floor(cantidad) !== cantidad) {
+      renderRenglones();
+      mostrarErrores(mensajes, ["La cantidad debe ser un entero mayor que cero."]);
       return;
     }
     for (var i = 0; i < ventaActual.renglones.length; i++) {
