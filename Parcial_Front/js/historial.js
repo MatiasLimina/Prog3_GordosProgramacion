@@ -14,17 +14,17 @@
     return Number(valor).toFixed(2);
   }
 
+  function dosDigitos(numero) {
+    return numero < 10 ? "0" + numero : String(numero);
+  }
+
+  // Ambos formatos usan la fecha local, para que el texto y el datetime coincidan.
   function fechaCorta(iso) {
     var fecha = new Date(iso);
     if (isNaN(fecha.getTime())) {
       return String(iso);
     }
-    var dia = String(fecha.getDate()).padStart ? fecha.getDate() : fecha.getDate();
-    var mes = fecha.getMonth() + 1;
-    var anio = fecha.getFullYear();
-    var dd = dia < 10 ? "0" + dia : String(dia);
-    var mm = mes < 10 ? "0" + mes : String(mes);
-    return dd + "/" + mm + "/" + anio;
+    return dosDigitos(fecha.getDate()) + "/" + dosDigitos(fecha.getMonth() + 1) + "/" + fecha.getFullYear();
   }
 
   function fechaIsoCorta(iso) {
@@ -32,7 +32,7 @@
     if (isNaN(fecha.getTime())) {
       return String(iso).slice(0, 10);
     }
-    return fecha.toISOString().slice(0, 10);
+    return fecha.getFullYear() + "-" + dosDigitos(fecha.getMonth() + 1) + "-" + dosDigitos(fecha.getDate());
   }
 
   function obtenerMensajes() {

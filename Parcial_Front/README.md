@@ -62,7 +62,7 @@ Estructura de una venta (para la prueba del precio histórico):
 ```json
 {
   "id": 1,
-  "fecha": "2026-10-01T00:00:00.000Z",
+  "fecha": "2026-10-01T15:00:00.000Z",
   "clienteId": 1,
   "clienteNombre": "María Gómez",
   "renglones": [
