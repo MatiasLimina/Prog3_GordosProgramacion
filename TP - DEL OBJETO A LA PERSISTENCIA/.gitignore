@@ -16,3 +16,6 @@ __pycache__/
 
 # Logs locales
 *.log
+
+# Instrucciones personales de Claude Code (no se comparten)
+CLAUDE.local.md
