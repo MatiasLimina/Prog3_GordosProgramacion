@@ -4,6 +4,10 @@ Guía canónica del proyecto para los integrantes del grupo y para cualquier age
 Fuente de verdad del enunciado: `TP_Cap1a4_Consigna.pdf`. Reparto de tareas: `REPARTO.md`.
 Si algo de este archivo contradice la consigna, **gana la consigna** y se corrige este archivo por PR.
 
+> **Parcial Cap 1–6 en curso:** consigna en `Parcial_Cap1a6_Consigna.pdf` y backlog de changes en
+> [`PLAN_PARCIAL.md`](PLAN_PARCIAL.md). Antes de trabajar en un change, leé su sección (`CHG-XX`) en ese plan.
+> Mientras no se cierre CHG-00, las reglas de abajo describen el TP 1–4: si chocan con el plan, gana el plan.
+
 ---
 
 ## 1. Proyecto y stack
