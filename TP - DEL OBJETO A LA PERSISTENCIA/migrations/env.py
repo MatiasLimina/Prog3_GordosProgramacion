@@ -16,7 +16,7 @@ import app.models  # noqa: F401  (registra todos los modelos en el metadata)
 # access to the values within the .ini file in use.
 config = context.config
 
-# La URL de la base sale de .env (DATABASE_URL), no de alembic.ini.
+# La URL de la base se arma con las variables POSTGRES_* de .env (Settings), no de alembic.ini.
 # Se duplican los '%' porque ConfigParser interpola esa secuencia.
 config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
 

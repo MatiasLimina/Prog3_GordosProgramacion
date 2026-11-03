@@ -1,13 +1,23 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
-from app.modules.health.schemas import LiveRead, ReadyRead
 
 logger = logging.getLogger(__name__)
+
+
+class LiveRead(BaseModel):
+    estado: str
+
+
+class ReadyRead(BaseModel):
+    estado: str
+    base_de_datos: str
+
 
 router = APIRouter(prefix="/health", tags=["health"])
 
