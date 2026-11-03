@@ -12,7 +12,7 @@ Este archivo describe el **estado objetivo** al terminar el parcial. Qué partes
 ## 1. Proyecto y stack
 
 API para una librería: catálogo (editoriales, géneros, autores, libros), clientes, ventas, y ahora acceso con usuarios y roles, stock por movimientos y repositorios con Unit of Work (UoW).
-El despliegue en el VPS (Docker) es **otro proyecto**: el TP 1–4 tal como se entregó, en la carpeta hermana `TP - DEL OBJETO A LA PERSISTENCIA (despliegue)`, que en el zip se llama `despliegue/`. No lleva ningún cambio del parcial y **nada del despliegue se crea dentro de este repositorio**.
+El despliegue en el VPS (Docker) es **otro proyecto**: el TP 1–4 tal como se entregó, en la carpeta hermana `Despliegue`, que en el zip se llama `despliegue/`. No lleva ningún cambio del parcial y **nada del despliegue se crea dentro de este repositorio**.
 
 | Componente | Versión mínima | Notas |
 |---|---|---|
@@ -91,7 +91,7 @@ Se reparte por **change** (ver tabla de seguimiento de `PLAN_PARCIAL.md`), no po
 |---|---|
 | Matias (lead) | core (`config`, `database`, `repository`, `unit_of_work`, `security`, `dependencies`), `app/main.py`, auth y autorización, ventas, `AGENTS.md`, `requirements.txt`, `migrations/env.py` |
 | Nico | modelos de libro/cliente/stock, la tercera y la cuarta migración, catálogo y clientes con repositorios + UoW, administración de usuarios, pytest de integración |
-| Lauti | carpeta hermana `TP - DEL OBJETO A LA PERSISTENCIA (despliegue)` (`despliegue/` en el zip), `core/paginacion.py`, modelos de usuarios, contratos (`schemas.py`), seed, casos `.http`, zip |
+| Lauti | carpeta hermana `Despliegue` (`despliegue/` en el zip), `core/paginacion.py`, modelos de usuarios, contratos (`schemas.py`), seed, casos `.http`, zip |
 
 **Archivos compartidos** (`app/main.py`, `app/models.py`, `requirements.txt`, `core/` (incluidos `base.py`, `tipos.py`, `errors.py`), `migrations/env.py`, `AGENTS.md`): los modifica el lead (Matias) o el responsable del change que los nombra en su sección «Archivos» del plan, siempre con revisión del lead.
 
