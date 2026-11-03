@@ -23,7 +23,7 @@ Plan de ejecución del parcial «La librería con acceso, transacciones y despli
 
 ### Gotchas conocidos (leer antes de empezar)
 
-1. `AGENTS.md` todavía describe el TP 1–4 (limit/offset, `DB_ECHO`, servicios que reciben la sesión, `DATABASE_URL`). **Hasta que se cierre CHG-00, ante la duda gana este plan y la consigna.**
+1. `AGENTS.md` ya describe las reglas del parcial (CHG-00, estado objetivo). El código todavía sigue el patrón del TP 1–4 (limit/offset, `DB_ECHO`, servicios que reciben la sesión, `DATABASE_URL`) hasta que cada change lo migre: ver la sección «Transición» de `AGENTS.md`. Ante una contradicción, gana la consigna.
 2. La consigna usa `python seed.py` **en la raíz**; el TP lo tiene en `scripts/seed.py` (CHG-17).
 3. Despliegue: el TP lee `DB_ECHO`, mientras que la consigna menciona `SQL_ECHO=false` en el env-file. No rompe nada (por defecto queda en false), pero hay que anotarlo en `DEPLOY.md`. D-05 ya pasa: `get_settings()` lanza un error si falta `DATABASE_URL`.
 4. En el contenedor, el seed se corre con `docker exec libreria python -m scripts.seed`.
@@ -51,7 +51,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 | ID | Change (nombre openspec) | Responsable | Depende de | Estado |
 |---|---|---|---|---|
-| CHG-00 | `bootstrap-parcial` | Matias | — | pendiente |
+| CHG-00 | `bootstrap-parcial` | Matias | — | en PR |
 | CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
 | CHG-03 | `settings-lifespan` | Matias | CHG-00 | pendiente |
@@ -157,7 +157,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
   - `AsignacionRol`: CHECK de rol dentro de ADMIN, VENDEDOR y CLIENTE; índice único parcial `(usuario_id, rol) WHERE revocada_en IS NULL` (`postgresql_where`).
   - `IntentoAcceso`: índice `(email, ip, cuando)`.
   - `EventoSeguridad`: `actor` es texto.
-  - Todas las fechas son `timestamptz`. `Usuario.cliente` se declara con un string bajo `TYPE_CHECKING`.
+  - Todas las fechas son `timestamptz`. `Usuario.cliente` se declara con un string bajo `TYPE_CHECKING` y es escalar (`sa_relationship_kwargs={"uselist": False}`); el otro extremo, `Cliente.usuario`, es de CHG-07.
 - **Leer antes:** consigna págs. 4–6 (Modelo de dominio).
 - **DoD:** test de nombres de constraints; los modelos importan sin errores.
 - **Commit:** `feat(usuarios): modelos de acceso y seguridad`
@@ -167,7 +167,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **Entregables:**
   - `Libro.borrado_en` (timestamptz, nullable) con índice único parcial de `isbn` `WHERE borrado_en IS NULL`, **en lugar del UNIQUE**. Siguen los CHECK de precio y stock.
   - `MovimientoStock` (en `libros`): `libro_id`, `venta_id` (nullable), `usuario_id`, `cantidad` con CHECK `<> 0`, `motivo` y `cuando`. Un índice en cada FK.
-  - `Cliente.usuario_id` UNIQUE y nullable; `Cliente.usuario` con `uselist=False`.
+  - `Cliente.usuario_id` UNIQUE y nullable; `Cliente.usuario` a uno (la FK está en `cliente`); el lado escalar `Usuario.cliente` (`sa_relationship_kwargs={"uselist": False}`) lo declara CHG-06.
   - Navegación declarada en los dos extremos.
 - **DoD:** tests de metadata.
 - **Commit:** `feat(libros): borrado lógico, movimiento_stock y acceso del cliente`

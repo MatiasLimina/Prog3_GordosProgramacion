@@ -1,7 +1,7 @@
 # Reparto del TP "Del objeto a la persistencia" — Librería (FastAPI + PostgreSQL)
 
 ## Contexto
-Este documento es el plan de reparto con el que se organizó el trabajo; el proyecto ya está implementado (ver `README.md` y `AGENTS.md`). La consigna está en `TP_Cap1a4_Consigna.pdf`.
+Este documento es el plan de reparto con el que se organizó el trabajo; el proyecto ya está implementado (ver `README.md` y `AGENTS.md`). Es el registro del TP 1–4: su consigna ya no está en esta carpeta (vive en la carpeta de despliegue); el parcial vigente es `Parcial_Cap1a6_Consigna.pdf`.
 Hay que repartir el trabajo entre 3 integrantes de forma que:
 - cada uno sea dueño de un **módulo vertical** completo (models → schemas → service → router → .http), así se evalúa todo el temario en cada persona y se minimizan los conflictos de merge;
 - las piezas compartidas (core, Alembic, helpers) tengan **un solo dueño**;
