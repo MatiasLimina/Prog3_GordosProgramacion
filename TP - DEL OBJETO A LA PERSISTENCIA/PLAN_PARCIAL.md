@@ -54,8 +54,8 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 | CHG-00 | `bootstrap-parcial` | Matias | — | pendiente |
 | CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
-| CHG-03 | `settings-lifespan` | Matias | CHG-00 | pendiente |
-| CHG-04 | `core-repository-uow` | Matias | CHG-03 | pendiente |
+| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | pendiente |
+| CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | pendiente |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
 | CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | pendiente |
 | CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | pendiente |
@@ -71,7 +71,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 | CHG-16 | `ventas-transaccional` | Matias | CHG-12, 13, 15 | pendiente |
 | CHG-17 | `seed-parcial` | Lauti | CHG-08, CHG-10 | pendiente |
 | CHG-18 | `casos-http` | Lauti (Nico revisa) | CHG-17 y el change de cada caso | pendiente |
-| CHG-19 | `pytest-integracion` | Nico | CHG-13, 16 | pendiente |
+| CHG-19 | `pytest-integracion` | Matias | CHG-13, 16 | pendiente |
 | CHG-20 | `entrega-zip` | Lauti + Matias | todo | pendiente |
 
 ---
@@ -115,8 +115,8 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **DoD:** la URL pública responde a D-03. D-04 pasa: después de `rm -f` y un nuevo `run`, los datos siguen ahí y las migraciones no se repiten. **Tiene que seguir en línea hasta que se publiquen las notas.**
 - **Commits:** `docs(deploy): DEPLOY.md con URL y comandos` · `docs(deploy): evidencia D-0X` (uno por caso)
 
-#### CHG-03 · `settings-lifespan` — Matias (Ej1)
-- **Archivos:** `app/core/config.py`, `app/core/database.py`, `app/main.py`, `app/modules/health/router.py`, `env.example`.
+#### CHG-03 · `settings-lifespan` — Nico, revisa Matias (Ej1)
+- **Archivos:** `app/core/config.py`, `app/core/database.py`, `app/main.py`, `app/modules/health/router.py`, `env.example`. Son archivos compartidos: el PR lo revisa Matias.
 - **Entregables:**
   - `Settings` (pydantic-settings) que arma la URL con `@computed_field` desde `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST` y `POSTGRES_PORT`, con el driver `postgresql+asyncpg`.
   - Sin valor por defecto para la contraseña de la base ni para la clave JWT.
@@ -129,8 +129,8 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 ### F1 · Dominio central
 
-#### CHG-04 · `core-repository-uow` — Matias (Ej6, base)
-- **Archivos:** `app/core/repository.py`, `app/core/unit_of_work.py`.
+#### CHG-04 · `core-repository-uow` — Nico, revisa Matias (Ej6, base)
+- **Archivos:** `app/core/repository.py`, `app/core/unit_of_work.py`. Son archivos compartidos: el PR lo revisa Matias.
 - **Entregables:**
   - `BaseRepository[T]`: recibe `session` y la **clase del modelo** en el constructor, y ofrece `get_by_id`, `get_all`, `count`, `add`, `update` y `delete`. `add` y `update` hacen `flush()`.
   - `SoftDeleteRepository[T](BaseRepository[T])`: filtra los dados de baja y agrega `get_by_id_including_deleted` y `soft_delete`.
@@ -280,7 +280,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **Leer antes:** consigna págs. 21–23.
 - **Commits:** uno por caso, por ejemplo `test(http): C-05 límite de intentos`
 
-#### CHG-19 · `pytest-integracion` — Nico
+#### CHG-19 · `pytest-integracion` — Matias
 - **Entregables:** tests de que el stock coincide con la suma de movimientos después de cada venta, de la atomicidad de RN-02 y RN-10, y del conteo de consultas de C-15 (2 contra 4 renglones).
 - **Commit:** `test(integracion): invariantes de stock y atomicidad`
 
@@ -298,17 +298,28 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 ## 4. Mapa de dependencias
 
 ```
-Lauti:  CHG-01 ─► CHG-02 (VPS)          CHG-05   CHG-06   CHG-09a/b ─────► CHG-17 ─► CHG-18 ─► CHG-20
-                                          │        │          │              ▲
-Matias: CHG-00 ─► CHG-03 ─► CHG-04 ──────┼────────┼──► CHG-10 ─► CHG-11 ─► CHG-12 ─► CHG-16 ──┤
-                              │           │        │                          │        ▲        │
-Nico:                         └─► CHG-07 ─┴────────┴─► CHG-08 ─► CHG-13 ───────┼────────┘        │
-                                                                  CHG-14 ◄─────┘ (necesita 12)    │
-                                                                  CHG-15 ─► CHG-19 ──────────────┘
+Lauti:  CHG-01 ─► CHG-02 (VPS)    CHG-05 · CHG-06 · CHG-09a/b ─────────────► CHG-17 ─► CHG-18 ─► CHG-20
+
+Nico:   CHG-03 ─► CHG-04 ─► CHG-07 ─► CHG-08 ─► CHG-13 ─► CHG-15 ─► CHG-14
+
+Matias: CHG-00 ─► CHG-10 ─► CHG-11 ─► CHG-12 ─► CHG-16 ─► CHG-19 ─► CHG-20
 ```
 
-- **Paralelo desde el día 1:** CHG-01/02 (Lauti, independiente) y CHG-00/03 (Matias).
-- **Cuello de botella 1:** CHG-04 (repo/UoW base). Entregarlo chico y rápido: Nico no puede pasar módulos a UoW sin él.
+Dependencias que cruzan de fila:
+
+| Change | Espera a |
+|---|---|
+| CHG-10 (Matias) | CHG-03 (Nico) |
+| CHG-11 (Matias) | CHG-04, CHG-08 (Nico) y CHG-09a (Lauti) |
+| CHG-08 (Nico) | CHG-06 (Lauti) |
+| CHG-13 / 15 (Nico) | CHG-05 (Lauti); CHG-13 también CHG-09b |
+| CHG-14 (Nico) | CHG-12 (Matias) |
+| CHG-16 (Matias) | CHG-13 y CHG-15 (Nico) |
+| CHG-17 (Lauti) | CHG-08 (Nico) y CHG-10 (Matias) |
+
+- **Reparto en el tiempo:** Nico concentra lo pesado del arranque (CHG-03, 04, 07, 08, 13, 15); Matias carga la segunda mitad (CHG-10, 11, 12, 16, 19, 20).
+- **Paralelo desde el día 1:** CHG-01/02 (Lauti, independiente) y CHG-03 → CHG-04 (Nico). Matias cierra CHG-00 y arranca CHG-10 apenas esté CHG-03.
+- **Cuello de botella 1:** CHG-04 (repo/UoW base). Entregarlo chico y rápido: CHG-11, 13 y 15 no arrancan sin él. Matias lo revisa en el día.
 - **Cuello de botella 2:** CHG-08 (migraciones). Necesita los dos lotes de modelos (CHG-06 y CHG-07). Los `models.py` van en PRs propios y primero.
 - **Punto de integración:** CHG-16 usa el punto único de stock de CHG-13. La firma se acuerda apenas termina CHG-07.
 - **Riesgo:** el 18 % de la nota (despliegue) depende de Lauti. Checkpoint con Matias después de CHG-01 y otro con el VPS ya arriba.
