@@ -20,6 +20,7 @@ from app.modules.libros.schemas import (
 def test_mensajes_de_integridad_en_libros():
     esperadas = [
         "uq_libro_isbn",
+        "uq_libro_isbn_vigente",
         "fk_libro_editorial_id_editorial",
         "fk_libro_genero_id_genero",
         "fk_libro_autor_autor_id_autor",
@@ -114,6 +115,28 @@ async def test_crear_libro_isbn_duplicado_lanza_409():
     session.add = MagicMock()
     orig = Exception("duplicate key")
     orig.constraint_name = "uq_libro_isbn"
+    orig.sqlstate = "23505"
+    session.commit.side_effect = IntegrityError("INSERT", {}, orig)
+
+    datos = LibroCreate(
+        isbn="978-950-00-0001-1",
+        titulo="Libro Test",
+        precio=Decimal("1000.00"),
+        editorial_id=1,
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await libros_service.crear(session, datos)
+    assert exc.value.status_code == 409
+    assert exc.value.detail == "Ya existe un libro con ese ISBN."
+    assert session.rollback.call_count == 1
+
+
+async def test_crear_libro_isbn_vigente_repetido_lanza_409_con_mensaje_propio():
+    session = AsyncMock()
+    session.add = MagicMock()
+    orig = Exception("duplicate key value violates unique index")
+    orig.constraint_name = "uq_libro_isbn_vigente"
     orig.sqlstate = "23505"
     session.commit.side_effect = IntegrityError("INSERT", {}, orig)
 

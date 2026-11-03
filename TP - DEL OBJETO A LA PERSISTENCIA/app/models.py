@@ -14,6 +14,6 @@ import app.core.base  # noqa: F401
 from app.modules.editoriales.models import Editorial  # noqa: F401,E402
 from app.modules.generos.models import Genero  # noqa: F401,E402
 from app.modules.autores.models import Autor  # noqa: F401
-from app.modules.libros.models import Libro, LibroAutor  # noqa: F401
+from app.modules.libros.models import Libro, LibroAutor, MovimientoStock  # noqa: F401
 from app.modules.clientes.models import Cliente, PerfilCliente  # noqa: F401
 from app.modules.ventas.models import Venta, RenglonVenta  # noqa: F401

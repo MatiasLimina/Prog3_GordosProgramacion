@@ -16,6 +16,9 @@ class Cliente(SQLModel, table=True):
     nombre: str = Field(max_length=150)
     # unique SIN index: así se crea la constraint uq_cliente_email (clave del 409).
     email: str = Field(max_length=255, unique=True)
+    # Acceso opcional al sistema. FK por texto a usuario.id (sin Relationship hasta la etapa B,
+    # cuando exista el modelo Usuario de CHG-06). unique SIN index -> uq_cliente_usuario_id.
+    usuario_id: int | None = Field(default=None, foreign_key="usuario.id", unique=True, nullable=True)
 
     perfil: Optional["PerfilCliente"] = Relationship(
         back_populates="cliente", sa_relationship_kwargs={"uselist": False}
