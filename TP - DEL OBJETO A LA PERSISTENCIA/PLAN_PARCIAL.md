@@ -13,7 +13,7 @@ Plan de ejecución del parcial «La librería con acceso, transacciones y despli
 
 - **Dos proyectos distintos**, que van en dos carpetas del zip:
   - `parcial/` ← esta carpeta (`TP - DEL OBJETO A LA PERSISTENCIA`): el TP ampliado con usuarios, roles, repositorios + Unit of Work, stock por movimientos.
-  - `despliegue/` ← `TP - DEL OBJETO A LA PERSISTENCIA (despliegue)`: el TP de los capítulos 1–4 **tal como se entregó**, más `Dockerfile`, `.dockerignore`, `env.example`, `DEPLOY.md` y `evidencia/`. **No lleva ningún cambio del parcial.**
+  - `despliegue/` ← `Despliegue`: el TP de los capítulos 1–4 **tal como se entregó**, más `Dockerfile`, `.dockerignore`, `env.example`, `DEPLOY.md` y `evidencia/`. **No lleva ningún cambio del parcial.**
 - **Capas obligatorias:** Router → Service → UoW → Repository → Model.
   - El router construye el UoW con una dependencia y se lo pasa al servicio **sin abrirlo**.
   - El servicio lo abre con `async with` y **nunca lo construye**.
@@ -91,7 +91,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **Commits:** `chore(parcial): inicializar openspec y dependencias de auth` · `docs(agents): actualizar reglas al parcial cap 1-6`
 
 #### CHG-01 · `deploy-imagen` — Lauti (Ej9)
-- **Dónde:** `TP - DEL OBJETO A LA PERSISTENCIA (despliegue)/`. **No tocar la lógica del TP.**
+- **Dónde:** `Despliegue/`. **No tocar la lógica del TP.**
 - **Entregables:**
   - `Dockerfile` que:
     - parte de `python:3.12-alpine`;
