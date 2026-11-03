@@ -19,7 +19,7 @@ Plan de ejecución del parcial «La librería con acceso, transacciones y despli
   - El servicio lo abre con `async with` y **nunca lo construye**.
   - Los repositorios hacen `flush()`, **nunca** `commit()`.
   - El UoW confirma al salir, revierte si hay una excepción y **no cierra la sesión**.
-- **Integrantes:** Yo (lead, Matías), Nico (persistencia y APIs), Lauti (tareas acotadas, commits constantes).
+- **Integrantes:** Matias (lead), Nico (persistencia y APIs), Lauti (tareas acotadas, commits constantes).
 
 ### Gotchas conocidos (leer antes de empezar)
 
@@ -51,28 +51,28 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 | ID | Change (nombre openspec) | Responsable | Depende de | Estado |
 |---|---|---|---|---|
-| CHG-00 | `bootstrap-parcial` | Yo | — | pendiente |
+| CHG-00 | `bootstrap-parcial` | Matias | — | pendiente |
 | CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
-| CHG-02 | `deploy-vps` | Lauti (+Yo) | CHG-01, accesos al VPS | pendiente |
-| CHG-03 | `settings-lifespan` | Yo | CHG-00 | pendiente |
-| CHG-04 | `core-repository-uow` | Yo | CHG-03 | pendiente |
+| CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
+| CHG-03 | `settings-lifespan` | Matias | CHG-00 | pendiente |
+| CHG-04 | `core-repository-uow` | Matias | CHG-03 | pendiente |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
 | CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | pendiente |
 | CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | pendiente |
 | CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | pendiente |
 | CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | pendiente |
 | CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | pendiente |
-| CHG-10 | `security-core` | Yo | CHG-03 | pendiente |
-| CHG-11 | `auth-endpoints` | Yo | CHG-04, 08, 09a, 10 | pendiente |
-| CHG-12 | `autorizacion-grupos-rutas` | Yo | CHG-11 | pendiente |
+| CHG-10 | `security-core` | Matias | CHG-03 | pendiente |
+| CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | pendiente |
+| CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | pendiente |
 | CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | pendiente |
 | CHG-14 | `usuarios-admin` | Nico | CHG-12 | pendiente |
 | CHG-15 | `clientes-repos-uow` | Nico | CHG-04, 05, 08 | pendiente |
-| CHG-16 | `ventas-transaccional` | Yo | CHG-12, 13, 15 | pendiente |
+| CHG-16 | `ventas-transaccional` | Matias | CHG-12, 13, 15 | pendiente |
 | CHG-17 | `seed-parcial` | Lauti | CHG-08, CHG-10 | pendiente |
 | CHG-18 | `casos-http` | Lauti (Nico revisa) | CHG-17 y el change de cada caso | pendiente |
 | CHG-19 | `pytest-integracion` | Nico | CHG-13, 16 | pendiente |
-| CHG-20 | `entrega-zip` | Lauti + Yo | todo | pendiente |
+| CHG-20 | `entrega-zip` | Lauti + Matias | todo | pendiente |
 
 ---
 
@@ -80,7 +80,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 ### F0 · Setup e infraestructura
 
-#### CHG-00 · `bootstrap-parcial` — Yo
+#### CHG-00 · `bootstrap-parcial` — Matias
 - **Entregables:**
   - `openspec init` en esta carpeta.
   - Reescribir `AGENTS.md` con las reglas del parcial: UoW, Settings, envoltorio `{items, total, page, size, pages}`, cookie, 401/403, stock con una sola vía de escritura.
@@ -105,7 +105,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **DoD:** se cumplen en local D-01, D-05, D-06 y D-07; `docker ps` muestra `healthy`.
 - **Commits (uno por punto):** `build(docker): Dockerfile sobre python:3.12-alpine` · `build(docker): usuario sin privilegios` · `build(docker): healthcheck sobre /health/ready` · `build(docker): .dockerignore sin secretos`
 
-#### CHG-02 · `deploy-vps` — Lauti, con apoyo de Yo (Ej10)
+#### CHG-02 · `deploy-vps` — Lauti, con apoyo de Matias (Ej10)
 - **Entregables:**
   - Contenedor corriendo en el VPS con `docker run -d --name libreria -p <puerto>:8000 --restart unless-stopped --env-file <archivo> --add-host=host.docker.internal:host-gateway libreria`.
   - Seed cargado con `docker exec libreria python -m scripts.seed`.
@@ -115,7 +115,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **DoD:** la URL pública responde a D-03. D-04 pasa: después de `rm -f` y un nuevo `run`, los datos siguen ahí y las migraciones no se repiten. **Tiene que seguir en línea hasta que se publiquen las notas.**
 - **Commits:** `docs(deploy): DEPLOY.md con URL y comandos` · `docs(deploy): evidencia D-0X` (uno por caso)
 
-#### CHG-03 · `settings-lifespan` — Yo (Ej1)
+#### CHG-03 · `settings-lifespan` — Matias (Ej1)
 - **Archivos:** `app/core/config.py`, `app/core/database.py`, `app/main.py`, `app/modules/health/router.py`, `env.example`.
 - **Entregables:**
   - `Settings` (pydantic-settings) que arma la URL con `@computed_field` desde `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST` y `POSTGRES_PORT`, con el driver `postgresql+asyncpg`.
@@ -129,7 +129,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 ### F1 · Dominio central
 
-#### CHG-04 · `core-repository-uow` — Yo (Ej6, base)
+#### CHG-04 · `core-repository-uow` — Matias (Ej6, base)
 - **Archivos:** `app/core/repository.py`, `app/core/unit_of_work.py`.
 - **Entregables:**
   - `BaseRepository[T]`: recibe `session` y la **clase del modelo** en el constructor, y ofrece `get_by_id`, `get_all`, `count`, `add`, `update` y `delete`. `add` y `update` hacen `flush()`.
@@ -197,13 +197,13 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 ### F2 · Capa externa / API
 
-#### CHG-10 · `security-core` — Yo (Ej4)
+#### CHG-10 · `security-core` — Matias (Ej4)
 - **Archivos:** `app/core/security.py`.
 - **Entregables:** hash y verificación con bcrypt dentro de `asyncio.to_thread` y bajo un `asyncio.Semaphore`, con el costo de la configuración. Emisión y verificación del JWT (PyJWT) con `sub`, `exp` y `roles`.
 - **DoD:** tests de hash y verificación, token vencido y token alterado.
 - **Commit:** `feat(core): hash bcrypt fuera del bucle y JWT`
 
-#### CHG-11 · `auth-endpoints` — Yo (Ej4 + Ej7)
+#### CHG-11 · `auth-endpoints` — Matias (Ej4 + Ej7)
 - **Entregables:**
   - Login en este orden: (1) contar fallos en `intento_acceso` (5 en 60 s por email e IP → 429 con `Retry-After`, sin calcular ningún hash); (2) verificar contra el hash real o contra el ficticio (RN-08).
   - `intento_acceso` se escribe desde una **sesión y transacción propias**, con un comentario que dice qué hace distinto, por qué no comparte la transacción y cuál es su costo.
@@ -214,7 +214,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **DoD:** C-02, C-03, C-04 y C-05.
 - **Commits:** uno por endpoint, por ejemplo `feat(auth): login con límite de intentos y hash ficticio`
 
-#### CHG-12 · `autorizacion-grupos-rutas` — Yo (Ej5)
+#### CHG-12 · `autorizacion-grupos-rutas` — Matias (Ej5)
 - **Archivos:** `app/core/dependencies.py`, `app/main.py`.
 - **Entregables:**
   - `get_usuario_actual` responde 401 si no hay cookie, si el token es inválido o venció, o si el usuario no existe o está inactivo.
@@ -229,7 +229,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **Entregables:**
   - editoriales, géneros, autores y libros con `repository.py`, `unit_of_work.py` y servicios que reciben el UoW. Listados con el envoltorio.
   - `LibroRepository` hereda de `SoftDeleteRepository`; la precarga se declara dentro de cada método.
-  - **Un único punto de escritura del stock** (por ejemplo `registrar_movimiento(libro_id, cantidad, motivo, usuario_id, venta_id=None)`), que usan el alta del libro, la reposición y las ventas. **Acordar la firma con Yo antes de CHG-16.**
+  - **Un único punto de escritura del stock** (por ejemplo `registrar_movimiento(libro_id, cantidad, motivo, usuario_id, venta_id=None)`), que usan el alta del libro, la reposición y las ventas. **Acordar la firma con Matias antes de CHG-16.**
   - `POST /libros` con `stock_inicial`, que deja el movimiento «Stock inicial».
   - `POST /libros/{id}/reponer`, `GET /libros/{id}/movimientos`, `DELETE /libros/{id}` → 204.
   - Un libro dado de baja no se vende ni se repone (409).
@@ -249,7 +249,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **Entregables:** clientes y perfil pasados a repositorios + UoW; `GET /clientes/{id}/ventas`.
 - **Commit:** `refactor(clientes): repositorios y Unit of Work`
 
-#### CHG-16 · `ventas-transaccional` — Yo (Ej6 + Ej8)
+#### CHG-16 · `ventas-transaccional` — Matias (Ej6 + Ej8)
 - **Entregables:**
   - RN-09 y RN-10 en **un solo bloque `async with uow`**: venta, renglones con el precio copiado, total calculado, descuento de stock y un movimiento por renglón, todo por el punto único de CHG-13.
   - 409 si no alcanza el stock, si el libro está dado de baja o si el cliente o el libro no existen. No queda ninguna escritura.
@@ -284,7 +284,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **Entregables:** tests de que el stock coincide con la suma de movimientos después de cada venta, de la atomicidad de RN-02 y RN-10, y del conteo de consultas de C-15 (2 contra 4 renglones).
 - **Commit:** `test(integracion): invariantes de stock y atomicidad`
 
-#### CHG-20 · `entrega-zip` — Lauti + Yo
+#### CHG-20 · `entrega-zip` — Lauti + Matias
 - **Entregables:**
   - `README.md` con los nombres y apellidos de los integrantes y los pasos desde cero: venv, dependencias, `.env` y cómo generar la clave de firma, `alembic upgrade head`, `python seed.py` y uvicorn.
   - `evidencia/` con C-14 (psql) y C-15 (consola).
@@ -300,18 +300,18 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 ```
 Lauti:  CHG-01 ─► CHG-02 (VPS)          CHG-05   CHG-06   CHG-09a/b ─────► CHG-17 ─► CHG-18 ─► CHG-20
                                           │        │          │              ▲
-Yo:     CHG-00 ─► CHG-03 ─► CHG-04 ──────┼────────┼──► CHG-10 ─► CHG-11 ─► CHG-12 ─► CHG-16 ──┤
+Matias: CHG-00 ─► CHG-03 ─► CHG-04 ──────┼────────┼──► CHG-10 ─► CHG-11 ─► CHG-12 ─► CHG-16 ──┤
                               │           │        │                          │        ▲        │
 Nico:                         └─► CHG-07 ─┴────────┴─► CHG-08 ─► CHG-13 ───────┼────────┘        │
                                                                   CHG-14 ◄─────┘ (necesita 12)    │
                                                                   CHG-15 ─► CHG-19 ──────────────┘
 ```
 
-- **Paralelo desde el día 1:** CHG-01/02 (Lauti, independiente) y CHG-00/03 (Yo).
+- **Paralelo desde el día 1:** CHG-01/02 (Lauti, independiente) y CHG-00/03 (Matias).
 - **Cuello de botella 1:** CHG-04 (repo/UoW base). Entregarlo chico y rápido: Nico no puede pasar módulos a UoW sin él.
 - **Cuello de botella 2:** CHG-08 (migraciones). Necesita los dos lotes de modelos (CHG-06 y CHG-07). Los `models.py` van en PRs propios y primero.
 - **Punto de integración:** CHG-16 usa el punto único de stock de CHG-13. La firma se acuerda apenas termina CHG-07.
-- **Riesgo:** el 18 % de la nota (despliegue) depende de Lauti. Checkpoint con Yo después de CHG-01 y otro con el VPS ya arriba.
+- **Riesgo:** el 18 % de la nota (despliegue) depende de Lauti. Checkpoint con Matias después de CHG-01 y otro con el VPS ya arriba.
 
 ## 5. Reglas de trabajo para todos los agentes
 
