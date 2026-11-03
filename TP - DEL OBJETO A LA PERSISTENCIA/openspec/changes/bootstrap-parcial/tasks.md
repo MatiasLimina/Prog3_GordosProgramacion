@@ -4,16 +4,16 @@
 
 - [x] 1.1 `openspec init --tools claude --language es` en esta carpeta; verificado con `openspec list` (responde sin error) y la existencia de `openspec/config.yaml`, `.claude/commands/opsx/` y `.claude/skills/openspec-*`.
 - [x] 1.2 Confirmar con Matias las Open Questions de `design.md` (PDF de consigna, `app/main.py`); verificar que la respuesta quede anotada en `design.md` antes del commit 1.
-- [ ] 1.3 Levantar la base (`docker compose up -d`, `docker compose ps` en `healthy`) y correr `REQUIRE_TEST_DB=1 pytest -q`; anotar en este archivo el resultado «N passed» como línea base (debe ser verde y sin tests `db` salteados).
-  - BLOQUEADO: `docker compose up -d` falla con «failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine ... The system cannot find the file specified» (Docker Desktop no está corriendo). Línea base parcial: `REQUIRE_TEST_DB=1 pytest -q` → 158 passed, 163 errors (tests `db` fallan sin base); `pytest -q` → 158 passed, 163 skipped. Pendiente: repetir con la base levantada.
+- [x] 1.3 Levantar la base (`docker compose up -d`, `docker compose ps` en `healthy`) y correr `REQUIRE_TEST_DB=1 pytest -q`; anotar en este archivo el resultado «N passed» como línea base (debe ser verde y sin tests `db` salteados).
+  - Línea base (2026-11-03, con la base levantada y las dependencias nuevas ya instaladas): `REQUIRE_TEST_DB=1 pytest -q` → **321 passed** en 515 s, sin tests salteados. La corrida previa sin Docker dio 158 passed, 163 skipped.
 
 ## 2. Commit 1 · `chore(parcial): inicializar openspec y dependencias de auth`
 
 - [x] 2.1 Agregar a `requirements.txt`, al final y con el estilo `paquete>=X.Y`, las líneas `pydantic-settings>=2.0`, `bcrypt>=4.0` y `PyJWT>=2.8`; verificar con `git diff requirements.txt` que sólo hay tres líneas nuevas.
 - [x] 2.2 Instalar con `pip install -r requirements-dev.txt` dentro del `.venv` y verificar con `python -c "import pydantic_settings, bcrypt, jwt; print(jwt.__version__, bcrypt.__version__)"` y `pip check` (sin conflictos).
   - `jwt` 2.15.1 / `bcrypt` 5.0.0 instalados; `pip check` sin conflictos.
-- [ ] 2.3 Correr `REQUIRE_TEST_DB=1 pytest -q` y verificar el mismo «N passed» de 1.3.
-  - BLOQUEADO por la misma causa que 1.3. Después de instalar: `pytest -q` → 158 passed, 163 skipped (igual que antes); `REQUIRE_TEST_DB=1` no re-corrido con base.
+- [x] 2.3 Correr `REQUIRE_TEST_DB=1 pytest -q` y verificar el mismo «N passed» de 1.3.
+  - Verificado: 321 passed con `REQUIRE_TEST_DB=1`, igual que 1.3 (las dependencias nuevas no rompen nada).
 - [x] 2.4 Preparar el commit: `git add openspec/ .claude/commands/opsx/ .claude/skills/ requirements.txt` más las rutas de PDF que decida 1.2; verificar con `git status` que no entran `.env`, `.venv/`, `__pycache__/` ni `../Parcial1_Proyecto_Libreria.zip`, y crear el commit con el mensaje del encabezado.
   - pendiente: commit lo hace el orquestador tras revisión (no se hizo `git add` ni `git commit`).
 
@@ -34,7 +34,7 @@
 
 ## 4. Verificación final
 
-- [ ] 4.1 `openspec list` responde y muestra `bootstrap-parcial`; `REQUIRE_TEST_DB=1 pytest -q` da el mismo «N passed» de 1.3; `git log --oneline -2` muestra los dos commits del plan.
-  - pendiente: depende de la línea base con base levantada y de los commits del orquestador.
+- [x] 4.1 `openspec list` responde y muestra `bootstrap-parcial`; `REQUIRE_TEST_DB=1 pytest -q` da el mismo «N passed» de 1.3; `git log --oneline -2` muestra los dos commits del plan.
+  - Verificado: `openspec list` muestra el change, 321 passed y commits 9b31e3d y 4bfb0b5.
 - [x] 4.2 Revisión del diff final (`git diff main...HEAD`) con el advisor (checkpoint FINAL_DIFF); verificar que no queden objeciones BLOCK antes de abrir el PR.
   - pendiente: advisor lo consulta el orquestador.
