@@ -23,9 +23,9 @@ Plan de ejecución del parcial «La librería con acceso, transacciones y despli
 
 ### Gotchas conocidos (leer antes de empezar)
 
-1. `AGENTS.md` ya describe las reglas del parcial (CHG-00, estado objetivo). El código todavía sigue el patrón del TP 1–4 (limit/offset, `DB_ECHO`, servicios que reciben la sesión, `DATABASE_URL`) hasta que cada change lo migre: ver la sección «Transición» de `AGENTS.md`. Ante una contradicción, gana la consigna.
+1. `AGENTS.md` ya describe las reglas del parcial (CHG-00, estado objetivo). Partes del código todavía siguen el patrón del TP 1–4 (limit/offset, servicios que reciben la sesión) hasta que cada change las migre; la configuración ya está migrada (CHG-03: `POSTGRES_*` y `SQL_ECHO`, sin `DATABASE_URL` ni `DB_ECHO`): ver la sección «Transición» de `AGENTS.md`. Ante una contradicción, gana la consigna.
 2. La consigna usa `python seed.py` **en la raíz**; el TP lo tiene en `scripts/seed.py` (CHG-17).
-3. Despliegue: el TP lee `DB_ECHO`, mientras que la consigna menciona `SQL_ECHO=false` en el env-file. No rompe nada (por defecto queda en false), pero hay que anotarlo en `DEPLOY.md`. D-05 ya pasa: `get_settings()` lanza un error si falta `DATABASE_URL`.
+3. Despliegue (carpeta hermana `Despliegue/`, el TP 1–4 sin cambios del parcial): **ese** proyecto sigue leyendo `DATABASE_URL` y `DB_ECHO`, mientras que la consigna menciona `SQL_ECHO=false` en el env-file. No rompe nada (por defecto queda en false), pero hay que anotarlo en su `DEPLOY.md`. D-05 pasa allá porque su `get_settings()` lanza un error si falta `DATABASE_URL`. Este repositorio, desde CHG-03, ya no lee ninguna de las dos: arma la URL con `POSTGRES_*`, usa `SQL_ECHO` y `Settings` no arranca si falta `POSTGRES_PASSWORD` o `JWT_SECRET`. No mezclar los `.env` de los dos proyectos.
 4. En el contenedor, el seed se corre con `docker exec libreria python -m scripts.seed`.
 5. `--autogenerate` puede manejar mal el paso de `uq_libro_isbn` (UNIQUE) al índice único parcial, y no ve funciones ni disparadores. La migración 0003 se lee línea por línea y la 0004 se escribe a mano.
 6. Healthcheck en Alpine: usar `wget` contra `http://127.0.0.1:8000/...`, **nunca `localhost`**, porque resuelve primero a `::1` y uvicorn escucha sólo IPv4.
@@ -54,7 +54,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 | CHG-00 | `bootstrap-parcial` | Matias | — | mergeado |
 | CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
-| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | pendiente |
+| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | en PR |
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | pendiente |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
 | CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | pendiente |

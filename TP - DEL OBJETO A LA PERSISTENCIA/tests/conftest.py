@@ -1,7 +1,7 @@
 """Fixtures de tests con base real (PostgreSQL, base `libreria_test`).
 
-La URL se deriva de DATABASE_URL cambiando sólo el nombre de la base, así no
-hay credenciales nuevas en ningún archivo. Crear la base una vez con:
+La URL se deriva de la configuración (POSTGRES_*) cambiando sólo el nombre de la
+base, así no hay credenciales nuevas en ningún archivo. Crear la base una vez con:
     docker compose exec -T postgres sh -c 'createdb -U "$POSTGRES_USER" libreria_test'
 
 Si la base no responde, los tests marcados `db` se SALTEAN. Con REQUIRE_TEST_DB=1
@@ -10,6 +10,7 @@ Sólo los errores de conexión causan skip; cualquier otro error (esquema, TRUNC
 hace fallar el test.
 """
 import os
+import secrets
 import subprocess
 import sys
 from pathlib import Path
@@ -28,6 +29,10 @@ import app.models  # noqa: F401  (registra todos los modelos en el metadata)
 from app.core.config import get_settings
 from app.core.database import get_session
 from app.main import app as fastapi_app
+
+# La suite no depende de la clave real del desarrollador: se genera una en cada corrida
+# (si ya hay una en el entorno, se respeta). Es obligatoria para construir Settings.
+os.environ.setdefault("JWT_SECRET", secrets.token_urlsafe(48))
 
 # Errores que significan "no hay base de test disponible".
 _SIN_BASE = (OSError, TimeoutError, asyncpg.InvalidCatalogNameError)
@@ -54,18 +59,18 @@ def _url_test():
     try:
         url = make_url(get_settings().database_url).set(database="libreria_test")
     except RuntimeError:
-        _sin_base("DATABASE_URL no está definida")
+        _sin_base("falta configuración: POSTGRES_* o JWT_SECRET")
     return url
 
 
 def _alembic_upgrade_head(url) -> None:
     """Corre `alembic upgrade head` contra la base de test en un subproceso.
 
-    `migrations/env.py` toma DATABASE_URL del entorno (load_dotenv no pisa las
-    variables ya definidas), así que alcanza con apuntarla a libreria_test.
+    `migrations/env.py` arma la URL con Settings, y el entorno pisa al `.env`:
+    alcanza con pasar POSTGRES_DB=libreria_test al subproceso.
     """
     assert url.database == "libreria_test"
-    env = {**os.environ, "DATABASE_URL": url.render_as_string(hide_password=False)}
+    env = {**os.environ, "POSTGRES_DB": url.database}
     proyecto = Path(__file__).resolve().parent.parent
     resultado = subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "head"],

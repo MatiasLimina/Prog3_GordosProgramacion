@@ -1,8 +1,11 @@
+from pathlib import Path
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.core.database import get_session
+from app.modules.health import router as health
 from app.main import app
 
 
@@ -93,3 +96,10 @@ class _Orig(Exception):
 
     def __init__(self):
         super().__init__('duplicate key value violates unique constraint "uq_libro_isbn"')
+
+
+def test_el_modulo_health_tiene_solo_router():
+    # Los modelos de respuesta viven en el router: no hay schemas.py en este módulo.
+    carpeta = Path(health.__file__).parent
+    archivos = {p.name for p in carpeta.glob("*.py")}
+    assert archivos == {"__init__.py", "router.py"}

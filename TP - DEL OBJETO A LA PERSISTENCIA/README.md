@@ -46,9 +46,9 @@ pip install -r requirements.txt
 ```bash
 cp env.example .env
 ```
-Editá `.env` y reemplazá los valores de ejemplo por los tuyos (usuario, clave y base de PostgreSQL; `DATABASE_URL` tiene que usar los mismos). El archivo `.env` **no se commitea**.
+Editá `.env` y reemplazá los valores de ejemplo por los tuyos (`POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`; la URL de la base se arma sola con las variables `POSTGRES_*`). Completá también `JWT_SECRET` (obligatoria, mínimo 32 caracteres): `python -c "import secrets; print(secrets.token_urlsafe(48))"`. El archivo `.env` **no se commitea**.
 
-Si el puerto 5432 ya está ocupado (por ejemplo, por un PostgreSQL instalado en Windows), agregá `POSTGRES_PORT=5433` en `.env` y usá `5433` en `DATABASE_URL`.
+Si el puerto 5432 ya está ocupado (por ejemplo, por un PostgreSQL instalado en Windows), poné `POSTGRES_PORT=5433` en `.env` (Docker y la app usan el mismo valor).
 
 ### 6. Base de datos
 ```bash
@@ -88,7 +88,7 @@ Probar:
    ```bash
    pytest
    ```
-   Los tests con base real usan `libreria_test` (se deriva de `DATABASE_URL`; el conftest recrea el esquema en cada corrida con `alembic upgrade head`, nunca toca la base de desarrollo). Si la base no responde, esos tests se **saltean** con un aviso. Con `REQUIRE_TEST_DB=1 pytest` la falta de base es un **fallo**: usarlo antes de entregar para no confiar en skips.
+   Los tests con base real usan `libreria_test` (se deriva de las variables `POSTGRES_*`, cambiando sólo la base; el conftest recrea el esquema en cada corrida con `alembic upgrade head`, nunca toca la base de desarrollo). Si la base no responde, esos tests se **saltean** con un aviso. Con `REQUIRE_TEST_DB=1 pytest` la falta de base es un **fallo**: usarlo antes de entregar para no confiar en skips.
 
 Los casos de prueba HTTP (C-01 a C-08) están en la carpeta `test/` y se ejecutan con la extensión **REST Client** de VS Code; cada caso indica en un comentario el resultado esperado.
 
@@ -131,7 +131,7 @@ No existen `PATCH`/`DELETE` de ventas ni el alta de renglones por separado.
 
 ## Diagnóstico de consultas (C-07)
 
-Con `DB_ECHO=true` en `.env` (y reiniciando el servidor) la consola muestra cada consulta SQL emitida. Sirve para comprobar que el detalle de un libro y de una venta emiten la misma cantidad de consultas con 1 o con N autores/renglones.
+Con `SQL_ECHO=true` en `.env` (y reiniciando el servidor) la consola muestra cada consulta SQL emitida. Sirve para comprobar que el detalle de un libro y de una venta emiten la misma cantidad de consultas con 1 o con N autores/renglones.
 
 Evidencia: [docs/evidencia_c07.md](docs/evidencia_c07.md) — sentencias SQL y cantidad de consultas del detalle de libro y de venta con 1 y con N autores/renglones (2 consultas en todos los casos).
 
