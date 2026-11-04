@@ -25,7 +25,7 @@ El despliegue en el VPS (Docker) es **otro proyecto**: el TP 1–4 tal como se e
 | Alembic | 1.13 | Plantilla async (`alembic init -t async`) |
 | pydantic-settings | 2.0 | Clase `Settings`, lee el entorno y `.env` |
 | bcrypt | 4.0 | Hash de contraseñas (la versión 5 rechaza más de 72 bytes: se valida en el contrato) |
-| PyJWT | 2.8 | Token firmado. El paquete se llama `PyJWT`, no `jwt` |
+| PyJWT | 2.15 | Token firmado. El paquete se llama `PyJWT`, no `jwt`. Mínimo = versión con la que corre la suite |
 | python-dotenv | 1.0 | Lee `.env` |
 | pytest / pytest-asyncio / httpx | — | Tests automatizados (dev) |
 
