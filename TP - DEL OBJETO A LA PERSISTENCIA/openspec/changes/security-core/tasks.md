@@ -39,7 +39,7 @@ Strict TDD: cada comportamiento tiene una tarea RED (test que falla, ejecutado y
 ## 5. Verificación integral y entrega
 
 - [x] 5.1 Documentación: en `AGENTS.md` §9 marcar la fila «Semáforo de bcrypt» como `CHG-10 ✅ hecho` (tachando la columna «Parte del código hoy», como las filas de CHG-03); en `PLAN_PARCIAL.md` pasar CHG-10 a `en PR` (por ahora `en curso`, y CHG-03 a `mergeado`; el orquestador lo pasa a `en PR` al abrir el PR). Verificar con `git diff AGENTS.md PLAN_PARCIAL.md` que sólo cambian esas filas.
-- [ ] 5.2 `REQUIRE_TEST_DB=1 pytest -q` con la base levantada: 0 fallos, 0 salteados; anotar el número (línea base de la suite completa + tests nuevos). _PENDIENTE: no hay `.env` ni base de test local; sin base: 264 passed, 163 skipped (todos `db`), 0 fallos._
+- [x] 5.2 `REQUIRE_TEST_DB=1 pytest -q` con la base levantada: 0 fallos, 0 salteados; anotar el número (línea base de la suite completa + tests nuevos). _Hecho: 428 passed, 0 fallos, 0 salteados (base `libreria_test` creada con `createdb`)._
 - [x] 5.3 Revisión de secretos: `git grep -n "get_secret_value" app` sólo en `config.py` y `security.py`; `git grep -n "logging\|print(" app/core/security.py` sin resultados; `git status` sin `.env`; ninguna clave literal en los tests (todas con `secrets.token_urlsafe`).
 - [x] 5.4 Checkpoint FINAL_DIFF con el advisor sobre `git diff main...HEAD`; sin BLOCK, revisión del usuario y commit `feat(core): hash bcrypt fuera del bucle y JWT`. Abrir el PR `feat/security-core` → `main` con la API resultante (sección «API resultante» de `design.md`) y avisar a Lauti (CHG-17: crear su propio `asyncio.Semaphore(1)` en el seed) y a Nico (CHG-14: `hashear_password` antes de abrir el UoW). Anotar el enlace del PR.
 
