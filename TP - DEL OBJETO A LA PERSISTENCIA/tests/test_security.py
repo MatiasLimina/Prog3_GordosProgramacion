@@ -1,5 +1,7 @@
 import asyncio
 import base64
+import hashlib
+import hmac
 import json
 import logging
 import secrets
@@ -425,6 +427,16 @@ def _firmado(secreto, **cambios):
 _FALTA = object()
 
 
+def _firmado_con_json_crudo(secreto, payload_json: str) -> str:
+    """Firma HS256 a mano un payload que jwt.encode no deja armar (Infinity, NaN)."""
+    encabezado = _b64(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+    cuerpo = _b64(payload_json.encode())
+    firma = hmac.new(
+        secreto.get_secret_value().encode(), f"{encabezado}.{cuerpo}".encode(), hashlib.sha256
+    ).digest()
+    return f"{encabezado}.{cuerpo}.{_b64(firma)}"
+
+
 def _token_alg_none(secreto):
     claims = {**_claims_validos(), "exp": int(_claims_validos()["exp"].timestamp())}
     encabezado = _b64(json.dumps({"alg": "none", "typ": "JWT"}).encode())
@@ -449,6 +461,23 @@ TOKENS_INVALIDOS = {
     "sub_con_cero_a_la_izquierda": lambda secreto: _firmado(secreto, sub="07"),
     "roles_es_texto": lambda secreto: _firmado(secreto, roles="ADMIN"),
     "roles_con_elementos_no_texto": lambda secreto: _firmado(secreto, roles=["ADMIN", 3]),
+    # exp con forma rara pero bien firmado: nunca un 500 ni un TokenVencido (PyJWT los
+    # aceptaba o los trataba como 0/1 y fromtimestamp desbordaba).
+    "exp_entero_fuera_de_rango": lambda secreto: _firmado(secreto, exp=10**100),
+    "exp_decimal_fuera_de_rango": lambda secreto: _firmado(secreto, exp=1e300),
+    "exp_texto_numerico": lambda secreto: _firmado(secreto, exp="9999999999"),
+    "exp_true": lambda secreto: _firmado(secreto, exp=True),
+    "exp_false": lambda secreto: _firmado(secreto, exp=False),
+    "exp_negativo_enorme": lambda secreto: _firmado(secreto, exp=-(10**20)),
+    "exp_infinito": lambda secreto: _firmado_con_json_crudo(
+        secreto, '{"sub":"7","roles":["CLIENTE"],"exp":Infinity}'
+    ),
+    "exp_nan": lambda secreto: _firmado_con_json_crudo(
+        secreto, '{"sub":"7","roles":["CLIENTE"],"exp":NaN}'
+    ),
+    # PyJWT viejo sólo atrapa ValueError al validar iat: cuida que no escape un 500.
+    "iat_lista": lambda secreto: _firmado(secreto, iat=[1]),
+    "nbf_texto": lambda secreto: _firmado(secreto, nbf="mañana"),
 }
 
 

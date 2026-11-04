@@ -7,6 +7,7 @@ ni conoce FastAPI: quien llama pasa `costo` y `semaforo` (el de la app vive en
 seed, crea su propio `asyncio.Semaphore` dentro de su bucle de eventos.
 """
 import asyncio
+import math
 import re
 import secrets
 from collections.abc import Iterable
@@ -141,29 +142,36 @@ def emitir_token(
 def verificar_token(token: str, *, secreto: SecretStr) -> DatosToken:
     """Valida firma (sólo HS256), vencimiento y forma del token y devuelve sus datos.
 
-    Lanza `TokenVencido` si venció y `TokenInvalido` ante cualquier otra falla. La
-    firma se chequea antes que `exp`: un token alterado y vencido es inválido, nunca
-    se confía en un `exp` sin firma válida. Los errores llevan un mensaje fijo y `from
-    None` para que ni el token ni la clave aparezcan en un traceback.
+    Lanza `TokenVencido` si venció y `TokenInvalido` ante cualquier otra falla, incluido
+    un `exp` que no sea un número finito representable como fecha. La firma se chequea
+    antes que `exp`: un token alterado y vencido es inválido, nunca se confía en un
+    `exp` sin firma válida. Los errores llevan un mensaje fijo y `from None` para que ni
+    el token ni la clave aparezcan en un traceback.
     """
     try:
+        # verify_exp=False: PyJWT acepta un exp de texto o booleano; el vencimiento se
+        # valida abajo, con la firma ya verificada.
         claims = jwt.decode(
             token,
             secreto.get_secret_value(),
             algorithms=[ALGORITMO_JWT],
-            options={"require": ["exp", "sub", "roles"]},
+            options={"require": ["exp", "sub", "roles"], "verify_exp": False},
         )
-    except jwt.ExpiredSignatureError:
-        raise TokenVencido(_MENSAJE_TOKEN_VENCIDO) from None
     except jwt.InvalidTokenError:
         raise TokenInvalido(_MENSAJE_TOKEN_INVALIDO) from None
+    exp = claims["exp"]
+    # bool es subclase de int: True/False no son un instante.
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)) or not math.isfinite(exp):
+        raise TokenInvalido(_MENSAJE_TOKEN_INVALIDO)
+    try:
+        vence_en = datetime.fromtimestamp(exp, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        raise TokenInvalido(_MENSAJE_TOKEN_INVALIDO) from None
+    if vence_en <= datetime.now(timezone.utc):  # mismo borde que PyJWT, sin margen
+        raise TokenVencido(_MENSAJE_TOKEN_VENCIDO) from None
     sub, roles = claims["sub"], claims["roles"]
     if not isinstance(sub, str) or not _ID_USUARIO.fullmatch(sub):
         raise TokenInvalido(_MENSAJE_TOKEN_INVALIDO)
     if not isinstance(roles, list) or not all(isinstance(rol, str) for rol in roles):
         raise TokenInvalido(_MENSAJE_TOKEN_INVALIDO)
-    return DatosToken(
-        usuario_id=int(sub),
-        roles=roles,
-        vence_en=datetime.fromtimestamp(claims["exp"], tz=timezone.utc),
-    )
+    return DatosToken(usuario_id=int(sub), roles=roles, vence_en=vence_en)
