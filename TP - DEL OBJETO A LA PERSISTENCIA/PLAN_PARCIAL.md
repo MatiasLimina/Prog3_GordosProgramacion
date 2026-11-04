@@ -51,7 +51,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 | ID | Change (nombre openspec) | Responsable | Depende de | Estado |
 |---|---|---|---|---|
-| CHG-00 | `bootstrap-parcial` | Matias | — | en PR |
+| CHG-00 | `bootstrap-parcial` | Matias | — | mergeado |
 | CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
 | CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | pendiente |
@@ -76,7 +76,57 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 ---
 
-## 3. Backlog detallado
+## 3. Orden de prioridades
+
+Objetivo: **destrabar el trabajo en paralelo cuanto antes**. Los changes se agrupan en oleadas. Todo change de una oleada puede arrancar cuando estén mergeadas sus dependencias, que siempre están en oleadas anteriores. Dentro de cada integrante, se toma **primero el de prioridad más alta (P1)**: es el que más trabajo ajeno destraba.
+
+**Camino crítico** (la cadena más larga; un día perdido acá es un día perdido en la entrega):
+
+```
+CHG-03 ─► CHG-04 ─┐
+CHG-03 ─► CHG-10 ─┤
+CHG-06 ─┐         ├─► CHG-11 ─► CHG-12 ─► CHG-16 ─► CHG-19 ─► CHG-20
+CHG-07 ─┴► CHG-08 ┤
+CHG-09a ──────────┘
+```
+
+CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que estén CHG-04, 08, 09a y 10. Todo lo que lo alimenta es P1.
+
+| Oleada | Change | Responsable | Prioridad | Por qué / qué destraba |
+|---|---|---|---|---|
+| 0 | CHG-00 | Matias | — | Hecho (mergeado y archivado). |
+| 1 | **CHG-03** `settings-lifespan` | Nico | **P1** | Destraba CHG-04 (Nico) y CHG-10 (Matias). Es lo primero que se hace en todo el parcial. |
+| 1 | **CHG-07** `modelos-libro-cliente-stock` | Nico | **P1** | Con CHG-06, destraba CHG-08 (migraciones), que bloquea a CHG-11, 13, 15 y 17. Nico lo hace apenas abre el PR de CHG-03. |
+| 1 | **CHG-06** `modelos-usuarios` | Lauti | **P1** | La otra mitad de CHG-08. Es lo primero de Lauti: PR chico y rápido. |
+| 1 | CHG-09a `schemas-auth-usuarios` | Lauti | P2 | Lo necesita CHG-11. Tiene margen hasta que estén CHG-04, 08 y 10. |
+| 1 | CHG-01 `deploy-imagen` | Lauti | P2 | No destraba nada del parcial, pero vale el 18 % junto con CHG-02 y el VPS tiene que quedar en línea. Se intercala entre los PRs de modelos y contratos. |
+| 1 | CHG-05 `paginacion-envoltorio` | Lauti | P3 | Lo necesitan CHG-13 y 15 (oleada 3). |
+| 1 | CHG-09b `schemas-catalogo-ventas` | Lauti | P3 | Lo necesita CHG-13 (oleada 3). |
+| 2 | **CHG-04** `core-repository-uow` | Nico | **P1** | Cuello de botella 1: lo necesitan CHG-11, 13 y 15. Matias lo revisa en el día. |
+| 2 | **CHG-08** `migraciones-3-4` | Nico | **P1** | Cuello de botella 2: lo necesitan CHG-11, 13, 15 y 17. |
+| 2 | **CHG-10** `security-core` | Matias | **P1** | Lo necesitan CHG-11 y CHG-17. Arranca apenas se mergea CHG-03. |
+| 2 | CHG-02 `deploy-vps` | Lauti (+Matias) | P2 | Depende de CHG-01 y de los accesos al VPS. Conviene tenerlo arriba temprano: no hay que dejarlo para el final. |
+| 3 | **CHG-11** `auth-endpoints` | Matias | **P1** | Destraba CHG-12 y, por él, CHG-14 y 16. |
+| 3 | **CHG-13** `catalogo-repos-uow` | Nico | **P1** | Lo necesita CHG-16. Primero se acuerda con Matias la firma del punto único de stock. |
+| 3 | CHG-15 `clientes-repos-uow` | Nico | P2 | Lo necesita CHG-16. Es chico, va después de CHG-13. |
+| 3 | CHG-17 `seed-parcial` | Lauti | P2 | Lo necesita CHG-18. Puede arrancar con CHG-08 y 10 mergeados. |
+| 4 | **CHG-12** `autorizacion-grupos-rutas` | Matias | **P1** | Destraba CHG-14 y CHG-16. |
+| 4 | CHG-18 `casos-http` | Lauti | P2 | Se escribe a medida que se mergea cada change: un caso por commit. |
+| 5 | **CHG-16** `ventas-transaccional` | Matias | **P1** | Lo necesita CHG-19. Es el change de mayor peso (Ej6 + Ej8). |
+| 5 | CHG-14 `usuarios-admin` | Nico | P2 | No bloquea a nadie; lo necesitan los casos C-07 y C-08. |
+| 6 | CHG-19 `pytest-integracion` | Matias | P1 | Lo necesita CHG-20. |
+| 7 | CHG-20 `entrega-zip` | Lauti + Matias | P1 | Cierre. |
+
+**Arranque recomendado (primer día):**
+- **Nico:** CHG-03 → abrir PR → CHG-07 mientras se revisa → CHG-04 → CHG-08.
+- **Lauti:** CHG-06 → CHG-09a → CHG-01; después CHG-05 y CHG-09b (antes de que Nico llegue a CHG-13).
+- **Matias:** revisar CHG-03 y CHG-06/07 en el día; apenas se mergea CHG-03, arrancar CHG-10.
+
+**Regla práctica:** si dos changes tuyos están disponibles, hacé primero el P1. Si te trabás esperando una revisión, tomá el siguiente de tu lista en lugar de esperar. Si un P1 tuyo se atrasa, avisá: atrasa a otros dos integrantes.
+
+---
+
+## 4. Backlog detallado
 
 ### F0 · Setup e infraestructura
 
@@ -295,12 +345,12 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 ---
 
-## 4. Mapa de dependencias
+## 5. Mapa de dependencias
 
 ```
 Lauti:  CHG-01 ─► CHG-02 (VPS)    CHG-05 · CHG-06 · CHG-09a/b ─────────────► CHG-17 ─► CHG-18 ─► CHG-20
 
-Nico:   CHG-03 ─► CHG-04 ─► CHG-07 ─► CHG-08 ─► CHG-13 ─► CHG-15 ─► CHG-14
+Nico:   CHG-03 ─► CHG-07 ─► CHG-04 ─► CHG-08 ─► CHG-13 ─► CHG-15 ─► CHG-14
 
 Matias: CHG-00 ─► CHG-10 ─► CHG-11 ─► CHG-12 ─► CHG-16 ─► CHG-19 ─► CHG-20
 ```
@@ -324,7 +374,7 @@ Dependencias que cruzan de fila:
 - **Punto de integración:** CHG-16 usa el punto único de stock de CHG-13. La firma se acuerda apenas termina CHG-07.
 - **Riesgo:** el 18 % de la nota (despliegue) depende de Lauti. Checkpoint con Matias después de CHG-01 y otro con el VPS ya arriba.
 
-## 5. Reglas de trabajo para todos los agentes
+## 6. Reglas de trabajo para todos los agentes
 
 - Un change = una rama = uno o más PRs chicos, revisados por otro integrante.
 - Commits convencionales en español (`feat`, `fix`, `refactor`, `test`, `docs`, `build`, `chore`), con el scope del módulo.
