@@ -43,9 +43,11 @@ uvicorn app.main:app --reload        # servidor
 pytest                               # tests automatizados
 ```
 
-Si el puerto 5432 está ocupado (p. ej. un PostgreSQL instalado en Windows), usar `POSTGRES_PORT=5433` en `.env` **y** ajustar el puerto también en `DATABASE_URL` mientras `env.example` siga usándola (hasta CHG-03, ver sección 9).
+Todos los comandos se corren **desde esta carpeta** (`TP - DEL OBJETO A LA PERSISTENCIA/`), no desde la raíz del repositorio: `Settings` busca el `.env` en el directorio actual y, desde otra carpeta, no lo encuentra (la app no arranca por falta de variables obligatorias).
+`POSTGRES_PASSWORD` y `JWT_SECRET` vienen vacías en `env.example` a propósito: hay que completarlas antes de `docker compose up -d` (Postgres no arranca sin contraseña) y antes de levantar la app (`Settings` exige ambas). Cambio respecto del TP 1–4: un `.env` copiado sin completar ya no sirve.
+Si el puerto 5432 está ocupado (p. ej. un PostgreSQL instalado en Windows), usar `POSTGRES_PORT=5433` en `.env` (lo toman Docker y la app; la URL de la base se arma sola con las variables `POSTGRES_*`).
 La verificación de reversibilidad (sobre base vacía: `alembic downgrade base` y otra vez `alembic upgrade head`) no forma parte del arranque: está en la sección 11.
-`SQL_ECHO=true` en `.env` (hoy el código lee `DB_ECHO`; `SQL_ECHO` es el nombre objetivo desde CHG-03) muestra en consola las consultas emitidas (evidencia de C-15). La clave de firma del token (`JWT_SECRET` o el nombre que fije `Settings`) se genera con `python -c "import secrets; print(secrets.token_urlsafe(48))"` y vive sólo en `.env`.
+`SQL_ECHO=true` en `.env` muestra en consola las consultas emitidas (evidencia de C-15; `DB_ECHO` ya no se lee). La clave de firma del token (`JWT_SECRET`, mínimo 32 caracteres) se genera con `python -c "import secrets; print(secrets.token_urlsafe(48))"` y vive sólo en `.env`.
 
 ## 3. Estructura obligatoria
 
@@ -221,13 +223,15 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 
 | Parte del código hoy | Cómo queda | Change |
 |---|---|---|
-| `app/core/config.py` con `DATABASE_URL` y `DB_ECHO` | `Settings` con `POSTGRES_*`, `SQL_ECHO` y recursos en el lifespan | CHG-03 |
-| `health` con `router.py` y `schemas.py` | sólo `router.py` | CHG-03 |
+| ~~`app/core/config.py` con `DATABASE_URL` y `DB_ECHO`~~ | `Settings` con `POSTGRES_*`, `SQL_ECHO` y recursos en el lifespan | CHG-03 ✅ hecho |
+| ~~`health` con `router.py` y `schemas.py`~~ | sólo `router.py` | CHG-03 ✅ hecho |
 | Servicios que reciben `AsyncSession` (catálogo, clientes, ventas) | reciben el UoW; repositorios por entidad | CHG-04 (base), 13, 15, 16 |
 | `app/core/pagination.py` con `limit` / `offset` | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 (y 13/15/16 al usarlo) |
 | `app/core/errors.py` (`commit_or_409` / `traducir_integrity` reciben la sesión) | se integra con el UoW | CHG-04 |
 | `test/*.http` con los casos C-01 a C-08 del TP | casos C-01 a C-16 del parcial (otra numeración y otro significado) | CHG-18 |
-| `tests/` con un conftest que deriva `libreria_test` de `DATABASE_URL`; `env.example` con `DATABASE_URL` | deriva de `Settings` / `POSTGRES_*` | CHG-03 |
+| ~~`tests/` con un conftest que deriva `libreria_test` de `DATABASE_URL`; `env.example` con `DATABASE_URL`~~ | deriva de `Settings` / `POSTGRES_*` | CHG-03 ✅ hecho |
+| `test/libros.http` y `test/ventas.http` mencionan `DB_ECHO=true` | `SQL_ECHO=true` | CHG-18 |
+| Semáforo de bcrypt: `BCRYPT_MAX_CONCURRENTES` ya está en `Settings`, pero el `asyncio.Semaphore` todavía no se crea | el lifespan crea el semáforo y `security.py` lo usa | CHG-10 |
 | `scripts/seed.py` (`python -m scripts.seed`) | `seed.py` en la raíz (`python seed.py`) | CHG-17 |
 | `libro.stock` editable, ISBN con UNIQUE común | stock por movimientos, ISBN único entre vigentes | CHG-07, 08, 13 |
 | Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11, 12, 14 |
