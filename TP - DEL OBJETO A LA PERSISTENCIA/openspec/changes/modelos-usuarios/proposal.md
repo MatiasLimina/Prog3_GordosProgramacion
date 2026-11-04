@@ -33,14 +33,15 @@ CHG-06 (`modelos-usuarios`) es un cambio prioritario (P1) asignado a Lauti en `P
     - Todas las columnas de fecha son con zona horaria (`DateTime(timezone=True)`).
 - Registrar los 4 modelos en `app/models.py`.
 - **Acuerdo de interfaz con Nicolás (CHG-07)**:
-  - `Usuario` no declara las relaciones `cliente` ni `movimientos` en CHG-06, evitando dependencias circulares incompletas que rompen `configure_mappers()` en pruebas aisladas de mappers. Nico incorporará ambos lados en CHG-07 (`Cliente.usuario` y `MovimientoStock.usuario`).
+  - CHG-06 no declara `Usuario.cliente` ni `Cliente.usuario`. CHG-07 incorpora juntos ambos extremos de la relación Cliente–Usuario: `Cliente.usuario` y `Usuario.cliente`; este último es escalar mediante `sa_relationship_kwargs={"uselist": False}`.
+  - La relación de movimientos también se completa en CHG-07 con ambos extremos: `MovimientoStock.usuario` y `Usuario.movimientos`.
   - El índice único parcial de roles vigentes adopta el nombre simétrico pactado: `uq_asignacion_rol_usuario_rol_vigente`.
 
 **Fuera de alcance**:
 - Esquemas Pydantic y DTOs de autenticación y usuarios (CHG-09a).
 - Endpoints de autenticación (`/auth/*`, CHG-11) y administración de usuarios (CHG-14).
 - Migración 0003 de Alembic (CHG-08).
-- Lados de relación `Cliente.usuario` y `MovimientoStock.usuario` (CHG-07).
+- Relaciones Cliente–Usuario (`Cliente.usuario` y `Usuario.cliente`) y MovimientoStock–Usuario (`MovimientoStock.usuario` y `Usuario.movimientos`), cuyos dos extremos se incorporan en CHG-07.
 
 ## Capabilities
 

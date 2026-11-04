@@ -17,6 +17,13 @@ El sistema SHALL definir el modelo de tabla `Usuario` mapeado a `usuario` con cl
 - **WHEN** se inspecciona la relación `asignaciones` en `Usuario`
 - **THEN** referencia a `AsignacionRol.usuario` como colección
 
+### Requirement: Integración de la relación Cliente–Usuario en CHG-07
+CHG-06 SHALL NOT declarar ninguno de los extremos de la relación Cliente–Usuario (`Cliente.usuario` ni `Usuario.cliente`). CHG-07 SHALL incorporar ambos extremos juntos: `Cliente.usuario` y `Usuario.cliente`, siendo este último escalar mediante `sa_relationship_kwargs={"uselist": False}`.
+
+#### Scenario: Extremos de Cliente–Usuario incorporados juntos
+- **WHEN** se implementa la relación Cliente–Usuario en CHG-07
+- **THEN** `Cliente.usuario` y `Usuario.cliente` se declaran en ese mismo change, y `Usuario.cliente` es escalar con `uselist=False`
+
 ### Requirement: Definición del modelo AsignacionRol
 El sistema SHALL definir el modelo `AsignacionRol` sobre `asignacion_rol` con FKs indexadas a `usuario`, CHECK de roles permitidos e índice único parcial para roles vigentes.
 

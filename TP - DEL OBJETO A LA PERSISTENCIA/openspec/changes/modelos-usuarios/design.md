@@ -17,14 +17,14 @@ Para mantener el flujo de trabajo desacoplado y sin cuellos de botella entre int
 
 **Non-Goals:**
 - Contratos y schemas Pydantic de entrada/salida (CHG-09a).
-- Declaración de las relaciones bidireccionales con `Cliente` y `MovimientoStock` (acordado con Nico: se completan en CHG-07).
+- Declaración de las relaciones bidireccionales con `Cliente` y `MovimientoStock` (ambos extremos de cada relación se incorporan en CHG-07).
 - Generación de la migración 0003 en Alembic (CHG-08).
 
 ## Decisions
 
 ### D1 · Desacoplamiento temporal de relaciones cruzadas en `Usuario` (Acuerdo con Nico)
-SQLAlchemy valida la consistencia de las relaciones (`back_populates`) al ejecutar `configure_mappers()`. Si en CHG-06 se declarasen `Usuario.cliente` y `Usuario.movimientos`, la suite de tests fallaría por no existir los extremos correspondientes en `Cliente` ni en `MovimientoStock` (que se implementan en CHG-07).
-- **Decisión**: `Usuario` solo declara la relación con `AsignacionRol` (`asignaciones`). Nico agregará `cliente` y `movimientos` en `app/modules/usuarios/models.py` en el mismo commit de CHG-07 en el que define `Cliente.usuario` y `MovimientoStock.usuario`.
+SQLAlchemy valida la consistencia de las relaciones (`back_populates`) al ejecutar `configure_mappers()`. Por eso CHG-06 no declara ninguno de los extremos de las relaciones Cliente–Usuario ni MovimientoStock–Usuario.
+- **Decisión**: `Usuario` solo declara en CHG-06 la relación con `AsignacionRol` (`asignaciones`). CHG-07 incorpora juntos `Cliente.usuario` y `Usuario.cliente`, además de `MovimientoStock.usuario` y `Usuario.movimientos`. El extremo `Usuario.cliente` es escalar y usa `sa_relationship_kwargs={"uselist": False}`; los tipos cruzados se mantienen como referencias string bajo `TYPE_CHECKING`.
 
 ### D2 · Nombres canónicos de constraints e índices parciales
 Para garantizar que la traducción de `IntegrityError` (en `app/core/errors.py`) asigne mensajes específicos sin caer en genéricos:
