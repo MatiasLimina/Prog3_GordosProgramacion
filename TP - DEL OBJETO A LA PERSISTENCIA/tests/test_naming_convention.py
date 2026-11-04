@@ -28,7 +28,7 @@ assert "{esperada}" in nombres, nombres
 )
 def test_importar_solo_un_modelo_ya_aplica_la_naming_convention(modulo, clase, esperada):
     codigo = CODIGO.format(modulo=modulo, clase=clase, esperada=esperada)
-    r = subprocess.run([sys.executable, "-c", codigo], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, "-c", codigo], capture_output=True, text=True, check=False)
     assert r.returncode == 0, r.stderr
 
 
@@ -38,5 +38,5 @@ def test_base_fija_la_convencion_en_el_metadata():
         "from sqlmodel import SQLModel\n"
         "assert SQLModel.metadata.naming_convention['uq'] == 'uq_%(table_name)s_%(column_0_name)s'\n"
     )
-    r = subprocess.run([sys.executable, "-c", codigo], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, "-c", codigo], capture_output=True, text=True, check=False)
     assert r.returncode == 0, r.stderr

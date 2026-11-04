@@ -1,7 +1,7 @@
 """Registro central de modelos.
 
 Acá se importan TODOS los modelos de los módulos (editoriales, generos,
-autores, libros, clientes, ventas) para que SQLModel.metadata quede completo
+autores, libros, clientes, ventas, usuarios) para que SQLModel.metadata quede completo
 y Alembic (migrations/env.py) pueda autogenerar las migraciones.
 Ejemplo cuando existan:
     from app.modules.editoriales.models import Editorial  # noqa: F401
@@ -11,9 +11,15 @@ Ejemplo cuando existan:
 import app.core.base  # noqa: F401
 
 # Un import por modelo, con noqa: F401.
-from app.modules.editoriales.models import Editorial  # noqa: F401,E402
-from app.modules.generos.models import Genero  # noqa: F401,E402
+from app.modules.editoriales.models import Editorial  # noqa: F401
+from app.modules.generos.models import Genero  # noqa: F401
 from app.modules.autores.models import Autor  # noqa: F401
 from app.modules.libros.models import Libro, LibroAutor  # noqa: F401
 from app.modules.clientes.models import Cliente, PerfilCliente  # noqa: F401
 from app.modules.ventas.models import Venta, RenglonVenta  # noqa: F401
+from app.modules.usuarios.models import (  # noqa: F401
+    AsignacionRol,
+    EventoSeguridad,
+    IntentoAcceso,
+    Usuario,
+)
