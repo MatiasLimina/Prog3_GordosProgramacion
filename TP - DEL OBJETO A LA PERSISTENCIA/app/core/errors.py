@@ -1,4 +1,4 @@
-"""Traducción de errores de base de datos a respuestas HTTP (RN-12).
+"""Traducción de errores de base de datos a respuestas HTTP (RN-15).
 
 Regla: el cliente nunca ve texto interno de la base (mensajes de PostgreSQL,
 nombres de constraints, SQL). Cada módulo pasa sus propios mensajes en
