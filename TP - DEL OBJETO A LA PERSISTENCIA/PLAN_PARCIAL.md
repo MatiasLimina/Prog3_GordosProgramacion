@@ -54,7 +54,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 | CHG-00 | `bootstrap-parcial` | Matias | — | mergeado |
 | CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
-| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | en PR |
+| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado |
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | pendiente |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
 | CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | pendiente |
@@ -62,7 +62,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 | CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | pendiente |
 | CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | pendiente |
 | CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | pendiente |
-| CHG-10 | `security-core` | Matias | CHG-03 | pendiente |
+| CHG-10 | `security-core` | Matias | CHG-03 | en PR |
 | CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | pendiente |
 | CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | pendiente |
 | CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | pendiente |

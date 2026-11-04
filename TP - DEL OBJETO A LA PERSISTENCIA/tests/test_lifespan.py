@@ -138,6 +138,50 @@ async def test_el_hash_ficticio_se_calcula_una_vez_con_el_costo_y_fuera_del_bucl
     assert hilo != hilo_del_bucle  # asyncio.to_thread: no bloquea el bucle de eventos
 
 
+async def _adquisiciones_inmediatas(semaforo: asyncio.Semaphore) -> int:
+    """Cuántos acquire() entran sin esperar; libera todo al terminar."""
+    tomadas = 0
+    while not semaforo.locked():
+        await semaforo.acquire()
+        tomadas += 1
+    for _ in range(tomadas):
+        semaforo.release()
+    return tomadas
+
+
+async def test_el_arranque_crea_el_semaforo_de_bcrypt_con_la_capacidad_configurada(
+    entorno, motores
+):
+    entorno.setenv("BCRYPT_MAX_CONCURRENTES", "2")
+    async with lifespan(app):
+        assert isinstance(app.state.semaforo_bcrypt, asyncio.Semaphore)
+        assert await _adquisiciones_inmediatas(app.state.semaforo_bcrypt) == 2
+
+
+async def test_el_semaforo_de_bcrypt_admite_cuatro_por_defecto(entorno, motores):
+    async with lifespan(app):
+        assert await _adquisiciones_inmediatas(app.state.semaforo_bcrypt) == 4
+
+
+async def test_el_semaforo_de_bcrypt_es_el_mismo_durante_toda_la_vida_de_la_app(
+    entorno, motores
+):
+    async with lifespan(app):
+        antes = app.state.semaforo_bcrypt
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            assert (await c.get("/health/live")).status_code == 200
+            assert (await c.get("/health/live")).status_code == 200
+        assert app.state.semaforo_bcrypt is antes
+
+
+async def test_cada_arranque_crea_su_propio_semaforo(entorno, motores):
+    # Un bucle por test no puede heredar un semáforo atado a otro bucle.
+    async with lifespan(app):
+        primero = app.state.semaforo_bcrypt
+    async with lifespan(app):
+        assert app.state.semaforo_bcrypt is not primero
+
+
 async def test_el_apagado_cierra_el_motor_una_sola_vez(entorno, motores):
     async with lifespan(app):
         assert motores.cierres(motores[0]) == 0
@@ -156,7 +200,7 @@ def test_importar_la_app_no_crea_motor_ni_fabrica(tmp_path):
     codigo = (
         "import app.main as m\n"
         "print(any(hasattr(m.app.state, k) for k in "
-        "('engine', 'sessionmaker', 'settings', 'hash_ficticio')))"
+        "('engine', 'sessionmaker', 'settings', 'hash_ficticio', 'semaforo_bcrypt')))"
     )
     # Entorno mínimo (sin variables de configuración); en Windows hace falta SYSTEMROOT.
     entorno = {"PYTHONPATH": str(RAIZ), "SYSTEMROOT": os.environ.get("SYSTEMROOT", "")}
