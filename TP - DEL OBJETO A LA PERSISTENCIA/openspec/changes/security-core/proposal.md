@@ -31,6 +31,6 @@ Fuera de alcance: endpoints, cookie, `dependencies.py`, `intento_acceso`, límit
 
 - Código: `app/core/security.py`, `app/main.py` (lifespan; archivo compartido, lo modifica el lead).
 - Tests: `tests/test_security.py` (se amplía, sin tocar los 4 tests del hash ficticio) y `tests/test_lifespan.py` (semáforo en el estado; la importación sigue sin crear recursos).
-- Dependencias: ninguna nueva (`bcrypt>=4.0` y `PyJWT>=2.8` ya están en `requirements.txt`).
+- Dependencias: ninguna nueva (`bcrypt>=4.0` y `PyJWT` ya están en `requirements.txt`; el mínimo de PyJWT sube de 2.8 a 2.15 en la revisión de la PR 36, ver `design.md`).
 - Consumidores: CHG-11 (login, registro, cambio de contraseña, `/auth/yo`), CHG-12 (`get_usuario_actual`), CHG-14 (alta de personal) y CHG-17 (seed) usan estas funciones.
 - Sin cambios de esquema, de migraciones ni de variables de entorno.

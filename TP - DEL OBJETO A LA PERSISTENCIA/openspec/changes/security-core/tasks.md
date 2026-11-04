@@ -43,6 +43,12 @@ Strict TDD: cada comportamiento tiene una tarea RED (test que falla, ejecutado y
 - [x] 5.3 Revisión de secretos: `git grep -n "get_secret_value" app` sólo en `config.py` y `security.py`; `git grep -n "logging\|print(" app/core/security.py` sin resultados; `git status` sin `.env`; ninguna clave literal en los tests (todas con `secrets.token_urlsafe`).
 - [x] 5.4 Checkpoint FINAL_DIFF con el advisor sobre `git diff main...HEAD`; sin BLOCK, revisión del usuario y commit `feat(core): hash bcrypt fuera del bucle y JWT`. Abrir el PR `feat/security-core` → `main` con la API resultante (sección «API resultante» de `design.md`) y avisar a Lauti (CHG-17: crear su propio `asyncio.Semaphore(1)` en el seed) y a Nico (CHG-14: `hashear_password` antes de abrir el UoW). Anotar el enlace del PR.
 
+## 6. Revisión de la PR 36
+
+- [x] 6.1 RED · Casos nuevos en `TOKENS_INVALIDOS` (bien firmados): `exp` 10**100, 1e300, `"9999999999"`, `True`, `False`, -10**20, `Infinity` y `NaN` (estos dos firmados a mano). Antes del fix: `OverflowError`/`TypeError` escapaban (500) y `True`/`False`/-10**20 daban `TokenVencido`.
+- [x] 6.2 GREEN · `jwt.decode` con `verify_exp: False` y chequeo propio de `exp` (D4). _Hecho: commit 6c7f14d; 80 tests de seguridad y lifespan en verde; suite completa 436._
+- [x] 6.3 Guardas de `iat`/`nbf` mal formados y `PyJWT>=2.15` en `requirements.txt` y `AGENTS.md` (commit 158da57). Advisor FINAL_DIFF: PASS.
+
 ## Workflow follow-up
 
 - Archivar el change (`/opsx:archive security-core`) después del merge: crea `openspec/specs/hash-de-contrasenas` y `openspec/specs/token-de-acceso` y suma el requisito del semáforo a `ciclo-de-vida`.

@@ -9,7 +9,7 @@ Estado actual que condiciona el diseño:
 - `app/core/security.py` sólo tiene `calcular_hash_ficticio(costo) -> str` (síncrona, `bcrypt.hashpw` con `gensalt(rounds=costo)`); su firma y sus 4 tests no cambian.
 - `Settings` ya tiene `jwt_secret: SecretStr` (mínimo 32 caracteres, o sea al menos 256 bits: PyJWT no emite `InsecureKeyLengthWarning` con HS256), `jwt_expire_minutes` (≥ 1), `bcrypt_cost` (4–31) y `bcrypt_max_concurrentes` (≥ 1). El comentario de `config.py` ya fija que el algoritmo no es configuración.
 - El lifespan arma `settings`, `engine`, `sessionmaker` y `hash_ficticio` en `app.state`; el hash ficticio se calcula con `asyncio.to_thread` y sin semáforo (en el arranque no hay concurrencia).
-- `requirements.txt` pide `bcrypt>=4.0` y `PyJWT>=2.8`. bcrypt 4 trunca en silencio una contraseña de más de 72 bytes; bcrypt 5 lanza `ValueError`. PyJWT ≥ 2.10 exige que `sub` sea texto.
+- `requirements.txt` pide `bcrypt>=4.0` y `PyJWT>=2.15` (subido desde `>=2.8` en la revisión de la PR 36: la suite corre con 2.15.1 y versiones viejas atrapan menos excepciones al validar `iat`/`nbf`). bcrypt 4 trunca en silencio una contraseña de más de 72 bytes; bcrypt 5 lanza `ValueError`. PyJWT ≥ 2.10 exige que `sub` sea texto.
 - Gobernanza: dominio CRITICAL (seguridad). Ningún código se escribe hasta que el usuario apruebe este diseño (tarea 1.1).
 
 ## Goals / Non-Goals
@@ -62,15 +62,15 @@ Las funciones reciben `costo`, `semaforo`, `secreto` y `minutos` como argumentos
 
 ### D2 · Errores de verificación del token: dos excepciones propias, una subclase de la otra (elegida)
 
-`verificar_token` traduce las excepciones de PyJWT: `jwt.ExpiredSignatureError` → `TokenVencido`; cualquier otro `jwt.InvalidTokenError` (firma, formato, algoritmo, claim faltante) y los chequeos de forma propios → `TokenInvalido`. Siempre `raise ... from None` y con un mensaje fijo en español, sin el token ni la clave.
+`verificar_token` traduce las excepciones de PyJWT: todo `jwt.InvalidTokenError` (firma, formato, algoritmo, claim faltante) y los chequeos de forma propios → `TokenInvalido`; el vencimiento lo chequea `security.py` (D4) y da `TokenVencido`. Siempre `raise ... from None` y con un mensaje fijo en español, sin el token ni la clave.
 
 - Por qué: CHG-12 atrapa sólo `TokenInvalido` (cubre las dos) y responde 401; si quiere distinguir (un mensaje «la sesión venció»), atrapa antes `TokenVencido`. No depende de PyJWT. `from None` deja `__cause__` en `None` y suprime el contexto, así el traceback no muestra el error interno de PyJWT.
-- Orden seguro: PyJWT verifica la firma antes que `exp`, así que un token alterado y vencido da `TokenInvalido`: nunca se confía en un `exp` sin firma válida.
+- Orden seguro: `jwt.decode` verifica la firma antes de devolver los claims y `exp` se mira recién después, así que un token alterado y vencido da `TokenInvalido`: nunca se confía en un `exp` sin firma válida.
 - Alternativa B · dejar pasar las excepciones de PyJWT: acopla CHG-12 a la librería y expone sus mensajes. Descartada.
 - Alternativa C · devolver `None` si no verifica: pierde la diferencia entre vencido e inválido y es fácil olvidarse de chequearlo. Descartada.
 - Alternativa D · una sola excepción con un campo `motivo`: equivalente pero obliga a inspeccionar el campo; la jerarquía es más idiomática.
 
-Chequeos de verificación: `algorithms=["HS256"]` (rechaza `none`, HS512 y confusión de algoritmo), `options={"require": ["exp", "sub", "roles"]}`, `sub` que coincide con `[1-9][0-9]*` (se convierte a `int`), `roles` lista de `str`. Cualquier otra forma → `TokenInvalido`.
+Chequeos de verificación: `algorithms=["HS256"]` (rechaza `none`, HS512 y confusión de algoritmo), `options={"require": ["exp", "sub", "roles"], "verify_exp": False}`, `exp` número finito (no `bool`) representable como fecha (D4), `sub` que coincide con `[1-9][0-9]*` (se convierte a `int`), `roles` lista de `str`. Cualquier otra forma → `TokenInvalido`.
 
 ### D3 · Hash ficticio: `security.py` sólo ofrece la verificación genérica (elegida)
 
@@ -80,10 +80,11 @@ Chequeos de verificación: `algorithms=["HS256"]` (rechaza `none`, HS512 y confu
 
 ### D4 · Reloj y vencimiento: UTC con zona, sin margen (elegida)
 
-`exp = ahora + timedelta(minutes=minutos)` con `ahora = datetime.now(timezone.utc)` por defecto. `emitir_token` acepta `ahora` (sólo con zona; uno sin zona → `ValueError`) para que los tests sean deterministas: el token vencido se emite con `ahora` 2 horas atrás, sin `sleep`. `verificar_token` usa el reloj real de PyJWT con `leeway=0`: la misma app emite y verifica con el mismo reloj, así que no hay desfase que tolerar. `DatosToken.vence_en` es `datetime` con `tzinfo=UTC` (lo usará CHG-11 si quiere mostrarlo; el `Max-Age` de la cookie sale de `jwt_expire_minutes`).
+`exp = ahora + timedelta(minutes=minutos)` con `ahora = datetime.now(timezone.utc)` por defecto. `emitir_token` acepta `ahora` (sólo con zona; uno sin zona → `ValueError`) para que los tests sean deterministas: el token vencido se emite con `ahora` 2 horas atrás, sin `sleep`. `verificar_token` desactiva `verify_exp` de PyJWT y chequea `exp` a mano contra `datetime.now(timezone.utc)`, sin margen y con el mismo borde que PyJWT (`vence_en <= ahora` → `TokenVencido`): la misma app emite y verifica con el mismo reloj, así que no hay desfase que tolerar. Antes de comparar, `exp` tiene que ser `int` o `float`, no `bool`, finito, y `datetime.fromtimestamp` no debe fallar (`OverflowError`, `OSError`, `ValueError`); si no, `TokenInvalido`. `DatosToken.vence_en` es `datetime` con `tzinfo=UTC` (lo usará CHG-11 si quiere mostrarlo; el `Max-Age` de la cookie sale de `jwt_expire_minutes`).
 
 - Alternativa B · `leeway` de unos segundos: útil con varios servidores con relojes distintos; no es el caso. Se puede agregar sin cambiar la API.
-- Alternativa C · inyectar un reloj también en la verificación: PyJWT no lo admite sin desactivar `verify_exp` y chequearlo a mano, lo que duplica lógica sensible. Descartada.
+- Por qué el chequeo a mano (revisión de la PR 36): con `verify_exp` activo, PyJWT convierte `exp` con `int()`, así que acepta `True`/`False` (los toma como vencidos) y textos numéricos, y deja pasar valores enormes que después hacen fallar `fromtimestamp` con un 500. Validar `exp` antes de convertirlo cierra los tres casos (RN-15).
+- Alternativa C · inyectar un reloj también en la verificación: ahora sería fácil (el chequeo ya es propio), pero los tests no lo necesitan: el token vencido se emite con `ahora` en el pasado. Se puede agregar sin cambiar la API.
 
 ### D5 · Límite de 72 bytes: guarda defensiva en `security.py` (elegida)
 
@@ -115,6 +116,7 @@ Se guardan como lista de textos en el orden recibido (`[str(r) for r in roles]`;
 - [El hash ficticio usa un costo distinto del real → el tiempo delata el correo] → ya cubierto por la spec de `ciclo-de-vida` (mismo `BCRYPT_COST`); este change no lo toca.
 - [La clave aparece en un traceback o en un log] → la clave viaja como `SecretStr` y se abre sólo en la llamada a PyJWT; `from None` en toda traducción; el módulo no usa `logging`; un test verifica mensaje, `__cause__`, `__suppress_context__` y `caplog`.
 - [PyJWT < 2.10 instalado no exige `sub` texto] → el chequeo propio de `sub` (D2) no depende de la versión.
+- [Un token bien firmado con `exp`, `iat` o `nbf` mal formado escapa como 500] → `exp` se valida a mano (D4); `iat`/`nbf` los cubre PyJWT ≥ 2.15 y hay tests de regresión para todos.
 - [Tests de concurrencia frágiles por tiempos] → el doble de bcrypt duerme 50 ms en el hilo y mide el máximo de llamadas simultáneas con un contador protegido por `threading.Lock`; la aserción es «nunca más de N» (y «alguna vez N» con N = 2), no una duración.
 - [Trade-off D1] → los callers repiten `costo=settings.bcrypt_cost, semaforo=app.state.semaforo_bcrypt`; si en CHG-11 molesta, se envuelve en una dependencia sin tocar este módulo.
 
