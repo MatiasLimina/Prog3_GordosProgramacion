@@ -54,7 +54,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 | CHG-00 | `bootstrap-parcial` | Matias | — | mergeado |
 | CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
-| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | en PR |
+| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado |
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | pendiente |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
 | CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | pendiente |
