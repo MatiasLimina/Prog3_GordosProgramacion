@@ -11,6 +11,4 @@ TDD estricto: cada comportamiento tuvo una tarea RED antes de la implementación
 ## 2. Cierre del change
 
 - [x] 2.1 Correr las pruebas focalizadas de CHG-09a y las pruebas de schemas existentes (`68 passed`).
-- [ ] 2.2 Revisar el diff para confirmar que sólo incluye archivos de CHG-09a.
-- [ ] 2.3 Crear el commit `feat(schemas): contratos de auth y usuarios`.
-- [ ] 2.4 Abrir una PR que detalle que CHG-09a está incluido y que CHG-09b queda a la espera de CHG-07.
+- [x] 2.2 Revisar el diff y confirmar que sólo incluye archivos de CHG-09a.
