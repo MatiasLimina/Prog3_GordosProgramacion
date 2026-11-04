@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.config import get_settings
 from app.core.database import crear_fabrica_sesiones, crear_motor
-from app.core.errors import mensaje_para
+from app.core.errors import Conflicto, mensaje_para
 from app.core.security import calcular_hash_ficticio
 import app.models  # noqa: F401  (registra todos los modelos en el metadata)
 from app.modules.autores.router import router as autores_router
@@ -48,6 +48,12 @@ def registrar_handlers(app: FastAPI) -> None:
     @app.exception_handler(IntegrityError)
     async def integrity_error_handler(request: Request, exc: IntegrityError):
         return JSONResponse(status_code=409, content={"detail": mensaje_para(exc, {})})
+
+    # Conflicto lo lanza el UnitOfWork (core no conoce HTTP): mismo 409 y mismo cuerpo
+    # que HTTPException, así el cliente no distingue de dónde salió.
+    @app.exception_handler(Conflicto)
+    async def conflicto_handler(request: Request, exc: Conflicto):
+        return JSONResponse(status_code=409, content={"detail": exc.mensaje})
 
 
 app = FastAPI(title="Librería", lifespan=lifespan)

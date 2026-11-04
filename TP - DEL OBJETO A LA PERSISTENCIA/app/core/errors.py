@@ -20,6 +20,19 @@ _MENSAJES_POR_SQLSTATE = {
 _MENSAJE_GENERICO = "La operación no pudo completarse por un conflicto con los datos existentes."
 
 
+class Conflicto(Exception):
+    """Choque con lo guardado; la app lo responde como 409 con `mensaje`.
+
+    Es una excepción de dominio: no conoce HTTP. La lanza el UnitOfWork cuando la
+    base rechaza una escritura por integridad, y el handler de `app/main.py` la
+    traduce a `409 {"detail": mensaje}`.
+    """
+
+    def __init__(self, mensaje: str) -> None:
+        super().__init__(mensaje)
+        self.mensaje = mensaje
+
+
 def _buscar_atributo(error: IntegrityError, nombre: str) -> str | None:
     """Busca un atributo en `orig` y, si no está, en `orig.__cause__`.
 
