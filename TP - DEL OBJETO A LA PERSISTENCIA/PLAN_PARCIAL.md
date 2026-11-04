@@ -180,11 +180,11 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 ### F1 · Dominio central
 
 #### CHG-04 · `core-repository-uow` — Nico, revisa Matias (Ej6, base)
-- **Archivos:** `app/core/repository.py`, `app/core/unit_of_work.py`. Son archivos compartidos: el PR lo revisa Matias.
+- **Archivos:** `app/core/repository.py`, `app/core/unit_of_work.py`, `app/core/errors.py` (excepción `Conflicto`) y `app/main.py` (su handler → 409). Son archivos compartidos: el PR lo revisa Matias.
 - **Entregables:**
   - `BaseRepository[T]`: recibe `session` y la **clase del modelo** en el constructor, y ofrece `get_by_id`, `get_all`, `count`, `add`, `update` y `delete`. `add` y `update` hacen `flush()`.
   - `SoftDeleteRepository[T](BaseRepository[T])`: filtra los dados de baja y agrega `get_by_id_including_deleted` y `soft_delete`.
-  - `UnitOfWork` base como gestor de contexto asincrónico: confirma al salir, revierte si hay una excepción y no cierra la sesión.
+  - `UnitOfWork` base como gestor de contexto asincrónico: confirma al salir, revierte con cualquier excepción y no cierra la sesión. Si la base rechaza la escritura (en el flush o en el commit), revierte y lanza `Conflicto` con el mensaje de los `MENSAJES` del UoW del módulo; el handler de `main.py` lo pasa a 409.
   - El patrón de dependencia con el que el router construye el UoW de cada módulo.
 - **DoD:** tests que muestran un rollback cuando hay una excepción y la sesión abierta después del bloque.
 - **Commit:** `feat(core): BaseRepository, SoftDeleteRepository y UnitOfWork`
