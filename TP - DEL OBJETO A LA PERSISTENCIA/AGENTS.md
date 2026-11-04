@@ -25,7 +25,7 @@ El despliegue en el VPS (Docker) es **otro proyecto**: el TP 1–4 tal como se e
 | Alembic | 1.13 | Plantilla async (`alembic init -t async`) |
 | pydantic-settings | 2.0 | Clase `Settings`, lee el entorno y `.env` |
 | bcrypt | 4.0 | Hash de contraseñas (la versión 5 rechaza más de 72 bytes: se valida en el contrato) |
-| PyJWT | 2.8 | Token firmado. El paquete se llama `PyJWT`, no `jwt` |
+| PyJWT | 2.15 | Token firmado. El paquete se llama `PyJWT`, no `jwt`. Mínimo = versión con la que corre la suite |
 | python-dotenv | 1.0 | Lee `.env` |
 | pytest / pytest-asyncio / httpx | — | Tests automatizados (dev) |
 
@@ -231,7 +231,7 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 | `test/*.http` con los casos C-01 a C-08 del TP | casos C-01 a C-16 del parcial (otra numeración y otro significado) | CHG-18 |
 | ~~`tests/` con un conftest que deriva `libreria_test` de `DATABASE_URL`; `env.example` con `DATABASE_URL`~~ | deriva de `Settings` / `POSTGRES_*` | CHG-03 ✅ hecho |
 | `test/libros.http` y `test/ventas.http` mencionan `DB_ECHO=true` | `SQL_ECHO=true` | CHG-18 |
-| Semáforo de bcrypt: `BCRYPT_MAX_CONCURRENTES` ya está en `Settings`, pero el `asyncio.Semaphore` todavía no se crea | el lifespan crea el semáforo y `security.py` lo usa | CHG-10 |
+| ~~Semáforo de bcrypt: `BCRYPT_MAX_CONCURRENTES` ya está en `Settings`, pero el `asyncio.Semaphore` todavía no se crea~~ | el lifespan crea el semáforo y `security.py` lo usa | CHG-10 ✅ hecho |
 | `scripts/seed.py` (`python -m scripts.seed`) | `seed.py` en la raíz (`python seed.py`) | CHG-17 |
 | `libro.stock` editable, ISBN con UNIQUE común | stock por movimientos, ISBN único entre vigentes | CHG-07, 08, 13 |
 | Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11, 12, 14 |

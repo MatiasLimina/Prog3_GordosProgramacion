@@ -33,6 +33,9 @@ async def lifespan(app: FastAPI):
     app.state.engine = engine
     app.state.sessionmaker = crear_fabrica_sesiones(engine)
     app.state.hash_ficticio = hash_ficticio
+    # Un único semáforo para todo bcrypt de la app (hash y verificación): acota los hilos
+    # que ocupa. Se crea acá y no al importar: cada arranque (y cada bucle de tests) tiene el suyo.
+    app.state.semaforo_bcrypt = asyncio.Semaphore(settings.bcrypt_max_concurrentes)
     try:
         yield
     finally:
