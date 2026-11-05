@@ -59,7 +59,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
 | CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | en PR |
 | CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | pendiente |
-| CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | pendiente |
+| CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | en PR |
 | CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | pendiente |
 | CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | pendiente |
 | CHG-10 | `security-core` | Matias | CHG-03 | en PR |
