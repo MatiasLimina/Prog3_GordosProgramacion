@@ -20,7 +20,7 @@ def cuerpo_libro(isbn, editorial_id, autor_id, **extra):
         "isbn": isbn,
         "titulo": f"Titulo {isbn}",
         "precio": "25000.00",
-        "stock": 4,
+        "stock_inicial": 4,
         "editorial_id": editorial_id,
         "autores": [{"autor_id": autor_id, "rol": "autor", "orden": 1}],
     }
@@ -96,7 +96,7 @@ async def test_patch_precio_invalido_da_422(client):
 
 
 async def test_patch_libro_inexistente_da_404(client):
-    r = await client.patch("/libros/999999999", json={"stock": 10})
+    r = await client.patch("/libros/999999999", json={"titulo": "Nuevo titulo"})
     assert r.status_code == 404
 
 
@@ -138,31 +138,15 @@ async def test_busqueda_titulo_con_inyeccion_da_200_vacia(client):
     assert len(r.json()) == 1
 
 
-# --- PATCH de editorial y género: la respuesta refleja el valor nuevo ---
+# --- PATCH de libro: sólo título y precio (RN-11); el resto es 422 ---
 
-async def test_patch_editorial_id_devuelve_la_editorial_nueva(client):
-    e1 = await editorial(client, "Editorial Uno")
-    e2 = await editorial(client, "Editorial Dos")
-    a = await autor(client)
-    libro_id = (await client.post("/libros/", json=cuerpo_libro("ISBN-PE", e1, a))).json()["id"]
-    r = await client.patch(f"/libros/{libro_id}", json={"editorial_id": e2})
-    assert r.status_code == 200, r.text
-    assert r.json()["editorial"]["id"] == e2
-    assert r.json()["editorial"]["nombre"] == "Editorial Dos"
-    r = await client.get(f"/libros/{libro_id}")
-    assert r.json()["editorial"]["id"] == e2
-
-
-async def test_patch_genero_id_devuelve_el_genero_nuevo(client):
+@pytest.mark.parametrize("campo", ["stock", "isbn", "editorial_id", "genero_id"])
+async def test_patch_libro_con_campos_no_editables_da_422(client, campo):
     e = await editorial(client)
     a = await autor(client)
-    g1 = (await client.post("/generos/", json={"nombre": "Novela"})).json()["id"]
-    g2 = (await client.post("/generos/", json={"nombre": "Cuento"})).json()["id"]
-    libro_id = (await client.post("/libros/", json=cuerpo_libro("ISBN-PG", e, a, genero_id=g1))).json()["id"]
-    r = await client.patch(f"/libros/{libro_id}", json={"genero_id": g2})
-    assert r.status_code == 200, r.text
-    assert r.json()["genero"]["id"] == g2
-    assert r.json()["genero"]["nombre"] == "Cuento"
+    libro_id = (await client.post("/libros/", json=cuerpo_libro("ISBN-PE", e, a))).json()["id"]
+    r = await client.patch(f"/libros/{libro_id}", json={campo: 1})
+    assert r.status_code == 422
 
 
 # --- detalle de libro: cantidad de consultas fija (Ejercicio 6 / C-07) ---
@@ -210,25 +194,22 @@ async def test_detalle_de_libro_emite_las_mismas_consultas_con_1_o_3_autores(cli
 # Por HTTP cada petición usa una sesión nueva y el resultado depende de cuándo
 # el recolector libera las instancias; en una sola sesión el defecto es determinista.
 
-async def test_servicio_actualizar_en_misma_sesion_refleja_editorial_y_genero_nuevos(client, sessionmaker_test):
+async def test_servicio_actualizar_en_misma_sesion_refleja_titulo_y_precio_nuevos(client, sessionmaker_test):
     from app.modules.libros import service
     from app.modules.libros.schemas import LibroCreate, LibroUpdate
 
     e1 = await editorial(client, "Editorial Uno")
-    e2 = await editorial(client, "Editorial Dos")
     a = await autor(client)
-    g1 = (await client.post("/generos/", json={"nombre": "Novela"})).json()["id"]
-    g2 = (await client.post("/generos/", json={"nombre": "Cuento"})).json()["id"]
     async with sessionmaker_test() as session:
         creado = await service.crear(
             session,
             LibroCreate(
-                isbn="ISBN-S", titulo="T", precio="10.00", stock=1, editorial_id=e1, genero_id=g1,
+                isbn="ISBN-S", titulo="T", precio="10.00", stock_inicial=1, editorial_id=e1,
                 autores=[{"autor_id": a, "rol": "autor", "orden": 1}],
             ),
         )
         assert creado.autores[0].nombre == "Jorge Luis Borges"
         assert creado.editorial.nombre == "Editorial Uno"
-        cambiado = await service.actualizar(session, creado.id, LibroUpdate(editorial_id=e2, genero_id=g2))
-    assert cambiado.editorial.id == e2 and cambiado.editorial.nombre == "Editorial Dos"
-    assert cambiado.genero.id == g2 and cambiado.genero.nombre == "Cuento"
+        cambiado = await service.actualizar(session, creado.id, LibroUpdate(titulo="T2", precio="12.00"))
+    assert cambiado.titulo == "T2" and str(cambiado.precio) == "12.00"
+    assert cambiado.editorial.id == e1
