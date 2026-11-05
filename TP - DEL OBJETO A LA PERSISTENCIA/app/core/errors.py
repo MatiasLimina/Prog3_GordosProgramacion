@@ -34,6 +34,19 @@ class Conflicto(Exception):
         self.mensaje = mensaje
 
 
+class PeticionInvalida(Exception):
+    """La petición no cumple el contrato; la app lo responde como 422 con `mensaje`.
+
+    Es una excepción de dominio: no conoce HTTP. La lanza el código de negocio
+    (por ejemplo, una página de listado fuera de rango en `core/paginacion.py`),
+    y el handler de `app/main.py` la traduce a `422 {"detail": mensaje}`.
+    """
+
+    def __init__(self, mensaje: str) -> None:
+        super().__init__(mensaje)
+        self.mensaje = mensaje
+
+
 def _buscar_atributo(error: IntegrityError, nombre: str) -> str | None:
     """Busca un atributo en `orig` y, si no está, en `orig.__cause__`.
 
