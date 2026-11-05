@@ -54,7 +54,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | ID | Change (nombre openspec) | Responsable | Depende de | Estado |
 |---|---|---|---|---|
 | CHG-00 | `bootstrap-parcial` | Matias | — | mergeado |
-| CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
+| CHG-01 | `deploy-imagen` | Lauti | — | mergeado (#37) |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
 | CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado (#33) |
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | mergeado (#40) |
