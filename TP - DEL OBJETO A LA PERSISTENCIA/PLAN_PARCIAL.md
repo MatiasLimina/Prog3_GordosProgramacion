@@ -60,8 +60,8 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | mergeado (#40) |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | mergeado (#45) |
 | CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | mergeado (#39) |
-| CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | en PR |
-| CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | en PR |
+| CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | mergeado (#46) |
+| CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | mergeado (#49) |
 | CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | mergeado (#42) |
 | CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | pendiente |
 | CHG-10 | `security-core` | Matias | CHG-03 | mergeado (#36) |
