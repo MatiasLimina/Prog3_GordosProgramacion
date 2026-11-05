@@ -5,7 +5,8 @@ Plan de ejecución del parcial «La librería con acceso, transacciones y despli
 
 > **Para agentes de IA:** antes de trabajar en un change, buscá su ID acá (`CHG-XX`), leé su sección completa
 > (entregables, DoD, "Leer antes" y dependencias) y verificá que sus dependencias estén mergeadas.
-> No toques archivos de otro change sin avisar. Al terminar, marcá el estado en la tabla de seguimiento.
+> No toques archivos de otro change sin avisar. El PR del change actualiza su fila de la tabla de seguimiento y archiva el change
+> en openspec **en el mismo PR** (regla completa en `AGENTS.md`, sección 10).
 
 ---
 
@@ -47,22 +48,23 @@ Plan de ejecución del parcial «La librería con acceso, transacciones y despli
 
 ## 2. Seguimiento
 
-Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
+Estados: `pendiente` · `en curso` (parte mergeada, faltan PRs) · `mergeado (#N)`.
+La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`, sección 10). Lo que está en trabajo se ve en los PRs abiertos, no acá.
 
 | ID | Change (nombre openspec) | Responsable | Depende de | Estado |
 |---|---|---|---|---|
 | CHG-00 | `bootstrap-parcial` | Matias | — | mergeado |
 | CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
-| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado |
-| CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | en PR |
-| CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
-| CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | en PR |
+| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado (#33) |
+| CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | mergeado (#40) |
+| CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | mergeado (#45) |
+| CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | mergeado (#39) |
 | CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | pendiente |
 | CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | pendiente |
-| CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | pendiente |
+| CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | mergeado (#42) |
 | CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | pendiente |
-| CHG-10 | `security-core` | Matias | CHG-03 | en PR |
+| CHG-10 | `security-core` | Matias | CHG-03 | mergeado (#36) |
 | CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | pendiente |
 | CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | pendiente |
 | CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | pendiente |
