@@ -58,7 +58,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
 | CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado (#33) |
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | mergeado (#40) |
-| CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
+| CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | mergeado (#45) |
 | CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | mergeado (#39) |
 | CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | pendiente |
 | CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | pendiente |

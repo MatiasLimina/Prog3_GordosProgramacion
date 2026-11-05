@@ -64,7 +64,7 @@ app/
 │   ├── unit_of_work.py     # UnitOfWork base: confirma o revierte al salir del bloque
 │   ├── base.py             # (propio del grupo) naming convention de constraints; se importa antes que los modelos
 │   ├── tipos.py            # (propio del grupo) tipos int32 para ids, stock y cantidades
-│   └── errors.py           # (propio del grupo) IntegrityError -> 409 con mensaje propio
+│   └── errors.py           # (propio del grupo) excepciones de dominio: Conflicto -> 409, PeticionInvalida -> 422; IntegrityError -> 409 con mensaje propio
 ├── models.py               # importa TODOS los modelos (metadata completo para Alembic)
 └── modules/<módulo>/
     ├── models.py           # tablas, restricciones y relaciones
@@ -136,7 +136,7 @@ Se implementa en CHG-03 (Settings), CHG-10 (seguridad), CHG-11 (auth), CHG-12 (a
 - **401 vs 403:** 401 si no hay cookie, el token es inválido o venció, o el usuario no existe o está inactivo. 403 si falta el rol vigente, si hay cambio de contraseña pendiente o si no es dueño del recurso.
 - **Roles vigentes** (RN-04): `requiere_rol` los consulta **en la base en cada petición**; los roles del token son informativos (`/auth/yo` devuelve ambos). Vigente = no revocada y sin vencer. Revocar escribe `revocada_en` y la fila no se borra; reasignar un rol vencido cierra la fila anterior y abre una nueva. El vencimiento llega con zona horaria y en el futuro (si no, 422, no 409). RN-05: nadie se revoca su propio ADMIN y nunca quedan cero administradores vigentes (409).
 - **Dos grupos de rutas** en `main.py`: uno abierto (health, `/auth`, catálogo público en GET) y uno protegido con el control del cambio obligatorio de contraseña (RN-06) montado **una sola vez**, porque FastAPI suma dependencias y no las resta. Lo propio (`/mis-ventas`, `/auth/yo`) sólo pide estar autenticado (RN-14), pero igual vive en el grupo protegido (401 sin sesión, 403 con el cambio de contraseña pendiente). `GET /ventas/{id}` no lleva `requiere_rol`: decide el servicio (personal o cliente dueño; si no, 403).
-- **Errores:** nunca texto interno de la base, nombres de constraints ni trazas; ninguna entrada inválida termina en 500 (RN-15).
+- **Errores:** nunca texto interno de la base, nombres de constraints ni trazas; ninguna entrada inválida termina en 500 (RN-15). Las excepciones de dominio son `Conflicto` (409) y `PeticionInvalida` (422), declaradas en `app/core/errors.py` y traducidas por los handlers de `app/main.py`; el código de negocio nunca lanza `HTTPException`.
 
 ## 7. Convenciones
 
@@ -226,7 +226,7 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 | ~~`app/core/config.py` con `DATABASE_URL` y `DB_ECHO`~~ | `Settings` con `POSTGRES_*`, `SQL_ECHO` y recursos en el lifespan | CHG-03 ✅ hecho |
 | ~~`health` con `router.py` y `schemas.py`~~ | sólo `router.py` | CHG-03 ✅ hecho |
 | Servicios que reciben `AsyncSession` (catálogo, clientes, ventas) | reciben el UoW; repositorios por entidad | CHG-04 (base), 13, 15, 16 |
-| `app/core/pagination.py` con `limit` / `offset` | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 (y 13/15/16 al usarlo) |
+| `app/core/pagination.py` con `limit` / `offset` | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 ✅ hecho (el viejo se migra en 13/15/16) |
 | `app/core/errors.py` (`commit_or_409` / `traducir_integrity` reciben la sesión) | el UoW lanza `Conflicto` (con `mensaje_para`) y `main.py` lo pasa a 409; `commit_or_409` sigue para los módulos viejos hasta 13/15/16 | CHG-04 |
 | `test/*.http` con los casos C-01 a C-08 del TP | casos C-01 a C-16 del parcial (otra numeración y otro significado) | CHG-18 |
 | ~~`tests/` con un conftest que deriva `libreria_test` de `DATABASE_URL`; `env.example` con `DATABASE_URL`~~ | deriva de `Settings` / `POSTGRES_*` | CHG-03 ✅ hecho |

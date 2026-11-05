@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.config import get_settings
 from app.core.database import crear_fabrica_sesiones, crear_motor
-from app.core.errors import Conflicto, mensaje_para
+from app.core.errors import Conflicto, PeticionInvalida, mensaje_para
 from app.core.security import calcular_hash_ficticio
 import app.models  # noqa: F401  (registra todos los modelos en el metadata)
 from app.modules.autores.router import router as autores_router
@@ -54,6 +54,12 @@ def registrar_handlers(app: FastAPI) -> None:
     @app.exception_handler(Conflicto)
     async def conflicto_handler(request: Request, exc: Conflicto):
         return JSONResponse(status_code=409, content={"detail": exc.mensaje})
+
+    # PeticionInvalida la lanza el código de negocio (core no conoce HTTP): mismo
+    # 422 y mismo cuerpo que HTTPException, así el cliente no distingue el origen.
+    @app.exception_handler(PeticionInvalida)
+    async def peticion_invalida_handler(request: Request, exc: PeticionInvalida):
+        return JSONResponse(status_code=422, content={"detail": exc.mensaje})
 
 
 app = FastAPI(title="Librería", lifespan=lifespan)
