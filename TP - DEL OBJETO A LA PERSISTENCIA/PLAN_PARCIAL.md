@@ -53,15 +53,15 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 
 | ID | Change (nombre openspec) | Responsable | Depende de | Estado |
 |---|---|---|---|---|
-| CHG-00 | `bootstrap-parcial` | Matias | — | mergeado |
+| CHG-00 | `bootstrap-parcial` | Matias | — | mergeado (#29) |
 | CHG-01 | `deploy-imagen` | Lauti | — | mergeado (#37) |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
 | CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado (#33) |
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | mergeado (#40) |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | mergeado (#45) |
 | CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | mergeado (#39) |
-| CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | en PR |
-| CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | en PR |
+| CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | mergeado (#46) |
+| CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | mergeado (#49) |
 | CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | mergeado (#42) |
 | CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | en curso |
 | CHG-10 | `security-core` | Matias | CHG-03 | mergeado (#36) |
@@ -96,7 +96,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 
 | Oleada | Change | Responsable | Prioridad | Por qué / qué destraba |
 |---|---|---|---|---|
-| 0 | CHG-00 | Matias | — | Hecho (mergeado y archivado). |
+| 0 | CHG-00 | Matias | — | Hecho: mergeado (#29) y archivado. |
 | 1 | **CHG-03** `settings-lifespan` | Nico | **P1** | Destraba CHG-04 (Nico) y CHG-10 (Matias). Es lo primero que se hace en todo el parcial. |
 | 1 | **CHG-07** `modelos-libro-cliente-stock` | Nico | **P1** | Con CHG-06, destraba CHG-08 (migraciones), que bloquea a CHG-11, 13, 15 y 17. Nico lo hace apenas abre el PR de CHG-03. |
 | 1 | **CHG-06** `modelos-usuarios` | Lauti | **P1** | La otra mitad de CHG-08. Es lo primero de Lauti: PR chico y rápido. |
