@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.modules.autores.models import Autor
     from app.modules.editoriales.models import Editorial
     from app.modules.generos.models import Genero
+    from app.modules.usuarios.models import Usuario
     from app.modules.ventas.models import RenglonVenta, Venta
 
 
@@ -81,7 +82,7 @@ class MovimientoStock(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     libro_id: int = Field(foreign_key="libro.id", index=True)
     venta_id: int | None = Field(default=None, foreign_key="venta.id", index=True, nullable=True)
-    # FK por texto: el modelo Usuario vive en el módulo usuarios (CHG-06) y no se importa acá.
+    # FK por texto: el módulo usuarios se referencia bajo TYPE_CHECKING (sin import circular).
     usuario_id: int = Field(foreign_key="usuario.id", index=True)
     # Signo = entrada (+) o salida (-); cero no tiene sentido.
     cantidad: int = Field()
@@ -95,3 +96,4 @@ class MovimientoStock(SQLModel, table=True):
 
     libro: Optional["Libro"] = Relationship(back_populates="movimientos")
     venta: Optional["Venta"] = Relationship(back_populates="movimientos")
+    usuario: Optional["Usuario"] = Relationship(back_populates="movimientos")

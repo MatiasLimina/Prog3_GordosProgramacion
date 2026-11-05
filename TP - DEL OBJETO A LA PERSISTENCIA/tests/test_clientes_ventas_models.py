@@ -130,3 +130,19 @@ def test_venta_renglones_en_cascada():
     cascade = Venta.renglones.property.cascade
     assert cascade.delete is True
     assert cascade.delete_orphan is True
+
+
+def test_cliente_usuario_y_usuario_cliente_son_a_uno_y_se_corresponden():
+    from app.modules.usuarios.models import Usuario
+
+    configure_mappers()
+    rel_cliente = Cliente.__mapper__.relationships["usuario"]
+    rel_usuario = Usuario.__mapper__.relationships["cliente"]
+    assert rel_cliente.back_populates == "cliente"
+    assert rel_usuario.back_populates == "usuario"
+    assert rel_cliente.uselist is False
+    assert rel_usuario.uselist is False
+    assert rel_cliente.mapper.class_ is Usuario
+    assert rel_usuario.mapper.class_ is Cliente
+    assert {c.name for c in rel_cliente.local_columns} == {"usuario_id"}
+    assert "delete" not in rel_usuario.cascade

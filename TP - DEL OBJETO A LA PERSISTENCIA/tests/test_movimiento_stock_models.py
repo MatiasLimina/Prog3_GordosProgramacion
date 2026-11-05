@@ -111,3 +111,27 @@ def test_colecciones_no_borran_en_cascada_y_no_ponen_nulos(coleccion):
 def test_lados_del_movimiento_son_a_uno(lado):
     configure_mappers()
     assert lado.property.uselist is False
+
+
+def test_movimiento_usuario_y_usuario_movimientos_se_corresponden():
+    from app.modules.usuarios.models import Usuario
+
+    configure_mappers()
+    rel_mov = MovimientoStock.__mapper__.relationships["usuario"]
+    rel_usr = Usuario.__mapper__.relationships["movimientos"]
+    assert rel_mov.back_populates == "movimientos"
+    assert rel_usr.back_populates == "usuario"
+    assert rel_mov.uselist is False
+    assert rel_usr.uselist is True
+    assert rel_usr.mapper.class_ is MovimientoStock
+    assert rel_usr.passive_deletes == "all"
+    assert "delete" not in rel_usr.cascade
+
+
+def test_metadata_ordena_las_14_tablas_y_las_fk_a_usuario_resuelven():
+    tablas = {t.name for t in SQLModel.metadata.sorted_tables}
+    assert len(tablas) == 14
+    assert {"usuario", "movimiento_stock", "cliente"} <= tablas
+    for tabla, columna in (("cliente", "usuario_id"), ("movimiento_stock", "usuario_id")):
+        fks = SQLModel.metadata.tables[tabla].c[columna].foreign_keys
+        assert {fk.column.table.name for fk in fks} == {"usuario"}

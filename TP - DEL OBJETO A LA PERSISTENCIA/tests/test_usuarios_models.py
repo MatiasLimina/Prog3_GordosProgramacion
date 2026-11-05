@@ -159,9 +159,10 @@ def test_relaciones_usuario_asignacion_rol():
     assert rel_otorgada.target == Usuario.__table__
 
 
-def test_acuerdo_chg_07_usuario_sin_cliente_ni_movimientos_todavia():
-    # Según acuerdo con Nico, CHG-06 sale sin cliente ni movimientos en Usuario
-    # para no romper mappers antes de que CHG-07 defina Cliente.usuario y MovimientoStock.usuario.
+def test_acuerdo_chg_07_usuario_ya_tiene_cliente_y_movimientos():
+    # Según acuerdo con Nico, CHG-07 incorpora Usuario.cliente y Usuario.movimientos
+    # junto con Cliente.usuario y MovimientoStock.usuario (cierra el marcador de CHG-06).
+    configure_mappers()
     relaciones = Usuario.__mapper__.relationships.keys()
-    assert "cliente" not in relaciones
-    assert "movimientos" not in relaciones
+    assert "cliente" in relaciones
+    assert "movimientos" in relaciones

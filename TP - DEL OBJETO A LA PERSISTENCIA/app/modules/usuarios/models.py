@@ -2,10 +2,14 @@
 import app.core.base  # noqa: F401
 
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import CheckConstraint, DateTime, Index, text
 from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from app.modules.clientes.models import Cliente
+    from app.modules.libros.models import MovimientoStock
 
 
 class Usuario(SQLModel, table=True):
@@ -19,8 +23,16 @@ class Usuario(SQLModel, table=True):
     activo: bool = Field(default=True)
     debe_cambiar_password: bool = Field(default=False)
 
-    # Según acuerdo con Nico (CHG-07): Usuario.cliente y Usuario.movimientos se
-    # incorporan en CHG-07 en el mismo commit que declara Cliente.usuario y MovimientoStock.usuario.
+    # Declaradas en CHG-07 (acuerdo con Nico), junto con Cliente.usuario y MovimientoStock.usuario.
+    # cliente: a uno (escalar); la FK vive en cliente.usuario_id (UNIQUE, nullable).
+    cliente: Optional["Cliente"] = Relationship(
+        back_populates="usuario", sa_relationship_kwargs={"uselist": False}
+    )
+    # movimientos: passive_deletes="all" y sin cascade de borrado: los usuarios no se borran
+    # y movimiento_stock es de sólo agregado; el ORM nunca debe tocar esas filas.
+    movimientos: list["MovimientoStock"] = Relationship(
+        back_populates="usuario", sa_relationship_kwargs={"passive_deletes": "all"}
+    )
     asignaciones: list["AsignacionRol"] = Relationship(
         back_populates="usuario",
         sa_relationship_kwargs={"foreign_keys": "[AsignacionRol.usuario_id]"},
