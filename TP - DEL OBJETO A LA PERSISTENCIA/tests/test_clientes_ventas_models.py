@@ -28,7 +28,7 @@ def test_modelos_registrados_en_metadata():
 @pytest.mark.parametrize(
     "modelo,tabla,columnas",
     [
-        (Cliente, "cliente", {"id", "nombre", "email"}),
+        (Cliente, "cliente", {"id", "nombre", "email", "usuario_id"}),
         (PerfilCliente, "perfil_cliente", {"id", "cliente_id", "telefono", "direccion"}),
         (Venta, "venta", {"id", "cliente_id", "fecha", "total"}),
         (
@@ -43,7 +43,9 @@ def test_tabla_y_columnas(modelo, tabla, columnas):
     assert t.name == tabla
     assert set(t.c.keys()) == columnas
     assert t.primary_key.columns.keys() == ["id"]
-    assert all(not t.c[c].nullable for c in columnas)
+    # Sólo cliente.usuario_id admite nulo (cliente sin acceso al sistema).
+    nulables = {"usuario_id"} if tabla == "cliente" else set()
+    assert {c for c in columnas if t.c[c].nullable} == nulables
 
 
 def test_numeric_total_12_2_y_precio_unitario_10_2():
@@ -63,6 +65,8 @@ def test_venta_fecha_con_zona_horaria():
     "modelo,nombre",
     [
         (Cliente, "uq_cliente_email"),
+        (Cliente, "uq_cliente_usuario_id"),
+        (Cliente, "fk_cliente_usuario_id_usuario"),
         (PerfilCliente, "uq_perfil_cliente_cliente_id"),
         (PerfilCliente, "fk_perfil_cliente_cliente_id_cliente"),
         (Venta, "fk_venta_cliente_id_cliente"),
@@ -85,6 +89,7 @@ def test_indices_en_claves_foraneas():
 def test_unicos_sin_indice_redundante():
     # unique=True sin index=True: el UNIQUE ya indexa; no debe existir ix_ extra.
     assert "ix_cliente_email" not in _indices(Cliente)
+    assert "ix_cliente_usuario_id" not in _indices(Cliente)
     assert "ix_perfil_cliente_cliente_id" not in _indices(PerfilCliente)
 
 
@@ -125,3 +130,19 @@ def test_venta_renglones_en_cascada():
     cascade = Venta.renglones.property.cascade
     assert cascade.delete is True
     assert cascade.delete_orphan is True
+
+
+def test_cliente_usuario_y_usuario_cliente_son_a_uno_y_se_corresponden():
+    from app.modules.usuarios.models import Usuario
+
+    configure_mappers()
+    rel_cliente = Cliente.__mapper__.relationships["usuario"]
+    rel_usuario = Usuario.__mapper__.relationships["cliente"]
+    assert rel_cliente.back_populates == "cliente"
+    assert rel_usuario.back_populates == "usuario"
+    assert rel_cliente.uselist is False
+    assert rel_usuario.uselist is False
+    assert rel_cliente.mapper.class_ is Usuario
+    assert rel_usuario.mapper.class_ is Cliente
+    assert {c.name for c in rel_cliente.local_columns} == {"usuario_id"}
+    assert "delete" not in rel_usuario.cascade

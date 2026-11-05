@@ -3,7 +3,7 @@ import sys
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import Numeric
+from sqlalchemy import DateTime, Numeric
 from sqlmodel import SQLModel
 
 import app.models  # noqa: F401
@@ -51,11 +51,23 @@ def test_libro_estructura_y_constraints():
     # Constraints con nombres de la convención
     nombres_constraints = {c.name for c in tabla.constraints}
     assert "pk_libro" in nombres_constraints
-    assert "uq_libro_isbn" in nombres_constraints
+    # El ISBN ya no es UNIQUE común: es único sólo entre libros vigentes (índice parcial).
+    assert "uq_libro_isbn" not in nombres_constraints
+    indice = next(i for i in tabla.indexes if i.name == "uq_libro_isbn_vigente")
+    assert indice.unique is True
+    assert [c.name for c in indice.columns] == ["isbn"]
+    assert str(indice.dialect_options["postgresql"]["where"]) == "borrado_en IS NULL"
     assert "ck_libro_precio_positivo" in nombres_constraints
     assert "ck_libro_stock_no_negativo" in nombres_constraints
     assert "fk_libro_editorial_id_editorial" in nombres_constraints
     assert "fk_libro_genero_id_genero" in nombres_constraints
+
+
+def test_libro_borrado_en_admite_nulo_y_lleva_zona_horaria():
+    columna = Libro.__table__.c.borrado_en
+    assert columna.nullable is True
+    assert isinstance(columna.type, DateTime)
+    assert columna.type.timezone is True
 
 
 def test_libro_autor_estructura_y_constraints():
@@ -89,7 +101,7 @@ assert "{esperada}" in nombres, nombres
 @pytest.mark.parametrize(
     "modulo,clase,esperada",
     [
-        ("app.modules.libros.models", "Libro", "uq_libro_isbn"),
+        ("app.modules.libros.models", "Libro", "ck_libro_stock_no_negativo"),
         ("app.modules.libros.models", "Libro", "ck_libro_precio_positivo"),
         ("app.modules.libros.models", "LibroAutor", "ck_libro_autor_rol_valido"),
     ],
@@ -97,4 +109,18 @@ assert "{esperada}" in nombres, nombres
 def test_importar_solo_un_modelo_aplica_naming_convention_aislada(modulo, clase, esperada):
     codigo = CODIGO_PROCESO_AISLADO.format(modulo=modulo, clase=clase, esperada=esperada)
     r = subprocess.run([sys.executable, "-c", codigo], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+
+
+CODIGO_INDICE_AISLADO = """
+import sys
+sys.path.insert(0, '.')
+from app.modules.libros.models import Libro
+nombres = {i.name for i in Libro.__table__.indexes}
+assert "uq_libro_isbn_vigente" in nombres, nombres
+"""
+
+
+def test_importar_solo_libro_define_el_indice_unico_parcial():
+    r = subprocess.run([sys.executable, "-c", CODIGO_INDICE_AISLADO], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
