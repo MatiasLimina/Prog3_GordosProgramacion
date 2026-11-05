@@ -3,15 +3,13 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from app.modules.autores.schemas import AutorCreate, AutorLibroRead, AutorRead, AutorUpdate
+from app.modules.autores.schemas import (
+    AutorCreate,
+    AutorUpdate,
+)
 from app.modules.libros.schemas import (
-    AutorEnLibroRead,
-    EditorialSimpleRead,
-    GeneroSimpleRead,
     LibroAutorCreate,
     LibroCreate,
-    LibroDetalleRead,
-    LibroRead,
     LibroUpdate,
     ReponerIn,
 )

@@ -61,8 +61,10 @@ async def crear(session: AsyncSession, datos: LibroCreate) -> LibroDetalleRead:
     Ningún if verifica si los IDs existen: se escribe y la base responde.
     Si la base rechaza una FK o unicidad, commit_or_409 responde 409 (RN-01, Ejercicio 5).
     """
-    datos_libro = datos.model_dump(exclude={"autores"})
-    libro = Libro(**datos_libro)
+    # Transitorio hasta CHG-13: el contrato viaja `stock_inicial` y la columna
+    # sigue siendo `stock`; el alta dejará un movimiento «Stock inicial».
+    datos_libro = datos.model_dump(exclude={"autores", "stock_inicial"})
+    libro = Libro(stock=datos.stock_inicial, **datos_libro)
 
     for a in datos.autores:
         autoria = LibroAutor(

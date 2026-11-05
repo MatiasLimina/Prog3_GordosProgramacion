@@ -33,28 +33,28 @@ Content-Type: application/json
 POST {{host}}/libros/
 Content-Type: application/json
 
-{"isbn": "978-950-00-0001-1", "titulo": "Ficciones", "precio": "25000.00", "stock": 4, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "autor", "orden": 1}]}
+{"isbn": "978-950-00-0001-1", "titulo": "Ficciones", "precio": "25000.00", "stock_inicial": 4, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "autor", "orden": 1}]}
 
 ### C-02: ISBN repetido
 # Esperado: 409 {"detail": "Ya existe un libro con ese ISBN."}
 POST {{host}}/libros/
 Content-Type: application/json
 
-{"isbn": "978-950-00-0001-1", "titulo": "Otro titulo", "precio": "10000.00", "stock": 1, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "autor", "orden": 1}]}
+{"isbn": "978-950-00-0001-1", "titulo": "Otro titulo", "precio": "10000.00", "stock_inicial": 1, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "autor", "orden": 1}]}
 
 ### C-04 (a): libro con editorial inexistente
 # Esperado: 409 {"detail": "La editorial indicada no existe."} (sin if previo: la FK decide)
 POST {{host}}/libros/
 Content-Type: application/json
 
-{"isbn": "978-950-00-0002-2", "titulo": "Libro fantasma", "precio": "10000.00", "stock": 1, "editorial_id": 999999999, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "autor", "orden": 1}]}
+{"isbn": "978-950-00-0002-2", "titulo": "Libro fantasma", "precio": "10000.00", "stock_inicial": 1, "editorial_id": 999999999, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "autor", "orden": 1}]}
 
 ### C-04 (b): libro con autor inexistente
 # Esperado: 409 {"detail": "Uno de los autores indicados no existe."}
 POST {{host}}/libros/
 Content-Type: application/json
 
-{"isbn": "978-950-00-0003-3", "titulo": "Libro huerfano", "precio": "10000.00", "stock": 1, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": 999999999, "rol": "autor", "orden": 1}]}
+{"isbn": "978-950-00-0003-3", "titulo": "Libro huerfano", "precio": "10000.00", "stock_inicial": 1, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": 999999999, "rol": "autor", "orden": 1}]}
 
 ### Alta de libro con dos autores (se captura su id)
 # @name libro2
@@ -62,7 +62,7 @@ Content-Type: application/json
 POST {{host}}/libros/
 Content-Type: application/json
 
-{"isbn": "978-950-00-0004-4", "titulo": "Los que aman, odian", "precio": "21000.00", "stock": 4, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "coautor", "orden": 1}, {"autor_id": {{autor2.response.body.id}}, "rol": "coautor", "orden": 2}]}
+{"isbn": "978-950-00-0004-4", "titulo": "Los que aman, odian", "precio": "21000.00", "stock_inicial": 4, "editorial_id": {{editorial1.response.body.id}}, "autores": [{"autor_id": {{autor1.response.body.id}}, "rol": "coautor", "orden": 1}, {"autor_id": {{autor2.response.body.id}}, "rol": "coautor", "orden": 2}]}
 
 ### Listado paginado de libros
 # Esperado: 200 con lista (editorial precargada en cada elemento)
@@ -114,12 +114,19 @@ Content-Type: application/json
 
 {"precio": "0"}
 
+### C-16: PATCH con stock
+# Esperado: 422 (el stock no se edita por PATCH: cambia por movimientos, RN-11)
+PATCH {{host}}/libros/{{libro1.response.body.id}}
+Content-Type: application/json
+
+{"stock": 10}
+
 ### PATCH de libro inexistente
 # Esperado: 404
 PATCH {{host}}/libros/999999999
 Content-Type: application/json
 
-{"stock": 10}
+{"precio": "100.00"}
 
 ### Libros del autor 1 (paginado)
 # Esperado: 200 con 2 elementos (Ficciones rol autor, Los que aman odian rol coautor)

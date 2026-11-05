@@ -109,7 +109,7 @@ Content-Type: application/json
 POST {{host}}/libros/
 Content-Type: application/json
 
-{"isbn": "978-0-00-000001-0", "titulo": "Libro A", "precio": "1500.00", "stock": 3, "editorial_id": {{editorial1.response.body.id}}, "genero_id": {{generoLibros.response.body.id}}}
+{"isbn": "978-0-00-000001-0", "titulo": "Libro A", "precio": "1500.00", "stock_inicial": 3, "editorial_id": {{editorial1.response.body.id}}, "genero_id": {{generoLibros.response.body.id}}}
 
 ### Libros de una editorial
 # Esperado: 200 con la lista de libros de la primera editorial (cada uno con editorial y género)
