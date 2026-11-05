@@ -4,9 +4,12 @@ from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
+from app.core.errors import PeticionInvalida
 from app.core.paginacion import Page, ParametrosPagina, envolver, paginacion_params
+from app.main import registrar_handlers
 
 app = FastAPI()
+registrar_handlers(app)
 
 
 @app.get("/items")
@@ -84,18 +87,16 @@ def test_envoltorio_sobrante():
     assert page.items == [{"id": 5}]
 
 
-def test_page_fuera_de_rango_lanza_422():
-    with pytest.raises(Exception) as exc:
+def test_page_fuera_de_rango_lanza_excepcion_de_dominio():
+    with pytest.raises(PeticionInvalida) as exc:
         envolver([], total=5, page=4, size=2)
-    assert getattr(exc.value, "status_code", None) == 422
-    assert "La página 4 no existe: hay 3" in exc.value.detail
+    assert exc.value.mensaje == "La página 4 no existe: hay 3"
 
 
 def test_page_fuera_de_rango_lista_vacia():
-    with pytest.raises(Exception) as exc:
+    with pytest.raises(PeticionInvalida) as exc:
         envolver([], total=0, page=2, size=20)
-    assert getattr(exc.value, "status_code", None) == 422
-    assert "La página 2 no existe: hay 1" in exc.value.detail
+    assert exc.value.mensaje == "La página 2 no existe: hay 1"
 
 
 def test_page_es_generico_y_serializa():

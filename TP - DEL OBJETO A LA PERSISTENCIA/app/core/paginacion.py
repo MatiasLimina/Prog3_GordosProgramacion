@@ -4,13 +4,18 @@ Todo listado responde `{items, total, page, size, pages}`: `page` empieza en 1,
 `size` va de 1 a 100 (por defecto 20), `pages` es el techo de `total / size` con
 mínimo 1 (con cero resultados hay una página, vacía) y pedir una página más allá
 de la última responde 422 con «La página {page} no existe: hay {pages}».
+
+El core no conoce HTTP: la página fuera de rango lanza `PeticionInvalida` (excepción
+de dominio de `core/errors.py`) y el handler de `app/main.py` la traduce a 422.
 """
 from dataclasses import dataclass
 from math import ceil
 from typing import Generic, TypeVar
 
-from fastapi import HTTPException, Query
+from fastapi import Query
 from pydantic import BaseModel
+
+from app.core.errors import PeticionInvalida
 
 T = TypeVar("T")
 
@@ -47,5 +52,5 @@ def envolver(items: list[T], *, total: int, page: int, size: int) -> Page[T]:
     """
     pages = max(1, ceil(total / size))
     if not 1 <= page <= pages:
-        raise HTTPException(422, f"La página {page} no existe: hay {pages}")
+        raise PeticionInvalida(f"La página {page} no existe: hay {pages}")
     return Page(items=items, total=total, page=page, size=size, pages=pages)
