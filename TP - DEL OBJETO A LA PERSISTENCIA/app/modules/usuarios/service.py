@@ -114,7 +114,7 @@ async def iniciar_sesion(
     revela que la cuenta existe). Un `password_hash` corrupto también es un fallo.
     """
     async with uow:
-        conteo = await uow.intentos.contar_fallos_recientes(datos.email, ip)
+        conteo = await uow.intentos.contar_fallos_recientes(datos.email, ip, VENTANA_SEGUNDOS)
         if conteo.fallos >= LIMITE_FALLOS:
             raise DemasiadosIntentos(calcular_retry_after(conteo.ahora, conteo.mas_viejo))
         usuario = await uow.usuarios.get_by_email(datos.email)

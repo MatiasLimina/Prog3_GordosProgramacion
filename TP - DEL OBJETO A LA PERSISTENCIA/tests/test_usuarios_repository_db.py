@@ -95,11 +95,11 @@ async def _insertar_intentos(sessionmaker, email, ip, exito, hace_segundos):
         await s.commit()
 
 
-async def _contar_fallos(sessionmaker, email="ana@example.com", ip="127.0.0.1"):
+async def _contar_fallos(sessionmaker, email="ana@example.com", ip="127.0.0.1", ventana_segundos=60):
     from app.modules.usuarios.repository import IntentoAccesoRepository
 
     async with sessionmaker() as s:
-        return await IntentoAccesoRepository(s).contar_fallos_recientes(email, ip)
+        return await IntentoAccesoRepository(s).contar_fallos_recientes(email, ip, ventana_segundos)
 
 
 async def test_cuenta_los_fallos_recientes_del_mismo_correo_e_ip(sessionmaker_test):
@@ -147,3 +147,15 @@ async def test_el_exito_de_otra_ip_o_de_otro_correo_no_reinicia(sessionmaker_tes
     await _insertar_intentos(sessionmaker_test, "ana@example.com", "10.0.0.9", True, [20])
     await _insertar_intentos(sessionmaker_test, "otra@example.com", "127.0.0.1", True, [20])
     assert (await _contar_fallos(sessionmaker_test)).fallos == 3
+
+
+@pytest.mark.parametrize(
+    "ventana, esperado",
+    [(30, 2), (60, 3), (120, 4)],
+    ids=["ventana_30", "ventana_60", "ventana_120"],
+)
+async def test_la_ventana_es_un_parametro_y_se_respeta(sessionmaker_test, ventana, esperado):
+    # fallos de hace 10, 20, 45 y 90 s: cada ventana deja entrar sólo a los más recientes
+    await _insertar_intentos(sessionmaker_test, "ana@example.com", "127.0.0.1", False, [10, 20, 45, 90])
+    conteo = await _contar_fallos(sessionmaker_test, ventana_segundos=ventana)
+    assert conteo.fallos == esperado

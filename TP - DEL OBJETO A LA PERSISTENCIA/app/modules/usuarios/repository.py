@@ -26,14 +26,14 @@ class ConteoFallos:
 
 
 # Una sola sentencia, parámetros ligados. Los fallos cuentan si son del mismo correo e IP,
-# de los últimos 60 s y POSTERIORES al último éxito del mismo correo e IP (RN-07: un login
+# de los últimos `:ventana` segundos (la fija el servicio, RN-07) y POSTERIORES al último éxito del mismo correo e IP (RN-07: un login
 # correcto reinicia la cuenta sin borrar filas). Usa ix_intento_acceso_email_ip_cuando.
 _CONTAR_FALLOS = text(
     """
     SELECT count(*) AS fallos, min(cuando) AS mas_viejo, now() AS ahora
     FROM intento_acceso
     WHERE email = :email AND ip = :ip AND NOT exito
-      AND cuando > now() - interval '60 seconds'
+      AND cuando > now() - make_interval(secs => :ventana)
       AND cuando > COALESCE(
             (SELECT max(cuando) FROM intento_acceso
              WHERE email = :email AND ip = :ip AND exito),
@@ -77,9 +77,14 @@ class IntentoAccesoRepository(BaseRepository[IntentoAcceso]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, IntentoAcceso)
 
-    async def contar_fallos_recientes(self, email: str, ip: str) -> ConteoFallos:
-        """Fallos vigentes del correo desde esa IP (ventana de 60 s, posteriores al último éxito)."""
-        fila = (await self.session.execute(_CONTAR_FALLOS, {"email": email, "ip": ip})).one()
+    async def contar_fallos_recientes(self, email: str, ip: str, ventana_segundos: int) -> ConteoFallos:
+        """Fallos vigentes del correo desde esa IP (dentro de la ventana, posteriores al último éxito).
+
+        La ventana la pasa quien llama (el servicio, con `VENTANA_SEGUNDOS`): el repositorio no
+        importa del servicio y así el valor vive en un solo lugar.
+        """
+        parametros = {"email": email, "ip": ip, "ventana": ventana_segundos}
+        fila = (await self.session.execute(_CONTAR_FALLOS, parametros)).one()
         return ConteoFallos(fallos=fila.fallos, mas_viejo=fila.mas_viejo, ahora=fila.ahora)
 
 
