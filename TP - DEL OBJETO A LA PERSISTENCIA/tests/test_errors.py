@@ -84,7 +84,12 @@ async def test_default_explicito_si_no_matchea():
 
 @pytest.mark.parametrize(
     "sqlstate,fragmento",
-    [("23505", "único"), ("23503", "relación"), ("23514", "condiciones")],
+    [
+        ("23505", "único"),
+        ("23503", "relación"),
+        ("23514", "condiciones"),
+        ("23001", "modificar ni borrar"),
+    ],
 )
 async def test_default_segun_sqlstate(sqlstate, fragmento):
     s = SesionFalsa(integrity_error(OrigFalso(sqlstate)))

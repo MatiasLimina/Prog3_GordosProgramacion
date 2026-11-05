@@ -19,7 +19,6 @@ from app.modules.libros.schemas import (
 
 def test_mensajes_de_integridad_en_libros():
     esperadas = [
-        "uq_libro_isbn",
         "uq_libro_isbn_vigente",
         "fk_libro_editorial_id_editorial",
         "fk_libro_genero_id_genero",
@@ -34,6 +33,8 @@ def test_mensajes_de_integridad_en_libros():
     for constraint in esperadas:
         assert constraint in libros_service.MENSAJES
         assert libros_service.MENSAJES[constraint]
+    # La 3ª migración reemplazó la constraint por el índice parcial: la clave vieja ya no existe.
+    assert "uq_libro_isbn" not in libros_service.MENSAJES
 
 
 def test_armar_detalle_libro():
@@ -107,28 +108,6 @@ async def test_crear_libro_fk_editorial_invalida_lanza_409():
         await libros_service.crear(session, datos)
     assert exc.value.status_code == 409
     assert exc.value.detail == "La editorial indicada no existe."
-    assert session.rollback.call_count == 1
-
-
-async def test_crear_libro_isbn_duplicado_lanza_409():
-    session = AsyncMock()
-    session.add = MagicMock()
-    orig = Exception("duplicate key")
-    orig.constraint_name = "uq_libro_isbn"
-    orig.sqlstate = "23505"
-    session.commit.side_effect = IntegrityError("INSERT", {}, orig)
-
-    datos = LibroCreate(
-        isbn="978-950-00-0001-1",
-        titulo="Libro Test",
-        precio=Decimal("1000.00"),
-        editorial_id=1,
-    )
-
-    with pytest.raises(HTTPException) as exc:
-        await libros_service.crear(session, datos)
-    assert exc.value.status_code == 409
-    assert exc.value.detail == "Ya existe un libro con ese ISBN."
     assert session.rollback.call_count == 1
 
 
