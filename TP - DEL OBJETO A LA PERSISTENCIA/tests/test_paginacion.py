@@ -67,13 +67,19 @@ def test_envoltorio_cero_resultados():
     assert page.pages == 1
 
 
+def test_envoltorio_size_cero_lanza_excepcion_de_dominio():
+    with pytest.raises(PeticionInvalida) as exc:
+        envolver([], total=0, page=1, size=0)
+    assert exc.value.mensaje == "El tamaño de página debe ser al menos 1"
+
+
 def test_envoltorio_un_resultado():
     page = envolver([{"id": 1}], total=1, page=1, size=20)
     assert page.pages == 1
     assert page.items == [{"id": 1}]
 
 
-def test_envoltorio_multiplio_exacto():
+def test_envoltorio_multiplo_exacto():
     datos = [{"id": i} for i in range(1, 5)]
     page = envolver(datos[2:4], total=4, page=2, size=2)
     assert page.pages == 2

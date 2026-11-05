@@ -50,6 +50,8 @@ def envolver(items: list[T], *, total: int, page: int, size: int) -> Page[T]:
     sin paginar; `items` son sólo los de la página pedida. `page` se valida acá
     porque el rango válido depende de `total`, que recién se conoce al consultar.
     """
+    if size < 1:
+        raise PeticionInvalida("El tamaño de página debe ser al menos 1")
     pages = max(1, ceil(total / size))
     if not 1 <= page <= pages:
         raise PeticionInvalida(f"La página {page} no existe: hay {pages}")
