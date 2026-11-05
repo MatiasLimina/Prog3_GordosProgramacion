@@ -241,6 +241,12 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 - `main` protegida. **Una rama por change**, con el nombre `<tipo>/<nombre-openspec>` (p. ej. `chore/bootstrap-parcial`); `<tipo>` es el tipo de commit convencional dominante (`feat`, `refactor`, `docs`, `build`, `chore`, `test`). Sale de `main` y vuelve por **PR chico revisado por al menos otro integrante**. Cada integrante trabaja en las ramas de sus changes (sección 4).
 - Commits convencionales en español con el scope del módulo (`feat(core): ...`). Los `models.py` se entregan primero en un PR propio.
 - Strict TDD: un test que falla primero, después el mínimo código que lo hace pasar.
+- **El plan se actualiza en el mismo PR del change, nunca después.** Antes de pedir revisión, el último PR de un change trae, además del código:
+  1. su fila de la tabla de seguimiento de `PLAN_PARCIAL.md` (sección 2) en `mergeado (#N)`, con el número del PR;
+  2. el change archivado con `openspec archive <nombre>`, hecho en la misma rama;
+  3. lo que el change deje desactualizado en `PLAN_PARCIAL.md` o en la «Transición» de este archivo (sección 9).
+
+  Se marca `mergeado` antes del merge porque la tabla describe `main` y el PR sólo llega a `main` mergeado; si se cierra sin merge, no cambia nada. Si el change se entrega en varios PRs, los anteriores marcan `en curso` y sólo el último pone `mergeado`. **Quien revisa no aprueba** un PR de change que no trae estos tres puntos. Lo que está en trabajo no se anota en la tabla: lo muestran los PRs abiertos (`gh pr list`). Un PR que no es de un change (docs, arreglos sueltos) no toca la tabla.
 
 ## 11. Definición de terminado (parcial)
 
