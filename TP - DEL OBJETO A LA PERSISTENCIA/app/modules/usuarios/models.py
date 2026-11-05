@@ -4,7 +4,7 @@ import app.core.base  # noqa: F401
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import CheckConstraint, DateTime, Index, text
+from sqlalchemy import CheckConstraint, DateTime, Index, func, text
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
@@ -20,8 +20,12 @@ class Usuario(SQLModel, table=True):
     email: str = Field(max_length=255, unique=True)
     nombre: str = Field(max_length=150)
     password_hash: str = Field(max_length=255)
-    activo: bool = Field(default=True)
-    debe_cambiar_password: bool = Field(default=False)
+    # server_default igual al default de Python: la base también completa las filas insertadas
+    # fuera del ORM (Lauti autorizó a Nico a agregarlos, 2026-11-05).
+    activo: bool = Field(default=True, sa_column_kwargs={"server_default": text("true")})
+    debe_cambiar_password: bool = Field(
+        default=False, sa_column_kwargs={"server_default": text("false")}
+    )
 
     # Declaradas en CHG-07 (acuerdo con Nico), junto con Cliente.usuario y MovimientoStock.usuario.
     # cliente: a uno (escalar); la FK vive en cliente.usuario_id (UNIQUE, nullable).
@@ -58,7 +62,10 @@ class AsignacionRol(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     usuario_id: int = Field(foreign_key="usuario.id", index=True)
     rol: str = Field(max_length=50)
-    desde: datetime = Field(sa_type=DateTime(timezone=True))
+    # server_default: un solo reloj (la base), como movimiento_stock.cuando.
+    desde: datetime = Field(
+        sa_type=DateTime(timezone=True), sa_column_kwargs={"server_default": func.now()}
+    )
     vence_en: datetime | None = Field(default=None, sa_type=DateTime(timezone=True), nullable=True)
     revocada_en: datetime | None = Field(default=None, sa_type=DateTime(timezone=True), nullable=True)
     otorgada_por: int | None = Field(default=None, foreign_key="usuario.id", index=True, nullable=True)
@@ -84,7 +91,9 @@ class IntentoAcceso(SQLModel, table=True):
     )
 
     id: int | None = Field(default=None, primary_key=True)
-    cuando: datetime = Field(sa_type=DateTime(timezone=True))
+    cuando: datetime = Field(
+        sa_type=DateTime(timezone=True), sa_column_kwargs={"server_default": func.now()}
+    )
     email: str = Field(max_length=255)
     ip: str = Field(max_length=45)
     exito: bool = Field()
@@ -94,6 +103,8 @@ class EventoSeguridad(SQLModel, table=True):
     __tablename__ = "evento_seguridad"
 
     id: int | None = Field(default=None, primary_key=True)
-    cuando: datetime = Field(sa_type=DateTime(timezone=True))
+    cuando: datetime = Field(
+        sa_type=DateTime(timezone=True), sa_column_kwargs={"server_default": func.now()}
+    )
     actor: str = Field(max_length=100)
     accion: str = Field(max_length=255)

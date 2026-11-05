@@ -135,3 +135,57 @@ def test_metadata_ordena_las_14_tablas_y_las_fk_a_usuario_resuelven():
     for tabla, columna in (("cliente", "usuario_id"), ("movimiento_stock", "usuario_id")):
         fks = SQLModel.metadata.tables[tabla].c[columna].foreign_keys
         assert {fk.column.table.name for fk in fks} == {"usuario"}
+
+
+# --- Guarda de acciones referenciales (RN-12: el disparador rechaza UPDATE y DELETE) ---
+
+
+def _fk_incompatibles_con_solo_agregado(metadata):
+    """FK cuya acción referencial haría que la base intente borrar o modificar movimientos.
+
+    - Hacia movimiento_stock con ON DELETE CASCADE: borrar el padre dispararía un DELETE.
+    - Desde movimiento_stock con ON DELETE CASCADE (DELETE) o SET NULL (UPDATE).
+    """
+    encontradas = []
+    for tabla in metadata.tables.values():
+        for fk in tabla.foreign_key_constraints:
+            accion = (fk.ondelete or "").upper()
+            hacia_movimiento = fk.referred_table.name == "movimiento_stock"
+            desde_movimiento = tabla.name == "movimiento_stock"
+            if hacia_movimiento and accion == "CASCADE":
+                encontradas.append(fk.name)
+            elif desde_movimiento and accion in ("CASCADE", "SET NULL"):
+                encontradas.append(fk.name)
+    return sorted(encontradas)
+
+
+def _metadata_con_acciones_incompatibles():
+    from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
+
+    md = MetaData()
+    Table("movimiento_stock", md, Column("id", Integer, primary_key=True),
+          Column("libro_id", Integer, ForeignKey("libro.id", ondelete="SET NULL", name="fk_ms_libro")),
+          Column("venta_id", Integer, ForeignKey("venta.id", ondelete="CASCADE", name="fk_ms_venta")),
+          Column("usuario_id", Integer, ForeignKey("usuario.id", ondelete="RESTRICT", name="fk_ms_usuario")))
+    Table("libro", md, Column("id", Integer, primary_key=True))
+    Table("venta", md, Column("id", Integer, primary_key=True))
+    Table("usuario", md, Column("id", Integer, primary_key=True))
+    Table("ajuste", md, Column("id", Integer, primary_key=True),
+          Column("movimiento_id", Integer,
+                 ForeignKey("movimiento_stock.id", ondelete="CASCADE", name="fk_ajuste_mov")))
+    Table("nota", md, Column("id", Integer, primary_key=True),
+          Column("movimiento_id", Integer,
+                 ForeignKey("movimiento_stock.id", ondelete="RESTRICT", name="fk_nota_mov")))
+    return md
+
+
+def test_la_guarda_detecta_cascade_hacia_y_cascade_o_set_null_desde_movimiento_stock():
+    assert _fk_incompatibles_con_solo_agregado(_metadata_con_acciones_incompatibles()) == [
+        "fk_ajuste_mov",
+        "fk_ms_libro",
+        "fk_ms_venta",
+    ]
+
+
+def test_metadata_real_no_tiene_fk_incompatibles_con_el_solo_agregado():
+    assert _fk_incompatibles_con_solo_agregado(SQLModel.metadata) == []

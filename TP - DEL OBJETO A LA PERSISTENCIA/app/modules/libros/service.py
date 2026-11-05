@@ -17,7 +17,6 @@ from app.modules.libros.schemas import (
 )
 
 MENSAJES = {
-    "uq_libro_isbn": "Ya existe un libro con ese ISBN.",
     "uq_libro_isbn_vigente": "Ya existe un libro con ese ISBN.",
     "fk_libro_editorial_id_editorial": "La editorial indicada no existe.",
     "fk_libro_genero_id_genero": "El género indicado no existe.",

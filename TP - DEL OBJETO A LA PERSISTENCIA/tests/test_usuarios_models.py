@@ -166,3 +166,36 @@ def test_acuerdo_chg_07_usuario_ya_tiene_cliente_y_movimientos():
     relaciones = Usuario.__mapper__.relationships.keys()
     assert "cliente" in relaciones
     assert "movimientos" in relaciones
+
+
+@pytest.mark.parametrize(
+    "modelo,col",
+    [
+        (AsignacionRol, "desde"),
+        (IntentoAcceso, "cuando"),
+        (EventoSeguridad, "cuando"),
+    ],
+)
+def test_fechas_de_registro_con_default_del_servidor_now(modelo, col):
+    # Mismo criterio que movimiento_stock.cuando: un solo reloj (la base), también
+    # para inserciones fuera del ORM. Lauti autorizó a Nico a agregarlos (2026-11-05).
+    columna = modelo.__table__.c[col]
+    assert columna.server_default is not None, f"{modelo.__name__}.{col} sin server_default"
+    assert str(columna.server_default.arg).lower() == "now()"
+    assert not columna.nullable
+
+
+@pytest.mark.parametrize(
+    "col,esperado,default_python",
+    [
+        ("activo", "true", True),
+        ("debe_cambiar_password", "false", False),
+    ],
+)
+def test_booleanos_de_usuario_con_default_del_servidor(col, esperado, default_python):
+    columna = Usuario.__table__.c[col]
+    assert columna.server_default is not None, f"usuario.{col} sin server_default"
+    assert str(columna.server_default.arg).lower() == esperado
+    # Se conserva el default de Python: el servidor sólo cubre inserciones fuera del ORM.
+    assert columna.default is not None
+    assert columna.default.arg is default_python
