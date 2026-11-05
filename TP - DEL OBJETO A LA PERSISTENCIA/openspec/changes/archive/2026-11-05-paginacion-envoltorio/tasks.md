@@ -17,7 +17,7 @@
 
 - [x] 4.1 Correr `python -m pytest tests/test_paginacion.py tests/test_pagination.py -q`: los tests nuevos en verde y los del archivo viejo (`limit`/`offset`) intactos, porque `pagination.py` no se toca. Verificar `git status --short` mostrando sólo los archivos de este change.
 - [x] 4.2 REFACTOR: revisar nombres, docstrings y comentarios en español; sin cambios de comportamiento. Verificar `python -m pytest tests/test_paginacion.py -q` en verde.
-- [ ] 4.3 `PLAN_PARCIAL.md`: dejar la fila de CHG-05 según la regla nueva de `AGENTS.md` §10 (el último PR la pone en `mergeado (#N)` con el número del PR; si el change se parte en varios PRs, `en curso` mientras tanto). Verificar con `git diff` que sólo cambia lo previsto.
+- [x] 4.3 `PLAN_PARCIAL.md`: dejar la fila de CHG-05 según la regla nueva de `AGENTS.md` §10 (el último PR la pone en `mergeado (#N)` con el número del PR; si el change se parte en varios PRs, `en curso` mientras tanto). Verificar con `git diff` que sólo cambia lo previsto.
 
 ## Workflow follow-up
 

@@ -226,7 +226,7 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 | ~~`app/core/config.py` con `DATABASE_URL` y `DB_ECHO`~~ | `Settings` con `POSTGRES_*`, `SQL_ECHO` y recursos en el lifespan | CHG-03 ✅ hecho |
 | ~~`health` con `router.py` y `schemas.py`~~ | sólo `router.py` | CHG-03 ✅ hecho |
 | Servicios que reciben `AsyncSession` (catálogo, clientes, ventas) | reciben el UoW; repositorios por entidad | CHG-04 (base), 13, 15, 16 |
-| `app/core/pagination.py` con `limit` / `offset` | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 (y 13/15/16 al usarlo) |
+| `app/core/pagination.py` con `limit` / `offset` | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 ✅ hecho (el viejo se migra en 13/15/16) |
 | `app/core/errors.py` (`commit_or_409` / `traducir_integrity` reciben la sesión) | el UoW lanza `Conflicto` (con `mensaje_para`) y `main.py` lo pasa a 409; `commit_or_409` sigue para los módulos viejos hasta 13/15/16 | CHG-04 |
 | `test/*.http` con los casos C-01 a C-08 del TP | casos C-01 a C-16 del parcial (otra numeración y otro significado) | CHG-18 |
 | ~~`tests/` con un conftest que deriva `libreria_test` de `DATABASE_URL`; `env.example` con `DATABASE_URL`~~ | deriva de `Settings` / `POSTGRES_*` | CHG-03 ✅ hecho |
