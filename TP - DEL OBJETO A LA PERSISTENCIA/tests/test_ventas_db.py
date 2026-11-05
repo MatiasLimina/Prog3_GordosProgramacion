@@ -22,7 +22,7 @@ async def crear_libro(client, isbn, titulo, precio, stock=10):
     e = r.json()["id"]
     r = await client.post(
         "/libros/",
-        json={"isbn": isbn, "titulo": titulo, "precio": precio, "stock": stock, "editorial_id": e},
+        json={"isbn": isbn, "titulo": titulo, "precio": precio, "stock_inicial": stock, "editorial_id": e},
     )
     assert r.status_code == 201, r.text
     return r.json()["id"]
@@ -144,11 +144,11 @@ async def test_stock_insuficiente_409_sin_descontar_ningun_stock(client, session
 
 async def test_total_que_supera_numeric_12_2_da_409_y_no_descuenta_stock(client, sessionmaker_test):
     c, l1, l2, _ = await escenario(client)
-    r = await client.patch(f"/libros/{l1}", json={"stock": 2_000_000_000})
-    assert r.status_code == 200, r.text
+    # El stock ya no se edita por PATCH (RN-11): el libro con stock grande nace con stock_inicial.
+    lgrande = await crear_libro(client, "IBIG", "Stock grande", "25000.00", 2_000_000_000)
     antes = await stocks(sessionmaker_test)
     # 25000.00 * 1.000.000.000 = 2,5e13: no entra en Numeric(12,2)
-    r = await client.post("/ventas/", json=cuerpo(c, (l2, 1), (l1, 1_000_000_000)))
+    r = await client.post("/ventas/", json=cuerpo(c, (l2, 1), (lgrande, 1_000_000_000)))
     assert r.status_code == 409, r.text
     assert r.json() == {"detail": "El total de la venta supera el máximo permitido."}
     assert await stocks(sessionmaker_test) == antes

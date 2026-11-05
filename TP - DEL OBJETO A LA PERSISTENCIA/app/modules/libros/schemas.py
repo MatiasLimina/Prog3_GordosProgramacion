@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.tipos import INT32_MAX, IdDto, StockDto
@@ -7,6 +8,8 @@ ROLES_PERMITIDOS = {"autor", "coautor", "traductor", "ilustrador"}
 
 
 class LibroAutorCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     autor_id: IdDto = Field(description="ID del autor existente")
     rol: str = Field(min_length=1, max_length=50, description="Rol del autor en el libro")
     orden: int = Field(ge=1, le=INT32_MAX, description="Orden de aparición (>= 1)")
@@ -23,6 +26,9 @@ class LibroAutorCreate(BaseModel):
 
 
 class LibroCreate(BaseModel):
+    # extra="forbid": `stock` (el nombre viejo) o cualquier campo no declarado es 422.
+    model_config = ConfigDict(extra="forbid")
+
     isbn: str = Field(min_length=1, max_length=30)
     titulo: str = Field(min_length=1, max_length=255)
     precio: Decimal = Field(
@@ -31,7 +37,7 @@ class LibroCreate(BaseModel):
         decimal_places=2,  # coincide con Numeric(10,2): evita overflow (500) y redondeo silencioso
         description="El precio debe ser mayor a 0 (RN-03)",
     )
-    stock: StockDto = Field(default=0, description="El stock no puede ser negativo (RN-03)")
+    stock_inicial: StockDto = Field(default=0, description="Stock inicial del libro (RN-11)")
     editorial_id: IdDto
     genero_id: IdDto | None = None
     autores: list[LibroAutorCreate] = Field(default_factory=list)
@@ -45,19 +51,27 @@ class LibroCreate(BaseModel):
 
 
 class LibroUpdate(BaseModel):
-    isbn: str | None = Field(default=None, min_length=1, max_length=30)
+    # Sólo título y precio: el stock cambia por movimientos (RN-11) y el resto
+    # de los campos no se edita por PATCH. extra="forbid" hace 422 a todo lo demás.
+    model_config = ConfigDict(extra="forbid")
+
     titulo: str | None = Field(default=None, min_length=1, max_length=255)
     precio: Decimal | None = Field(default=None, gt=Decimal(0), max_digits=10, decimal_places=2)
-    stock: StockDto | None = None
-    editorial_id: IdDto | None = None
-    genero_id: IdDto | None = None
 
-    @field_validator("isbn", "titulo", "precio", "stock", "editorial_id", mode="before")
+    @field_validator("titulo", "precio", mode="before")
     @classmethod
     def no_null(cls, valor):
         if valor is None:
             raise ValueError("No puede ser null; omití el campo para no modificarlo.")
         return valor
+
+
+class ReponerIn(BaseModel):
+    """Cuerpo de POST /libros/{id}/reponer (el endpoint llega con CHG-13)."""
+    model_config = ConfigDict(extra="forbid")
+
+    cantidad: int = Field(ge=1, le=INT32_MAX, description="Unidades a reponer (> 0)")
+    motivo: str | None = Field(default=None, min_length=1, max_length=255)
 
 
 class EditorialSimpleRead(BaseModel):

@@ -14,7 +14,7 @@ async def crear_libro(client, isbn="ISBN-1", precio="1000.00", stock=10):
     e = (await client.post("/editoriales/", json={"nombre": "E", "pais": "AR"})).json()["id"]
     r = await client.post(
         "/libros/",
-        json={"isbn": isbn, "titulo": f"T {isbn}", "precio": precio, "stock": stock, "editorial_id": e},
+        json={"isbn": isbn, "titulo": f"T {isbn}", "precio": precio, "stock_inicial": stock, "editorial_id": e},
     )
     assert r.status_code == 201, r.text
     return r.json()["id"]

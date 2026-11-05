@@ -9,7 +9,7 @@ async def base(client):
 
 
 def cuerpo(editorial_id, **extra):
-    d = {"isbn": "X1", "titulo": "T", "precio": "10.50", "stock": 1, "editorial_id": editorial_id}
+    d = {"isbn": "X1", "titulo": "T", "precio": "10.50", "stock_inicial": 1, "editorial_id": editorial_id}
     d.update(extra)
     return d
 
@@ -76,7 +76,7 @@ async def test_id_maximo_int32_pasa_la_validacion_y_da_404(client):
 
 @pytest.mark.parametrize(
     "extra",
-    [{"editorial_id": GIGANTE}, {"genero_id": GIGANTE}, {"stock": GIGANTE}, {"stock": -1},
+    [{"editorial_id": GIGANTE}, {"genero_id": GIGANTE}, {"stock_inicial": GIGANTE}, {"stock_inicial": -1},
      {"autores": [{"autor_id": GIGANTE, "rol": "autor", "orden": 1}]},
      {"autores": [{"autor_id": 1, "rol": "autor", "orden": 0}]}],
 )
@@ -85,6 +85,21 @@ async def test_post_libro_con_enteros_invalidos_da_422(client, extra):
     body = cuerpo(e)
     body.update(extra)
     assert (await client.post("/libros/", json=body)).status_code == 422
+
+
+@pytest.mark.parametrize("extra", [{"stock": 5}, {"stock": GIGANTE}, {"campo_inventado": 1}])
+async def test_post_libro_rechaza_stock_y_campos_no_declarados(client, extra):
+    e = await base(client)
+    body = cuerpo(e)
+    body.update(extra)
+    assert (await client.post("/libros/", json=body)).status_code == 422
+
+
+async def test_patch_libro_con_stock_da_422(client):
+    # RN-11 / C-16: el stock no se edita por PATCH.
+    e = await base(client)
+    await client.post("/libros/", json=cuerpo(e))
+    assert (await client.patch("/libros/1", json={"stock": 10})).status_code == 422
 
 
 async def test_patch_libro_con_enteros_invalidos_da_422(client):

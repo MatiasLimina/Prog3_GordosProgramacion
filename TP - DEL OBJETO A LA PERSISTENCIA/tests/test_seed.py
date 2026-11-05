@@ -111,7 +111,7 @@ async def test_post_libro_del_ejemplo_de_la_consigna_da_201(client, sessionmaker
             "isbn": "978-950-00-0006-6",
             "titulo": "Los que aman, odian",
             "precio": "21000.00",
-            "stock": 4,
+            "stock_inicial": 4,
             "editorial_id": 1,
             "genero_id": 1,
             "autores": [

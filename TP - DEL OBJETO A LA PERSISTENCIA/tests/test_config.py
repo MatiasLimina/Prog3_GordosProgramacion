@@ -246,8 +246,13 @@ def test_el_algoritmo_del_token_no_es_configuracion():
 
 def test_importar_la_app_sin_variables_ni_env_no_falla(tmp_path):
     raiz = Path(__file__).resolve().parent.parent
-    # Entorno mínimo: en Windows Python necesita SYSTEMROOT para arrancar.
-    entorno = {"PYTHONPATH": str(raiz), "SYSTEMROOT": os.environ.get("SYSTEMROOT", "")}
+    # Entorno mínimo: en Windows Python necesita SYSTEMROOT para arrancar y
+    # APPDATA para encontrar el site-packages del usuario (donde está fastapi).
+    entorno = {
+        "PYTHONPATH": str(raiz),
+        "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),
+        "APPDATA": os.environ.get("APPDATA", ""),
+    }
     resultado = subprocess.run(
         [sys.executable, "-c", "import app.main"],
         cwd=tmp_path, env=entorno, capture_output=True, text=True, timeout=120, check=False,

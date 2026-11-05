@@ -12,7 +12,7 @@ async def genero(client, nombre):
 
 
 async def libro(client, isbn, editorial_id, genero_id=None):
-    body = {"isbn": isbn, "titulo": f"Titulo {isbn}", "precio": "10.50", "stock": 1, "editorial_id": editorial_id}
+    body = {"isbn": isbn, "titulo": f"Titulo {isbn}", "precio": "10.50", "stock_inicial": 1, "editorial_id": editorial_id}
     if genero_id is not None:
         body["genero_id"] = genero_id
     r = await client.post("/libros/", json=body)

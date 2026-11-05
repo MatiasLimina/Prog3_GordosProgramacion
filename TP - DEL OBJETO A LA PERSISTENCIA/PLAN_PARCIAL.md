@@ -54,7 +54,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | ID | Change (nombre openspec) | Responsable | Depende de | Estado |
 |---|---|---|---|---|
 | CHG-00 | `bootstrap-parcial` | Matias | — | mergeado (#29) |
-| CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
+| CHG-01 | `deploy-imagen` | Lauti | — | mergeado (#37) |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
 | CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado (#33) |
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | mergeado (#40) |
@@ -63,7 +63,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | mergeado (#46) |
 | CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | mergeado (#49) |
 | CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | mergeado (#42) |
-| CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | pendiente |
+| CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | mergeado (#51) |
 | CHG-10 | `security-core` | Matias | CHG-03 | mergeado (#36) |
 | CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | pendiente |
 | CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | pendiente |
