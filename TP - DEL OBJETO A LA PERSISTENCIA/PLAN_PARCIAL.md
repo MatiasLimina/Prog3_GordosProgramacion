@@ -180,7 +180,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 ### F1 · Dominio central
 
 #### CHG-04 · `core-repository-uow` — Nico, revisa Matias (Ej6, base)
-- **Archivos:** `app/core/repository.py`, `app/core/unit_of_work.py`, `app/core/errors.py` (excepción `Conflicto`) y `app/main.py` (su handler → 409). Son archivos compartidos: el PR lo revisa Matias.
+- **Archivos:** `app/core/repository.py`, `app/core/unit_of_work.py`, `app/core/errors.py` (excepción `Conflicto`), `app/core/dependencies.py` (crea el archivo con `proveedor_uow`; CHG-12 le suma las dependencias de usuario y de rol) y `app/main.py` (handler de `Conflicto` → 409). Son archivos compartidos: el PR lo revisa Matias.
 - **Entregables:**
   - `BaseRepository[T]`: recibe `session` y la **clase del modelo** en el constructor, y ofrece `get_by_id`, `get_all`, `count`, `add`, `update` y `delete`. `add` y `update` hacen `flush()`.
   - `SoftDeleteRepository[T](BaseRepository[T])`: filtra los dados de baja y agrega `get_by_id_including_deleted` y `soft_delete`.
@@ -265,7 +265,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 - **Commits:** uno por endpoint, por ejemplo `feat(auth): login con límite de intentos y hash ficticio`
 
 #### CHG-12 · `autorizacion-grupos-rutas` — Matias (Ej5)
-- **Archivos:** `app/core/dependencies.py`, `app/main.py`.
+- **Archivos:** `app/core/dependencies.py` (ya existe desde CHG-04, con `proveedor_uow`), `app/main.py`.
 - **Entregables:**
   - `get_usuario_actual` responde 401 si no hay cookie, si el token es inválido o venció, o si el usuario no existe o está inactivo.
   - `requiere_rol` responde 403 y consulta los roles vigentes **en la base** en cada petición.

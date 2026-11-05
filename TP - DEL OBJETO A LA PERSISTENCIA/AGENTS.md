@@ -58,7 +58,7 @@ app/
 │   ├── config.py           # Settings (pydantic-settings)
 │   ├── database.py         # funciones que crean motor y fábrica de sesiones (las llama el lifespan) y get_session
 │   ├── security.py         # hash bcrypt fuera del bucle; emisión y verificación del token
-│   ├── dependencies.py     # usuario actual, roles vigentes, control del cambio obligatorio, requiere_rol
+│   ├── dependencies.py     # proveedor_uow (construye el UoW); usuario actual, roles vigentes, control del cambio obligatorio, requiere_rol
 │   ├── repository.py       # BaseRepository[T] y SoftDeleteRepository[T]
 │   ├── paginacion.py       # envoltorio de listados y cálculo de páginas
 │   ├── unit_of_work.py     # UnitOfWork base: confirma o revierte al salir del bloque
