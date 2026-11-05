@@ -27,6 +27,7 @@ PROYECTO = Path(__file__).resolve().parent.parent
 SEGUNDA_REVISION = "9df0eb6a1dd6"
 TERCERA_REVISION = "0003"
 CUARTA_REVISION = "0004"
+QUINTA_REVISION = "0005"  # head: evento_seguridad.actor a 255
 
 FUNCION = "movimiento_stock_solo_agregado"
 DISPARADOR = "tg_movimiento_stock_solo_agregado"
@@ -176,7 +177,7 @@ async def test_upgrade_head_deja_las_catorce_tablas(base_migraciones):
     alembic("upgrade", "head")
 
     assert await _tablas() == TABLAS | {"alembic_version"}
-    assert await _version() == [CUARTA_REVISION]
+    assert await _version() == [QUINTA_REVISION]
     assert await _funcion_y_disparador() == (True, True)
 
 
@@ -199,7 +200,7 @@ async def test_ida_vuelta_e_ida_deja_el_mismo_esquema(base_migraciones):
 
     assert await _tablas() == primera == TABLAS | {"alembic_version"}
     assert await _indices_y_constraints() == primeros_nombres
-    assert await _version() == [CUARTA_REVISION]
+    assert await _version() == [QUINTA_REVISION]
     assert await _funcion_y_disparador() == (True, True)
 
 
@@ -213,7 +214,7 @@ async def test_bajar_a_la_tercera_revision_retira_el_disparador_y_volver_a_head_
     await _actualizar_motivo(movimiento_id)  # sin disparador, el UPDATE se acepta
 
     alembic("upgrade", "head")
-    assert await _version() == [CUARTA_REVISION]
+    assert await _version() == [QUINTA_REVISION]
     assert await _funcion_y_disparador() == (True, True)
     with pytest.raises(asyncpg.IntegrityConstraintViolationError):
         await _actualizar_motivo(movimiento_id)  # con disparador, se rechaza otra vez
@@ -253,3 +254,26 @@ async def test_la_tercera_migracion_se_aplica_sobre_una_base_con_datos_del_tp(ba
     assert libro["borrado_en"] is None
     assert (cliente["nombre"], cliente["email"], cliente["usuario_id"]) == ("Ana TP", "ana@example.com", None)
     assert (usuarios, movimientos) == (0, 0)
+
+
+async def _largo_de_actor() -> int:
+    conexion = await _conectar(BASE_DESCARTABLE)
+    try:
+        return await conexion.fetchval(
+            "SELECT character_maximum_length FROM information_schema.columns "
+            "WHERE table_name = 'evento_seguridad' AND column_name = 'actor'"
+        )
+    finally:
+        await conexion.close()
+
+
+async def test_la_quinta_revision_ensancha_actor_a_255_y_bajar_la_devuelve_a_100(base_migraciones):
+    alembic("upgrade", "head")
+    assert await _largo_de_actor() == 255
+
+    alembic("downgrade", CUARTA_REVISION)
+    assert await _version() == [CUARTA_REVISION]
+    assert await _largo_de_actor() == 100
+
+    alembic("upgrade", "head")
+    assert await _largo_de_actor() == 255

@@ -106,5 +106,5 @@ class EventoSeguridad(SQLModel, table=True):
     cuando: datetime = Field(
         sa_type=DateTime(timezone=True), sa_column_kwargs={"server_default": func.now()}
     )
-    actor: str = Field(max_length=100)
+    actor: str = Field(max_length=255)
     accion: str = Field(max_length=255)

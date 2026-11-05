@@ -54,6 +54,33 @@ async def test_el_cambio_solo_toca_al_usuario_de_la_sesion(client, sessionmaker_
     assert await contar(sessionmaker_test, "evento_seguridad", "actor = :a", a="a@example.com") == 1
 
 
+def _correo_de_largo(largo: int) -> str:
+    """Correo válido (local <= 64, etiquetas <= 63, termina en .com) con exactamente `largo` caracteres."""
+    restante = largo - 65 - len("com")  # 64 del local + "@"; cada etiqueta gasta su largo + un punto
+    etiquetas = []
+    while restante > 0:
+        n = min(63, restante - 1)
+        if restante - (n + 1) == 1:  # un resto de 1 no alcanza para otra etiqueta
+            n -= 1
+        etiquetas.append("d" * n)
+        restante -= n + 1
+    return "u" * 64 + "@" + ".".join(etiquetas + ["com"])
+
+
+@pytest.mark.parametrize("largo", [150, 254], ids=["150_caracteres", "254_maximo_del_validador"])
+async def test_el_evento_guarda_el_correo_completo_aunque_pase_de_100_caracteres(client, sessionmaker_test, largo):
+    correo = _correo_de_largo(largo)
+    assert len(correo) == largo
+    await insertar_usuario(sessionmaker_test, correo)
+    assert (await login(client, correo)).status_code == 200
+
+    r = await _cambiar(client)
+
+    assert r.status_code == 200
+    eventos = await filas(sessionmaker_test, "SELECT actor FROM evento_seguridad")
+    assert [e["actor"] for e in eventos] == [correo]
+
+
 # ---- bordes ----
 
 async def _estado(sessionmaker):
