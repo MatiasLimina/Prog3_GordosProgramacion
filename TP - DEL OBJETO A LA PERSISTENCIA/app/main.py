@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.config import get_settings
 from app.core.database import crear_fabrica_sesiones, crear_motor
-from app.core.errors import Conflicto, PeticionInvalida, mensaje_para
+from app.core.errors import Conflicto, DemasiadosIntentos, NoAutenticado, PeticionInvalida, mensaje_para
 from app.core.security import calcular_hash_ficticio
 import app.models  # noqa: F401  (registra todos los modelos en el metadata)
 from app.modules.autores.router import router as autores_router
@@ -16,6 +16,7 @@ from app.modules.editoriales.router import router as editoriales_router
 from app.modules.generos.router import router as generos_router
 from app.modules.health.router import router as health_router
 from app.modules.libros.router import router as libros_router
+from app.modules.usuarios.router import auth_router
 from app.modules.ventas.router import router as ventas_router
 
 
@@ -61,11 +62,26 @@ def registrar_handlers(app: FastAPI) -> None:
     async def peticion_invalida_handler(request: Request, exc: PeticionInvalida):
         return JSONResponse(status_code=422, content={"detail": exc.mensaje})
 
+    # NoAutenticado y DemasiadosIntentos las lanzan el login y la dependencia del usuario
+    # actual (core no conoce HTTP). El 429 lleva `Retry-After` y un detalle fijo.
+    @app.exception_handler(NoAutenticado)
+    async def no_autenticado_handler(request: Request, exc: NoAutenticado):
+        return JSONResponse(status_code=401, content={"detail": exc.mensaje})
+
+    @app.exception_handler(DemasiadosIntentos)
+    async def demasiados_intentos_handler(request: Request, exc: DemasiadosIntentos):
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Demasiados intentos fallidos. Probá de nuevo más tarde."},
+            headers={"Retry-After": str(exc.retry_after)},
+        )
+
 
 app = FastAPI(title="Librería", lifespan=lifespan)
 registrar_handlers(app)
 
 app.include_router(health_router)
+app.include_router(auth_router)
 app.include_router(editoriales_router)
 app.include_router(generos_router)
 app.include_router(autores_router)
