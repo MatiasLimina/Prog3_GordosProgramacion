@@ -16,6 +16,7 @@ _MENSAJES_POR_SQLSTATE = {
     "23505": "Ya existe un registro con un valor único repetido.",
     "23503": "El registro referencia o depende de otro que no permite la relación.",
     "23514": "Los datos enviados no cumplen las condiciones requeridas.",
+    "23001": "El registro no se puede modificar ni borrar.",
 }
 _MENSAJE_GENERICO = "La operación no pudo completarse por un conflicto con los datos existentes."
 
