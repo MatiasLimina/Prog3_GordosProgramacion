@@ -17,7 +17,7 @@ from app.core.dependencies import (
     proveedor_uow_sesion_propia,
 )
 from app.modules.usuarios import service
-from app.modules.usuarios.schemas import AuthYoRead, LoginCreate, LoginRead, RegistroCreate, UsuarioRead
+from app.modules.usuarios.schemas import AuthYoRead, CambioPasswordCreate, LoginCreate, LoginRead, RegistroCreate, UsuarioRead
 from app.modules.usuarios.unit_of_work import IntentosUoW, UsuariosUoW
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -72,3 +72,14 @@ async def logout(response: Response, seg: SeguridadDep) -> dict[str, str]:
     # que al ponerla, así el navegador la reconoce). No exige sesión: cerrar sin sesión es un 200.
     response.delete_cookie(NOMBRE_COOKIE, path="/", httponly=True, samesite="lax", secure=seg.cookie_secure)
     return {"mensaje": "Sesión cerrada"}
+
+
+@auth_router.post("/cambiar-password", response_model=dict[str, str])
+async def cambiar_password(
+    datos: CambioPasswordCreate,
+    usuario: Annotated[UsuarioActual, Depends(get_usuario_actual)],
+    uow: UsuariosUoWDep,
+    seg: SeguridadDep,
+) -> dict[str, str]:
+    await service.cambiar_password(uow, usuario, datos, seg)
+    return {"mensaje": "Contraseña actualizada"}

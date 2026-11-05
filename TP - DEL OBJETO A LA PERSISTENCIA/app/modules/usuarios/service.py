@@ -9,11 +9,11 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from app.core.dependencies import ParametrosSeguridad, UsuarioActual
-from app.core.errors import DemasiadosIntentos, NoAutenticado
+from app.core.errors import DemasiadosIntentos, NoAutenticado, PeticionInvalida
 from app.core.security import emitir_token, hashear_password, verificar_password
 from app.modules.clientes.models import Cliente
-from app.modules.usuarios.models import AsignacionRol, IntentoAcceso, Usuario
-from app.modules.usuarios.schemas import AuthYoRead, LoginCreate, RegistroCreate, UsuarioRead
+from app.modules.usuarios.models import AsignacionRol, EventoSeguridad, IntentoAcceso, Usuario
+from app.modules.usuarios.schemas import AuthYoRead, CambioPasswordCreate, LoginCreate, RegistroCreate, UsuarioRead
 from app.modules.usuarios.unit_of_work import IntentosUoW, UsuariosUoW
 
 logger = logging.getLogger(__name__)
@@ -156,3 +156,31 @@ async def yo(uow: UsuariosUoW, actual: UsuarioActual) -> AuthYoRead:
         roles_vigentes=roles_vigentes,
         roles_token=actual.roles_token,
     )
+
+
+async def cambiar_password(
+    uow: UsuariosUoW, actual: UsuarioActual, datos: CambioPasswordCreate, seg: ParametrosSeguridad
+) -> None:
+    """Cambia la contraseña propia (RN-16): `password_hash`, bajar el flag y dejar el evento, o nada.
+
+    1. Lectura del hash actual en un bloque corto (valor simple).
+    2. FUERA de todo bloque: verificar la actual y calcular el hash de la nueva (bcrypt no
+       corre con una conexión tomada).
+    3. UN solo bloque de escritura: `update` del usuario y `add` del evento de seguridad; si
+       cualquiera falla, no queda ninguna de las dos.
+
+    La contraseña actual incorrecta es 422 y no 401: en este proyecto 401 significa «no hay
+    sesión válida» y un cliente lo leería como sesión vencida. No emite token ni toca la
+    cookie y no invalida las sesiones abiertas: la misma cookie sigue sirviendo.
+    """
+    async with uow:
+        usuario = await uow.usuarios.get_by_id(actual.id)
+        if usuario is None:  # borrado entre la dependencia y acá: sin sesión válida
+            raise NoAutenticado("No hay una sesión válida.")
+        hash_actual = usuario.password_hash
+    if not await verificar_password(datos.password_actual, hash_actual, semaforo=seg.semaforo):
+        raise PeticionInvalida("La contraseña actual no es correcta.")
+    hash_nuevo = await hashear_password(datos.password_nueva, costo=seg.costo, semaforo=seg.semaforo)
+    async with uow:
+        await uow.usuarios.update(usuario, {"password_hash": hash_nuevo, "debe_cambiar_password": False})
+        await uow.eventos.add(EventoSeguridad(actor=actual.email, accion="Cambio de contraseña"))
