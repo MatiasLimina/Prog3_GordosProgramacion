@@ -91,6 +91,19 @@ class _Credenciales:
     roles: list[str]
 
 
+async def _verificar_o_fallar(password: str, password_hash: str, usuario_id: int | None, seg: ParametrosSeguridad) -> bool:
+    """`verificar_password` que trata un hash corrupto como contraseña incorrecta (nunca 500).
+
+    bcrypt lanza `ValueError` («Invalid salt») si el hash guardado está dañado: se avisa en el
+    log con el id del usuario (jamás con el hash) y se devuelve `False`, igual que un fallo normal.
+    """
+    try:
+        return await verificar_password(password, password_hash, semaforo=seg.semaforo)
+    except ValueError:
+        logger.warning("password_hash inválido para el usuario id=%s", usuario_id)
+        return False
+
+
 async def iniciar_sesion(
     uow: UsuariosUoW, intentos: IntentosUoW, datos: LoginCreate, ip: str, seg: ParametrosSeguridad
 ) -> SesionIniciada:
@@ -129,12 +142,7 @@ async def iniciar_sesion(
                 debe_cambiar_password=usuario.debe_cambiar_password,
                 roles=await uow.asignaciones.roles_vigentes(usuario.id),
             )
-    try:
-        coincide = await verificar_password(datos.password, cred.password_hash, semaforo=seg.semaforo)
-    except ValueError:
-        # Hash corrupto en la base (bcrypt: «Invalid salt»): se trata como fallo, sin el hash.
-        logger.warning("password_hash inválido para el usuario id=%s", cred.usuario_id)
-        coincide = False
+    coincide = await _verificar_o_fallar(datos.password, cred.password_hash, cred.usuario_id, seg)
     exito = coincide and cred.existe and cred.activo
     await _anotar_intento(intentos, datos.email, ip, exito)
     if not exito:
@@ -178,7 +186,7 @@ async def cambiar_password(
         if usuario is None:  # borrado entre la dependencia y acá: sin sesión válida
             raise NoAutenticado("No hay una sesión válida.")
         hash_actual = usuario.password_hash
-    if not await verificar_password(datos.password_actual, hash_actual, semaforo=seg.semaforo):
+    if not await _verificar_o_fallar(datos.password_actual, hash_actual, actual.id, seg):
         raise PeticionInvalida("La contraseña actual no es correcta.")
     hash_nuevo = await hashear_password(datos.password_nueva, costo=seg.costo, semaforo=seg.semaforo)
     async with uow:

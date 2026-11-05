@@ -1,5 +1,8 @@
 """POST /auth/cambiar-password (RN-16, C-09)."""
+import logging
+
 import pytest
+from sqlalchemy import text
 
 from tests.auxiliares_auth import PASSWORD, contar, filas, insertar_usuario, login
 
@@ -99,6 +102,28 @@ async def test_contrasena_actual_incorrecta_da_422_y_no_cambia_nada(client, sess
     assert r.json() == {"detail": "La contraseña actual no es correcta."}
     assert await _estado(sessionmaker_test) == antes
     assert antes[1] is True and antes[2] == 0
+
+
+@pytest.mark.parametrize("hash_corrupto", ["no-es-un-hash-bcrypt", "$2b$12$corto"], ids=["texto_suelto", "prefijo_bcrypt_truncado"])
+async def test_hash_corrupto_en_la_base_da_422_sin_evento_y_sin_tocar_el_hash(
+    client, sessionmaker_test, caplog, hash_corrupto
+):
+    await insertar_usuario(sessionmaker_test, "nuevo@example.com", debe_cambiar=True)
+    await login(client, "nuevo@example.com")
+    async with sessionmaker_test() as s:
+        await s.execute(text("UPDATE usuario SET password_hash = :h"), {"h": hash_corrupto})
+        await s.commit()
+    antes = await _estado(sessionmaker_test)
+
+    with caplog.at_level(logging.WARNING, logger="app.modules.usuarios.service"):
+        r = await _cambiar(client)
+
+    assert r.status_code == 422
+    assert r.json() == {"detail": "La contraseña actual no es correcta."}
+    assert await _estado(sessionmaker_test) == antes
+    assert antes[0] == hash_corrupto and antes[2] == 0
+    assert any(rec.levelno == logging.WARNING for rec in caplog.records)
+    assert hash_corrupto not in caplog.text  # el aviso no filtra el hash
 
 
 async def test_sin_cookie_da_401_y_no_cambia_nada(client, sessionmaker_test):
