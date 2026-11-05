@@ -8,16 +8,17 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 
 from app.core.dependencies import (
+    NOMBRE_COOKIE,
     ParametrosSeguridad,
+    UsuarioActual,
     get_parametros_seguridad,
+    get_usuario_actual,
     proveedor_uow,
     proveedor_uow_sesion_propia,
 )
 from app.modules.usuarios import service
-from app.modules.usuarios.schemas import LoginCreate, LoginRead, RegistroCreate, UsuarioRead
+from app.modules.usuarios.schemas import AuthYoRead, LoginCreate, LoginRead, RegistroCreate, UsuarioRead
 from app.modules.usuarios.unit_of_work import IntentosUoW, UsuariosUoW
-
-NOMBRE_COOKIE = "access_token"
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -58,3 +59,8 @@ async def login(
         debe_cambiar_password=sesion.debe_cambiar_password,
         expira_en_segundos=sesion.expira_en_segundos,
     )
+
+
+@auth_router.get("/yo", response_model=AuthYoRead)
+async def yo(usuario: Annotated[UsuarioActual, Depends(get_usuario_actual)], uow: UsuariosUoWDep) -> AuthYoRead:
+    return await service.yo(uow, usuario)

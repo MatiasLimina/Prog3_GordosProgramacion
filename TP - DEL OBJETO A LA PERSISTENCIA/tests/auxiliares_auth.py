@@ -57,3 +57,19 @@ def espiar_verificacion(monkeypatch):
 
     monkeypatch.setattr(service, "verificar_password", espia)
     return llamadas
+
+
+def cabecera_cookie(token: str) -> dict[str, str]:
+    """Cabecera `Cookie` con un token armado a mano (no pasa por el cookie jar del cliente)."""
+    return {"Cookie": f"access_token={token}"}
+
+
+def token_de_prueba(usuario_id: int, roles=(), *, ahora=None) -> str:
+    """Token firmado con la clave de la app de test; `ahora` permite emitirlo en el pasado."""
+    from app.core.security import emitir_token
+    from app.main import app as fastapi_app
+
+    settings = fastapi_app.state.settings
+    return emitir_token(
+        usuario_id, roles, secreto=settings.jwt_secret, minutos=settings.jwt_expire_minutes, ahora=ahora
+    )

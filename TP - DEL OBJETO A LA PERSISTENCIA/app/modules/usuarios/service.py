@@ -8,12 +8,12 @@ import math
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.core.dependencies import ParametrosSeguridad
+from app.core.dependencies import ParametrosSeguridad, UsuarioActual
 from app.core.errors import DemasiadosIntentos, NoAutenticado
 from app.core.security import emitir_token, hashear_password, verificar_password
 from app.modules.clientes.models import Cliente
 from app.modules.usuarios.models import AsignacionRol, IntentoAcceso, Usuario
-from app.modules.usuarios.schemas import LoginCreate, RegistroCreate, UsuarioRead
+from app.modules.usuarios.schemas import AuthYoRead, LoginCreate, RegistroCreate, UsuarioRead
 from app.modules.usuarios.unit_of_work import IntentosUoW, UsuariosUoW
 
 logger = logging.getLogger(__name__)
@@ -141,3 +141,18 @@ async def iniciar_sesion(
         raise NoAutenticado(MENSAJE_CREDENCIALES)
     token = emitir_token(cred.usuario_id, cred.roles, secreto=seg.secreto, minutos=seg.minutos_token)
     return SesionIniciada(token, cred.debe_cambiar_password, seg.minutos_token * 60)
+
+
+async def yo(uow: UsuariosUoW, actual: UsuarioActual) -> AuthYoRead:
+    """La sesión propia: el usuario, sus roles vigentes (leídos de la base ahora) y los del token.
+
+    Se responde también con el cambio de contraseña pendiente: `/auth/yo` es de las rutas
+    que ese estado no bloquea (RN-06).
+    """
+    async with uow:
+        roles_vigentes = await uow.asignaciones.roles_vigentes(actual.id)
+    return AuthYoRead(
+        usuario=UsuarioRead.model_validate(actual, from_attributes=True),
+        roles_vigentes=roles_vigentes,
+        roles_token=actual.roles_token,
+    )
