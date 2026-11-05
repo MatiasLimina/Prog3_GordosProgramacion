@@ -23,9 +23,9 @@ Plan de ejecución del parcial «La librería con acceso, transacciones y despli
 
 ### Gotchas conocidos (leer antes de empezar)
 
-1. `AGENTS.md` ya describe las reglas del parcial (CHG-00, estado objetivo). El código todavía sigue el patrón del TP 1–4 (limit/offset, `DB_ECHO`, servicios que reciben la sesión, `DATABASE_URL`) hasta que cada change lo migre: ver la sección «Transición» de `AGENTS.md`. Ante una contradicción, gana la consigna.
+1. `AGENTS.md` ya describe las reglas del parcial (CHG-00, estado objetivo). Partes del código todavía siguen el patrón del TP 1–4 (limit/offset, servicios que reciben la sesión) hasta que cada change las migre; la configuración ya está migrada (CHG-03: `POSTGRES_*` y `SQL_ECHO`, sin `DATABASE_URL` ni `DB_ECHO`): ver la sección «Transición» de `AGENTS.md`. Ante una contradicción, gana la consigna.
 2. La consigna usa `python seed.py` **en la raíz**; el TP lo tiene en `scripts/seed.py` (CHG-17).
-3. Despliegue: el TP lee `DB_ECHO`, mientras que la consigna menciona `SQL_ECHO=false` en el env-file. No rompe nada (por defecto queda en false), pero hay que anotarlo en `DEPLOY.md`. D-05 ya pasa: `get_settings()` lanza un error si falta `DATABASE_URL`.
+3. Despliegue (carpeta hermana `Despliegue/`, el TP 1–4 sin cambios del parcial): **ese** proyecto sigue leyendo `DATABASE_URL` y `DB_ECHO`, mientras que la consigna menciona `SQL_ECHO=false` en el env-file. No rompe nada (por defecto queda en false), pero hay que anotarlo en su `DEPLOY.md`. D-05 pasa allá porque su `get_settings()` lanza un error si falta `DATABASE_URL`. Este repositorio, desde CHG-03, ya no lee ninguna de las dos: arma la URL con `POSTGRES_*`, usa `SQL_ECHO` y `Settings` no arranca si falta `POSTGRES_PASSWORD` o `JWT_SECRET`. No mezclar los `.env` de los dos proyectos.
 4. En el contenedor, el seed se corre con `docker exec libreria python -m scripts.seed`.
 5. `--autogenerate` puede manejar mal el paso de `uq_libro_isbn` (UNIQUE) al índice único parcial, y no ve funciones ni disparadores. La migración 0003 se lee línea por línea y la 0004 se escribe a mano.
 6. Healthcheck en Alpine: usar `wget` contra `http://127.0.0.1:8000/...`, **nunca `localhost`**, porque resuelve primero a `::1` y uvicorn escucha sólo IPv4.
@@ -51,18 +51,18 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 | ID | Change (nombre openspec) | Responsable | Depende de | Estado |
 |---|---|---|---|---|
-| CHG-00 | `bootstrap-parcial` | Matias | — | en PR |
+| CHG-00 | `bootstrap-parcial` | Matias | — | mergeado |
 | CHG-01 | `deploy-imagen` | Lauti | — | pendiente |
 | CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
-| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | pendiente |
-| CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | pendiente |
+| CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado |
+| CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | en PR |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
-| CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | pendiente |
+| CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | en PR |
 | CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | pendiente |
 | CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | pendiente |
 | CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | pendiente |
 | CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | pendiente |
-| CHG-10 | `security-core` | Matias | CHG-03 | pendiente |
+| CHG-10 | `security-core` | Matias | CHG-03 | en PR |
 | CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | pendiente |
 | CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | pendiente |
 | CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | pendiente |
@@ -76,7 +76,57 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 ---
 
-## 3. Backlog detallado
+## 3. Orden de prioridades
+
+Objetivo: **destrabar el trabajo en paralelo cuanto antes**. Los changes se agrupan en oleadas. Todo change de una oleada puede arrancar cuando estén mergeadas sus dependencias, que siempre están en oleadas anteriores. Dentro de cada integrante, se toma **primero el de prioridad más alta (P1)**: es el que más trabajo ajeno destraba.
+
+**Camino crítico** (la cadena más larga; un día perdido acá es un día perdido en la entrega):
+
+```
+CHG-03 ─► CHG-04 ─┐
+CHG-03 ─► CHG-10 ─┤
+CHG-06 ─┐         ├─► CHG-11 ─► CHG-12 ─► CHG-16 ─► CHG-19 ─► CHG-20
+CHG-07 ─┴► CHG-08 ┤
+CHG-09a ──────────┘
+```
+
+CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que estén CHG-04, 08, 09a y 10. Todo lo que lo alimenta es P1.
+
+| Oleada | Change | Responsable | Prioridad | Por qué / qué destraba |
+|---|---|---|---|---|
+| 0 | CHG-00 | Matias | — | Hecho (mergeado y archivado). |
+| 1 | **CHG-03** `settings-lifespan` | Nico | **P1** | Destraba CHG-04 (Nico) y CHG-10 (Matias). Es lo primero que se hace en todo el parcial. |
+| 1 | **CHG-07** `modelos-libro-cliente-stock` | Nico | **P1** | Con CHG-06, destraba CHG-08 (migraciones), que bloquea a CHG-11, 13, 15 y 17. Nico lo hace apenas abre el PR de CHG-03. |
+| 1 | **CHG-06** `modelos-usuarios` | Lauti | **P1** | La otra mitad de CHG-08. Es lo primero de Lauti: PR chico y rápido. |
+| 1 | CHG-09a `schemas-auth-usuarios` | Lauti | P2 | Lo necesita CHG-11. Tiene margen hasta que estén CHG-04, 08 y 10. |
+| 1 | CHG-01 `deploy-imagen` | Lauti | P2 | No destraba nada del parcial, pero vale el 18 % junto con CHG-02 y el VPS tiene que quedar en línea. Se intercala entre los PRs de modelos y contratos. |
+| 1 | CHG-05 `paginacion-envoltorio` | Lauti | P3 | Lo necesitan CHG-13 y 15 (oleada 3). |
+| 1 | CHG-09b `schemas-catalogo-ventas` | Lauti | P3 | Lo necesita CHG-13 (oleada 3). |
+| 2 | **CHG-04** `core-repository-uow` | Nico | **P1** | Cuello de botella 1: lo necesitan CHG-11, 13 y 15. Matias lo revisa en el día. |
+| 2 | **CHG-08** `migraciones-3-4` | Nico | **P1** | Cuello de botella 2: lo necesitan CHG-11, 13, 15 y 17. |
+| 2 | **CHG-10** `security-core` | Matias | **P1** | Lo necesitan CHG-11 y CHG-17. Arranca apenas se mergea CHG-03. |
+| 2 | CHG-02 `deploy-vps` | Lauti (+Matias) | P2 | Depende de CHG-01 y de los accesos al VPS. Conviene tenerlo arriba temprano: no hay que dejarlo para el final. |
+| 3 | **CHG-11** `auth-endpoints` | Matias | **P1** | Destraba CHG-12 y, por él, CHG-14 y 16. |
+| 3 | **CHG-13** `catalogo-repos-uow` | Nico | **P1** | Lo necesita CHG-16. Primero se acuerda con Matias la firma del punto único de stock. |
+| 3 | CHG-15 `clientes-repos-uow` | Nico | P2 | Lo necesita CHG-16. Es chico, va después de CHG-13. |
+| 3 | CHG-17 `seed-parcial` | Lauti | P2 | Lo necesita CHG-18. Puede arrancar con CHG-08 y 10 mergeados. |
+| 4 | **CHG-12** `autorizacion-grupos-rutas` | Matias | **P1** | Destraba CHG-14 y CHG-16. |
+| 4 | CHG-18 `casos-http` | Lauti | P2 | Se escribe a medida que se mergea cada change: un caso por commit. |
+| 5 | **CHG-16** `ventas-transaccional` | Matias | **P1** | Lo necesita CHG-19. Es el change de mayor peso (Ej6 + Ej8). |
+| 5 | CHG-14 `usuarios-admin` | Nico | P2 | No bloquea a nadie; lo necesitan los casos C-07 y C-08. |
+| 6 | CHG-19 `pytest-integracion` | Matias | P1 | Lo necesita CHG-20. |
+| 7 | CHG-20 `entrega-zip` | Lauti + Matias | P1 | Cierre. |
+
+**Arranque recomendado (primer día):**
+- **Nico:** CHG-03 → abrir PR → CHG-07 mientras se revisa → CHG-04 → CHG-08.
+- **Lauti:** CHG-06 → CHG-09a → CHG-01; después CHG-05 y CHG-09b (antes de que Nico llegue a CHG-13).
+- **Matias:** revisar CHG-03 y CHG-06/07 en el día; apenas se mergea CHG-03, arrancar CHG-10.
+
+**Regla práctica:** si dos changes tuyos están disponibles, hacé primero el P1. Si te trabás esperando una revisión, tomá el siguiente de tu lista en lugar de esperar. Si un P1 tuyo se atrasa, avisá: atrasa a otros dos integrantes.
+
+---
+
+## 4. Backlog detallado
 
 ### F0 · Setup e infraestructura
 
@@ -130,11 +180,11 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 ### F1 · Dominio central
 
 #### CHG-04 · `core-repository-uow` — Nico, revisa Matias (Ej6, base)
-- **Archivos:** `app/core/repository.py`, `app/core/unit_of_work.py`. Son archivos compartidos: el PR lo revisa Matias.
+- **Archivos:** `app/core/repository.py`, `app/core/unit_of_work.py`, `app/core/errors.py` (excepción `Conflicto`), `app/core/dependencies.py` (crea el archivo con `proveedor_uow`; CHG-12 le suma las dependencias de usuario y de rol) y `app/main.py` (handler de `Conflicto` → 409). Son archivos compartidos: el PR lo revisa Matias.
 - **Entregables:**
   - `BaseRepository[T]`: recibe `session` y la **clase del modelo** en el constructor, y ofrece `get_by_id`, `get_all`, `count`, `add`, `update` y `delete`. `add` y `update` hacen `flush()`.
   - `SoftDeleteRepository[T](BaseRepository[T])`: filtra los dados de baja y agrega `get_by_id_including_deleted` y `soft_delete`.
-  - `UnitOfWork` base como gestor de contexto asincrónico: confirma al salir, revierte si hay una excepción y no cierra la sesión.
+  - `UnitOfWork` base como gestor de contexto asincrónico: confirma al salir, revierte con cualquier excepción y no cierra la sesión. Si la base rechaza la escritura (en el flush o en el commit), revierte y lanza `Conflicto` con el mensaje de los `MENSAJES` del UoW del módulo; el handler de `main.py` lo pasa a 409.
   - El patrón de dependencia con el que el router construye el UoW de cada módulo.
 - **DoD:** tests que muestran un rollback cuando hay una excepción y la sesión abierta después del bloque.
 - **Commit:** `feat(core): BaseRepository, SoftDeleteRepository y UnitOfWork`
@@ -157,7 +207,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
   - `AsignacionRol`: CHECK de rol dentro de ADMIN, VENDEDOR y CLIENTE; índice único parcial `(usuario_id, rol) WHERE revocada_en IS NULL` (`postgresql_where`).
   - `IntentoAcceso`: índice `(email, ip, cuando)`.
   - `EventoSeguridad`: `actor` es texto.
-  - Todas las fechas son `timestamptz`. `Usuario.cliente` se declara con un string bajo `TYPE_CHECKING` y es escalar (`sa_relationship_kwargs={"uselist": False}`); el otro extremo, `Cliente.usuario`, es de CHG-07.
+  - Todas las fechas son `timestamptz`. CHG-06 no declara ninguno de los extremos de la relación Cliente–Usuario; CHG-07 incorpora juntos `Cliente.usuario` y `Usuario.cliente`. `Usuario.cliente` es escalar (`sa_relationship_kwargs={"uselist": False}`).
 - **Leer antes:** consigna págs. 4–6 (Modelo de dominio).
 - **DoD:** test de nombres de constraints; los modelos importan sin errores.
 - **Commit:** `feat(usuarios): modelos de acceso y seguridad`
@@ -167,7 +217,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **Entregables:**
   - `Libro.borrado_en` (timestamptz, nullable) con índice único parcial de `isbn` `WHERE borrado_en IS NULL`, **en lugar del UNIQUE**. Siguen los CHECK de precio y stock.
   - `MovimientoStock` (en `libros`): `libro_id`, `venta_id` (nullable), `usuario_id`, `cantidad` con CHECK `<> 0`, `motivo` y `cuando`. Un índice en cada FK.
-  - `Cliente.usuario_id` UNIQUE y nullable; `Cliente.usuario` a uno (la FK está en `cliente`); el lado escalar `Usuario.cliente` (`sa_relationship_kwargs={"uselist": False}`) lo declara CHG-06.
+  - `Cliente.usuario_id` UNIQUE y nullable; CHG-07 declara juntos los dos extremos de la relación uno a uno: `Cliente.usuario` y `Usuario.cliente`. `Usuario.cliente` es escalar (`sa_relationship_kwargs={"uselist": False}`); ninguno de estos extremos se incorpora en CHG-06.
   - Navegación declarada en los dos extremos.
 - **DoD:** tests de metadata.
 - **Commit:** `feat(libros): borrado lógico, movimiento_stock y acceso del cliente`
@@ -215,7 +265,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 - **Commits:** uno por endpoint, por ejemplo `feat(auth): login con límite de intentos y hash ficticio`
 
 #### CHG-12 · `autorizacion-grupos-rutas` — Matias (Ej5)
-- **Archivos:** `app/core/dependencies.py`, `app/main.py`.
+- **Archivos:** `app/core/dependencies.py` (ya existe desde CHG-04, con `proveedor_uow`), `app/main.py`.
 - **Entregables:**
   - `get_usuario_actual` responde 401 si no hay cookie, si el token es inválido o venció, o si el usuario no existe o está inactivo.
   - `requiere_rol` responde 403 y consulta los roles vigentes **en la base** en cada petición.
@@ -295,12 +345,12 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 
 ---
 
-## 4. Mapa de dependencias
+## 5. Mapa de dependencias
 
 ```
 Lauti:  CHG-01 ─► CHG-02 (VPS)    CHG-05 · CHG-06 · CHG-09a/b ─────────────► CHG-17 ─► CHG-18 ─► CHG-20
 
-Nico:   CHG-03 ─► CHG-04 ─► CHG-07 ─► CHG-08 ─► CHG-13 ─► CHG-15 ─► CHG-14
+Nico:   CHG-03 ─► CHG-07 ─► CHG-04 ─► CHG-08 ─► CHG-13 ─► CHG-15 ─► CHG-14
 
 Matias: CHG-00 ─► CHG-10 ─► CHG-11 ─► CHG-12 ─► CHG-16 ─► CHG-19 ─► CHG-20
 ```
@@ -324,7 +374,7 @@ Dependencias que cruzan de fila:
 - **Punto de integración:** CHG-16 usa el punto único de stock de CHG-13. La firma se acuerda apenas termina CHG-07.
 - **Riesgo:** el 18 % de la nota (despliegue) depende de Lauti. Checkpoint con Matias después de CHG-01 y otro con el VPS ya arriba.
 
-## 5. Reglas de trabajo para todos los agentes
+## 6. Reglas de trabajo para todos los agentes
 
 - Un change = una rama = uno o más PRs chicos, revisados por otro integrante.
 - Commits convencionales en español (`feat`, `fix`, `refactor`, `test`, `docs`, `build`, `chore`), con el scope del módulo.

@@ -18,7 +18,7 @@ from sqlmodel import SQLModel
 import app.core.base  # noqa: F401  (naming convention primero)
 import app.models  # noqa: F401  (todo el metadata)
 from app.core.config import get_settings
-from app.core.database import crear_engine_y_sessionmaker
+from app.core.database import crear_fabrica_sesiones, crear_motor
 from app.modules.autores.models import Autor
 from app.modules.clientes.models import Cliente, PerfilCliente
 from app.modules.editoriales.models import Editorial
@@ -141,7 +141,8 @@ async def _contar(session: AsyncSession) -> dict[str, int]:
 
 async def main() -> None:
     settings = get_settings()
-    engine, sessionmaker = crear_engine_y_sessionmaker(settings.database_url, settings.db_echo)
+    engine = crear_motor(settings)
+    sessionmaker = crear_fabrica_sesiones(engine)
     try:
         async with sessionmaker() as session:
             c = await cargar_datos(session)

@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -5,8 +6,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
 from app.core.config import get_settings
-from app.core.database import crear_engine_y_sessionmaker
-from app.core.errors import mensaje_para
+from app.core.database import crear_fabrica_sesiones, crear_motor
+from app.core.errors import Conflicto, mensaje_para
+from app.core.security import calcular_hash_ficticio
 import app.models  # noqa: F401  (registra todos los modelos en el metadata)
 from app.modules.autores.router import router as autores_router
 from app.modules.clientes.router import router as clientes_router
@@ -19,14 +21,25 @@ from app.modules.ventas.router import router as ventas_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Motor y sessionmaker se crean una vez al arrancar y viven en app.state.
-    # El esquema NO se crea acá: se crea sólo con `alembic upgrade head`.
+    # Los recursos se crean una vez al arrancar y viven en app.state; nada se crea al
+    # importar el módulo. El esquema NO se crea acá: sólo con `alembic upgrade head`.
+    # Si la configuración es inválida, falla acá, antes de crear cualquier recurso.
     settings = get_settings()
-    engine, sessionmaker = crear_engine_y_sessionmaker(settings.database_url, settings.db_echo)
+    # Hash ficticio del login (RN-08): bcrypt bloquea ~300 ms con costo 12, por eso
+    # corre fuera del bucle de eventos; se calcula una sola vez, con el costo real.
+    hash_ficticio = await asyncio.to_thread(calcular_hash_ficticio, settings.bcrypt_cost)
+    engine = crear_motor(settings)
+    app.state.settings = settings
     app.state.engine = engine
-    app.state.sessionmaker = sessionmaker
-    yield
-    await engine.dispose()
+    app.state.sessionmaker = crear_fabrica_sesiones(engine)
+    app.state.hash_ficticio = hash_ficticio
+    # Un único semáforo para todo bcrypt de la app (hash y verificación): acota los hilos
+    # que ocupa. Se crea acá y no al importar: cada arranque (y cada bucle de tests) tiene el suyo.
+    app.state.semaforo_bcrypt = asyncio.Semaphore(settings.bcrypt_max_concurrentes)
+    try:
+        yield
+    finally:
+        await engine.dispose()
 
 
 def registrar_handlers(app: FastAPI) -> None:
@@ -35,6 +48,12 @@ def registrar_handlers(app: FastAPI) -> None:
     @app.exception_handler(IntegrityError)
     async def integrity_error_handler(request: Request, exc: IntegrityError):
         return JSONResponse(status_code=409, content={"detail": mensaje_para(exc, {})})
+
+    # Conflicto lo lanza el UnitOfWork (core no conoce HTTP): mismo 409 y mismo cuerpo
+    # que HTTPException, así el cliente no distingue de dónde salió.
+    @app.exception_handler(Conflicto)
+    async def conflicto_handler(request: Request, exc: Conflicto):
+        return JSONResponse(status_code=409, content={"detail": exc.mensaje})
 
 
 app = FastAPI(title="Librería", lifespan=lifespan)

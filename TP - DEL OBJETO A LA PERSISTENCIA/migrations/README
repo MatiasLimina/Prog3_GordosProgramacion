@@ -1,6 +1,6 @@
 # Migraciones (Alembic, plantilla async)
 
-El esquema se crea **sólo** con Alembic (nunca con `create_all`). La URL de la base sale de `DATABASE_URL` en `.env`; `alembic.ini` no la contiene.
+El esquema se crea **sólo** con Alembic (nunca con `create_all`). La URL de la base se arma con las variables `POSTGRES_*` de `.env` (vía `app.core.config`); `alembic.ini` no la contiene.
 
 Dos migraciones, en orden:
 
