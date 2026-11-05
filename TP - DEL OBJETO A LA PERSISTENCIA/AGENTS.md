@@ -135,7 +135,7 @@ Se implementa en CHG-03 (Settings), CHG-10 (seguridad), CHG-11 (auth), CHG-12 (a
 - **Token:** JWT con `sub`, `exp` y los roles vigentes al emitirlo. Viaja **sólo** en la cookie `access_token` con `HttpOnly`, `SameSite=Lax`, `Max-Age` igual a la duración del token y `Secure` configurable. **Nunca** en el cuerpo ni leído de `Authorization`; se lee de `request.cookies`. Cambiar la contraseña no invalida sesiones ni emite un token nuevo. `/auth/logout` borra la cookie.
 - **401 vs 403:** 401 si no hay cookie, el token es inválido o venció, o el usuario no existe o está inactivo. 403 si falta el rol vigente, si hay cambio de contraseña pendiente o si no es dueño del recurso.
 - **Roles vigentes** (RN-04): `requiere_rol` los consulta **en la base en cada petición**; los roles del token son informativos (`/auth/yo` devuelve ambos). Vigente = no revocada y sin vencer. Revocar escribe `revocada_en` y la fila no se borra; reasignar un rol vencido cierra la fila anterior y abre una nueva. El vencimiento llega con zona horaria y en el futuro (si no, 422, no 409). RN-05: nadie se revoca su propio ADMIN y nunca quedan cero administradores vigentes (409).
-- **Dos grupos de rutas** en `main.py`: uno abierto (health, `/auth`, catálogo público en GET) y uno protegido con el control del cambio obligatorio de contraseña (RN-06) montado **una sola vez**, porque FastAPI suma dependencias y no las resta. Lo propio (`/mis-ventas`, `/auth/yo`) sólo pide estar autenticado (RN-14), pero igual vive en el grupo protegido (401 sin sesión, 403 con el cambio de contraseña pendiente). `GET /ventas/{id}` no lleva `requiere_rol`: decide el servicio (personal o cliente dueño; si no, 403).
+- **Dos grupos de rutas** en `main.py`: uno abierto (health, `/auth`, catálogo público en GET) y uno protegido con el control del cambio obligatorio de contraseña (RN-06) montado **una sola vez**, porque FastAPI suma dependencias y no las resta. Lo propio (`/mis-ventas`) sólo pide estar autenticado (RN-14), pero igual vive en el grupo protegido (401 sin sesión, 403 con el cambio de contraseña pendiente). Todo `/auth`, incluidos `/auth/yo` y `/auth/cambiar-password`, vive en el grupo **abierto**: piden estar autenticados (401 sin sesión) pero **no** pasan por el control del cambio obligatorio (consigna: tabla de endpoints, RN-06 y C-09). `GET /ventas/{id}` no lleva `requiere_rol`: decide el servicio (personal o cliente dueño; si no, 403).
 - **Errores:** nunca texto interno de la base, nombres de constraints ni trazas; ninguna entrada inválida termina en 500 (RN-15). Las excepciones de dominio son `Conflicto` (409) y `PeticionInvalida` (422), declaradas en `app/core/errors.py` y traducidas por los handlers de `app/main.py`; el código de negocio nunca lanza `HTTPException`.
 
 ## 7. Convenciones
@@ -234,7 +234,7 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 | ~~Semáforo de bcrypt: `BCRYPT_MAX_CONCURRENTES` ya está en `Settings`, pero el `asyncio.Semaphore` todavía no se crea~~ | el lifespan crea el semáforo y `security.py` lo usa | CHG-10 ✅ hecho |
 | `scripts/seed.py` (`python -m scripts.seed`) | `seed.py` en la raíz (`python seed.py`) | CHG-17 |
 | `libro.stock` editable, ISBN con UNIQUE común | stock por movimientos, ISBN único entre vigentes | CHG-07, 08, 13 |
-| Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11, 12, 14 |
+| Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11 ✅ (rutas `/auth` hechas), 12, 14 |
 
 ## 10. Git
 

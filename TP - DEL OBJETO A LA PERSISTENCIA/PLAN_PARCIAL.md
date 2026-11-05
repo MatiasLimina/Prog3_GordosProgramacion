@@ -269,7 +269,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 #### CHG-12 · `autorizacion-grupos-rutas` — Matias (Ej5)
 - **Archivos:** `app/core/dependencies.py` (ya existe desde CHG-04, con `proveedor_uow`), `app/main.py`.
 - **Entregables:**
-  - `get_usuario_actual` responde 401 si no hay cookie, si el token es inválido o venció, o si el usuario no existe o está inactivo.
+  - `get_usuario_actual` ya existe desde CHG-11 (401 si no hay cookie, si el token es inválido o venció, o si el usuario no existe o está inactivo); CHG-12 lo reutiliza y suma `requiere_rol`, el control RN-06 y los dos grupos (con `/auth` en el grupo abierto).
   - `requiere_rol` responde 403 y consulta los roles vigentes **en la base** en cada petición.
   - Control del cambio obligatorio de contraseña.
   - Dos routers en `main.py`: uno abierto y uno protegido, con el control montado una sola vez.
