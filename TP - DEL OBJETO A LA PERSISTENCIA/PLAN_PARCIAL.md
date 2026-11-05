@@ -57,7 +57,7 @@ Estados: `pendiente` · `en curso` · `en PR` · `mergeado`
 | CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado |
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | en PR |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | pendiente |
-| CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | pendiente |
+| CHG-06 | `modelos-usuarios` | Lauti | CHG-00 | en PR |
 | CHG-07 | `modelos-libro-cliente-stock` | Nico | CHG-00 | pendiente |
 | CHG-08 | `migraciones-3-4` | Nico | CHG-06, CHG-07 | pendiente |
 | CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | pendiente |
@@ -207,7 +207,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
   - `AsignacionRol`: CHECK de rol dentro de ADMIN, VENDEDOR y CLIENTE; índice único parcial `(usuario_id, rol) WHERE revocada_en IS NULL` (`postgresql_where`).
   - `IntentoAcceso`: índice `(email, ip, cuando)`.
   - `EventoSeguridad`: `actor` es texto.
-  - Todas las fechas son `timestamptz`. `Usuario.cliente` se declara con un string bajo `TYPE_CHECKING` y es escalar (`sa_relationship_kwargs={"uselist": False}`); el otro extremo, `Cliente.usuario`, es de CHG-07.
+  - Todas las fechas son `timestamptz`. CHG-06 no declara ninguno de los extremos de la relación Cliente–Usuario; CHG-07 incorpora juntos `Cliente.usuario` y `Usuario.cliente`. `Usuario.cliente` es escalar (`sa_relationship_kwargs={"uselist": False}`).
 - **Leer antes:** consigna págs. 4–6 (Modelo de dominio).
 - **DoD:** test de nombres de constraints; los modelos importan sin errores.
 - **Commit:** `feat(usuarios): modelos de acceso y seguridad`
@@ -217,7 +217,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 - **Entregables:**
   - `Libro.borrado_en` (timestamptz, nullable) con índice único parcial de `isbn` `WHERE borrado_en IS NULL`, **en lugar del UNIQUE**. Siguen los CHECK de precio y stock.
   - `MovimientoStock` (en `libros`): `libro_id`, `venta_id` (nullable), `usuario_id`, `cantidad` con CHECK `<> 0`, `motivo` y `cuando`. Un índice en cada FK.
-  - `Cliente.usuario_id` UNIQUE y nullable; `Cliente.usuario` a uno (la FK está en `cliente`); el lado escalar `Usuario.cliente` (`sa_relationship_kwargs={"uselist": False}`) lo declara CHG-06.
+  - `Cliente.usuario_id` UNIQUE y nullable; CHG-07 declara juntos los dos extremos de la relación uno a uno: `Cliente.usuario` y `Usuario.cliente`. `Usuario.cliente` es escalar (`sa_relationship_kwargs={"uselist": False}`); ninguno de estos extremos se incorpora en CHG-06.
   - Navegación declarada en los dos extremos.
 - **DoD:** tests de metadata.
 - **Commit:** `feat(libros): borrado lógico, movimiento_stock y acceso del cliente`
