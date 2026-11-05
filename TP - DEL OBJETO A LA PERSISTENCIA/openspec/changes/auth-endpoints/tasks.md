@@ -53,8 +53,8 @@ Strict TDD: cada comportamiento tiene una tarea RED (test que falla, ejecutado y
 
 ## 6. `POST /auth/logout`
 
-- [ ] 6.1 RED · En `tests/test_auth_sesion_db.py`: tras login, `POST /auth/logout` → 200 `{"mensaje": "Sesión cerrada"}` con `Set-Cookie` que borra `access_token` (`Max-Age=0`, `Path=/`) y luego `GET /auth/yo` con el mismo cliente → 401; sin cookie, `POST /auth/logout` → 200 con la misma cabecera. Ejecutar y verificar que falla con 404.
-- [ ] 6.2 GREEN · `POST /auth/logout` en el router con `delete_cookie` (design D7; sin servicio ni base). Verificar 6.1 en verde, `REQUIRE_TEST_DB=1 pytest -q` completo en verde y commit `feat(auth): logout borra la cookie`.
+- [x] 6.1 RED · En `tests/test_auth_sesion_db.py`: tras login, `POST /auth/logout` → 200 `{"mensaje": "Sesión cerrada"}` con `Set-Cookie` que borra `access_token` (`Max-Age=0`, `Path=/`) y luego `GET /auth/yo` con el mismo cliente → 401; sin cookie, `POST /auth/logout` → 200 con la misma cabecera. Ejecutar y verificar que falla con 404.
+- [x] 6.2 GREEN · `POST /auth/logout` en el router con `delete_cookie` (design D7; sin servicio ni base). Verificar 6.1 en verde, `REQUIRE_TEST_DB=1 pytest -q` completo en verde y commit `feat(auth): logout borra la cookie`.
 
 ## 7. `POST /auth/cambiar-password` (RN-16)
 

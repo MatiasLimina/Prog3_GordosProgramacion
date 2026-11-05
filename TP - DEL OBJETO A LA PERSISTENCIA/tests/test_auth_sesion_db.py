@@ -111,3 +111,40 @@ async def test_yo_de_un_usuario_registrado_muestra_el_rol_cliente(client):
     r = await client.get("/auth/yo")
 
     assert r.json()["roles_vigentes"] == r.json()["roles_token"] == ["CLIENTE"]
+
+
+# ---- POST /auth/logout ----
+
+def _borra_la_cookie(r) -> bool:
+    cabecera = r.headers["set-cookie"].lower()
+    return cabecera.startswith("access_token=") and "max-age=0" in cabecera and "path=/" in cabecera
+
+
+async def test_logout_borra_la_cookie_y_la_sesion_deja_de_servir(client):
+    await registrar(client)
+    await login(client)
+    assert (await client.get("/auth/yo")).status_code == 200
+
+    r = await client.post("/auth/logout")
+
+    assert r.status_code == 200
+    assert r.json() == {"mensaje": "Sesión cerrada"}
+    assert _borra_la_cookie(r)
+    assert (await client.get("/auth/yo")).status_code == 401
+
+
+async def test_logout_sin_sesion_tambien_responde_200_con_la_cabecera(client):
+    r = await client.post("/auth/logout")
+
+    assert r.status_code == 200
+    assert r.json() == {"mensaje": "Sesión cerrada"}
+    assert _borra_la_cookie(r)
+
+
+async def test_logout_con_cookie_secure_borra_con_los_mismos_atributos(client):
+    fastapi_app.state.settings = fastapi_app.state.settings.model_copy(update={"cookie_secure": True})
+
+    r = await client.post("/auth/logout")
+
+    cabecera = r.headers["set-cookie"].lower()
+    assert "secure" in cabecera and "httponly" in cabecera and "samesite=lax" in cabecera

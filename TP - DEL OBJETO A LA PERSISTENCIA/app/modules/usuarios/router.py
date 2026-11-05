@@ -64,3 +64,11 @@ async def login(
 @auth_router.get("/yo", response_model=AuthYoRead)
 async def yo(usuario: Annotated[UsuarioActual, Depends(get_usuario_actual)], uow: UsuariosUoWDep) -> AuthYoRead:
     return await service.yo(uow, usuario)
+
+
+@auth_router.post("/logout", response_model=dict[str, str])
+async def logout(response: Response, seg: SeguridadDep) -> dict[str, str]:
+    # Sin servicio ni base: no hay regla de negocio, sólo se borra la cookie (mismos atributos
+    # que al ponerla, así el navegador la reconoce). No exige sesión: cerrar sin sesión es un 200.
+    response.delete_cookie(NOMBRE_COOKIE, path="/", httponly=True, samesite="lax", secure=seg.cookie_secure)
+    return {"mensaje": "Sesión cerrada"}
