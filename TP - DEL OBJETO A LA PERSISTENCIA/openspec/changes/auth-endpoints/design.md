@@ -188,7 +188,7 @@ No emite token ni toca la cookie. Convención de evento que hereda CHG-14: `acto
 
 ## Migration Plan
 
-Sin migraciones de base ni variables nuevas. Un commit por endpoint (registro, login, logout, yo, cambiar-password), precedidos por la infraestructura compartida, y un commit final de documentación (`PLAN_PARCIAL.md`, `AGENTS.md`, archivo del change). Rollback: revertir el PR; nadie depende todavía de `/auth`.
+Sin variables nuevas. Una sola migración, agregada en la revisión: `0005_evento_seguridad_actor_255` (ensancha `evento_seguridad.actor` de 100 a 255, porque guarda el correo, que admite 255; ver tasks 8.4a). Un commit por endpoint (registro, login, logout, yo, cambiar-password), precedidos por la infraestructura compartida, y un commit final de documentación (`PLAN_PARCIAL.md`, `AGENTS.md`, archivo del change). Rollback: revertir el PR; nadie depende todavía de `/auth`.
 
 ## Decisiones a confirmar (CRITICAL: aprobación de Matias antes de escribir código)
 
