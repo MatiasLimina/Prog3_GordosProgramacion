@@ -3,11 +3,43 @@
 Heredan `add`, `update` y `get_by_id` de `BaseRepository`; los métodos propios se nombran
 por lo que traen. Ninguno confirma: confirmar es del UnitOfWork.
 """
-from sqlalchemy import func, or_, select
+from dataclasses import dataclass
+from datetime import datetime
+
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.repository import BaseRepository
 from app.modules.usuarios.models import AsignacionRol, EventoSeguridad, IntentoAcceso, Usuario
+
+
+@dataclass(frozen=True)
+class ConteoFallos:
+    """Resultado de `contar_fallos_recientes`: `mas_viejo` es `None` si no hay fallos.
+
+    `ahora` es el reloj de la base, el mismo que escribe `intento_acceso.cuando`.
+    """
+
+    fallos: int
+    mas_viejo: datetime | None
+    ahora: datetime
+
+
+# Una sola sentencia, parámetros ligados. Los fallos cuentan si son del mismo correo e IP,
+# de los últimos 60 s y POSTERIORES al último éxito del mismo correo e IP (RN-07: un login
+# correcto reinicia la cuenta sin borrar filas). Usa ix_intento_acceso_email_ip_cuando.
+_CONTAR_FALLOS = text(
+    """
+    SELECT count(*) AS fallos, min(cuando) AS mas_viejo, now() AS ahora
+    FROM intento_acceso
+    WHERE email = :email AND ip = :ip AND NOT exito
+      AND cuando > now() - interval '60 seconds'
+      AND cuando > COALESCE(
+            (SELECT max(cuando) FROM intento_acceso
+             WHERE email = :email AND ip = :ip AND exito),
+            '-infinity')
+    """
+)
 
 
 class UsuarioRepository(BaseRepository[Usuario]):
@@ -44,6 +76,11 @@ class AsignacionRolRepository(BaseRepository[AsignacionRol]):
 class IntentoAccesoRepository(BaseRepository[IntentoAcceso]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, IntentoAcceso)
+
+    async def contar_fallos_recientes(self, email: str, ip: str) -> ConteoFallos:
+        """Fallos vigentes del correo desde esa IP (ventana de 60 s, posteriores al último éxito)."""
+        fila = (await self.session.execute(_CONTAR_FALLOS, {"email": email, "ip": ip})).one()
+        return ConteoFallos(fallos=fila.fallos, mas_viejo=fila.mas_viejo, ahora=fila.ahora)
 
 
 class EventoSeguridadRepository(BaseRepository[EventoSeguridad]):
