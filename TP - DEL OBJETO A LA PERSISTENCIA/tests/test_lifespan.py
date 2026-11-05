@@ -202,8 +202,13 @@ def test_importar_la_app_no_crea_motor_ni_fabrica(tmp_path):
         "print(any(hasattr(m.app.state, k) for k in "
         "('engine', 'sessionmaker', 'settings', 'hash_ficticio', 'semaforo_bcrypt')))"
     )
-    # Entorno mínimo (sin variables de configuración); en Windows hace falta SYSTEMROOT.
-    entorno = {"PYTHONPATH": str(RAIZ), "SYSTEMROOT": os.environ.get("SYSTEMROOT", "")}
+    # Entorno mínimo (sin variables de configuración); en Windows hace falta
+    # SYSTEMROOT para arrancar y APPDATA para el site-packages del usuario.
+    entorno = {
+        "PYTHONPATH": str(RAIZ),
+        "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),
+        "APPDATA": os.environ.get("APPDATA", ""),
+    }
     r = subprocess.run(
         [sys.executable, "-c", codigo],
         cwd=tmp_path, env=entorno, capture_output=True, text=True, timeout=120, check=False,
