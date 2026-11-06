@@ -108,6 +108,31 @@ class StockExcedido(Conflicto):
         self.libro_id = libro_id
 
 
+class ClienteNoEncontrado(NoEncontrado):
+    """El cliente de la ruta no existe (404 con «El cliente no existe.»).
+
+    Es una excepción de dominio: no conoce HTTP. La lanzan el servicio de clientes y el
+    repositorio de perfiles (cuando la FK del perfil dice que el cliente no existe); CHG-16 la
+    puede reutilizar, igual que `LibroNoEncontrado`.
+    """
+
+    def __init__(self, cliente_id: int) -> None:
+        super().__init__("El cliente no existe.")
+        self.cliente_id = cliente_id
+
+
+class CorreoConCuenta(Conflicto):
+    """El correo de un cliente con usuario vinculado no se puede cambiar (409).
+
+    Es una excepción de dominio: no conoce HTTP. El texto vive acá y no en `MENSAJES` del UoW
+    porque no es una constraint de la base sino una regla de negocio.
+    """
+
+    def __init__(self, cliente_id: int) -> None:
+        super().__init__("El correo de un cliente con cuenta no se puede cambiar.")
+        self.cliente_id = cliente_id
+
+
 class NoAutenticado(Exception):
     """No hay una sesión válida o las credenciales no sirven; la app lo responde como 401.
 
@@ -165,9 +190,18 @@ def _buscar_atributo(error: IntegrityError, nombre: str) -> str | None:
     return None
 
 
+def constraint_violada(error: IntegrityError) -> str | None:
+    """Nombre de la constraint que violó el `IntegrityError`, o `None` si la base no lo informa.
+
+    Es la única forma de leerlo: `mensaje_para` la usa adentro y quien necesite distinguir una
+    constraint de otra (p. ej. FK -> 404 y UNIQUE -> 409) la usa directamente.
+    """
+    return _buscar_atributo(error, "constraint_name")
+
+
 def mensaje_para(error: IntegrityError, mensajes: dict[str, str], default: str | None = None) -> str:
     """Devuelve el mensaje propio para un IntegrityError."""
-    constraint = _buscar_atributo(error, "constraint_name")
+    constraint = constraint_violada(error)
     if constraint in mensajes:
         return mensajes[constraint]
     if default is not None:

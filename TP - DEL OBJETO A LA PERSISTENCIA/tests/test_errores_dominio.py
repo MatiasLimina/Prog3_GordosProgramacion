@@ -4,7 +4,9 @@ import pytest
 from fastapi import FastAPI
 
 from app.core.errors import (
+    ClienteNoEncontrado,
     Conflicto,
+    CorreoConCuenta,
     LibroDadoDeBaja,
     LibroNoEncontrado,
     NoEncontrado,
@@ -26,6 +28,14 @@ def _app_de_prueba() -> FastAPI:
     @app.get("/libro-no-encontrado")
     async def libro_no_encontrado():
         raise LibroNoEncontrado(3)
+
+    @app.get("/cliente-no-encontrado")
+    async def cliente_no_encontrado():
+        raise ClienteNoEncontrado(7)
+
+    @app.get("/correo-con-cuenta")
+    async def correo_con_cuenta():
+        raise CorreoConCuenta(3)
 
     @app.get("/stock-insuficiente")
     async def stock_insuficiente():
@@ -75,11 +85,29 @@ def test_stock_excedido_es_conflicto_con_su_mensaje():
     assert error.mensaje == "El stock del libro 3 superaría el máximo permitido."
 
 
+def test_cliente_no_encontrado_es_no_encontrado_y_no_es_conflicto():
+    error = ClienteNoEncontrado(7)
+    assert isinstance(error, NoEncontrado)
+    assert not isinstance(error, Conflicto)
+    assert error.cliente_id == 7
+    assert error.mensaje == "El cliente no existe."
+
+
+def test_correo_con_cuenta_es_conflicto_con_su_mensaje():
+    error = CorreoConCuenta(3)
+    assert isinstance(error, Conflicto)
+    assert not isinstance(error, NoEncontrado)
+    assert error.cliente_id == 3
+    assert error.mensaje == "El correo de un cliente con cuenta no se puede cambiar."
+
+
 @pytest.mark.parametrize(
     ("ruta", "estado", "detalle"),
     [
         ("/no-encontrado", 404, "La editorial no existe."),
         ("/libro-no-encontrado", 404, "El libro no existe."),
+        ("/cliente-no-encontrado", 404, "El cliente no existe."),
+        ("/correo-con-cuenta", 409, "El correo de un cliente con cuenta no se puede cambiar."),
         ("/stock-insuficiente", 409, "Stock insuficiente para el libro 3: hay 2, se pidieron 5."),
     ],
 )
