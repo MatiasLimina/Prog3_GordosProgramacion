@@ -267,14 +267,16 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 - **Commits:** uno por endpoint, por ejemplo `feat(auth): login con límite de intentos y hash ficticio`
 
 #### CHG-12 · `autorizacion-grupos-rutas` — Matias (Ej5)
-- **Archivos:** `app/core/dependencies.py` (ya existe desde CHG-04, con `proveedor_uow`), `app/main.py`.
+- **Archivos:** `app/core/dependencies.py` (ya existe desde CHG-04, con `proveedor_uow`), `app/core/errors.py` (`SinPermiso` → 403), `app/main.py`, los seis `router.py` de editoriales, géneros, autores, libros, clientes y ventas (**sólo** el montaje y el rol de cada ruta: sin tocar cuerpos de handlers, servicios ni contratos) y los tests (`tests/matriz_acceso.py`, `tests/test_grupos_de_rutas.py`, `tests/test_autorizacion_db.py` y compañía).
 - **Entregables:**
   - `get_usuario_actual` ya existe desde CHG-11 (401 si no hay cookie, si el token es inválido o venció, o si el usuario no existe o está inactivo); CHG-12 lo reutiliza y suma `requiere_rol`, el control RN-06 y los dos grupos (con `/auth` en el grupo abierto).
   - `requiere_rol` responde 403 y consulta los roles vigentes **en la base** en cada petición.
   - Control del cambio obligatorio de contraseña.
   - Dos routers en `main.py`: uno abierto y uno protegido, con el control montado una sola vez.
   - Las dependencias usan **la misma sesión** que el UoW.
-- **DoD:** C-01, C-06, C-07 (diferencia en `/auth/yo`) y C-09.
+  - Cada módulo de catálogo se parte en `router_abierto` (los GET) y `router` (las escrituras, con `SOLO_ADMIN`); clientes y ventas llevan `PERSONAL` en cada ruta. `tests/matriz_acceso.py` clasifica TODAS las rutas y la suite falla si una ruta nueva no está ahí.
+  - `GET /ventas/{id}` queda **provisoriamente** con `PERSONAL` hasta CHG-16.
+- **DoD:** C-01, C-06 (sin sesión → 401; vendedor que crea un libro → 403; la parte de la venta propia y ajena es de CHG-16), C-07 (diferencia en `/auth/yo`, con la revocación hecha en la base; la revocación por API es de CHG-14) y C-09.
 - **Commit:** `feat(auth): grupos abierto/protegido y requiere_rol contra la base`
 
 #### CHG-13 · `catalogo-repos-uow` — Nico (Ej3 + Ej6)
@@ -283,7 +285,8 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
   - `LibroRepository` hereda de `SoftDeleteRepository`; la precarga se declara dentro de cada método.
   - **Un único punto de escritura del stock** (por ejemplo `registrar_movimiento(libro_id, cantidad, motivo, usuario_id, venta_id=None)`), que usan el alta del libro, la reposición y las ventas. **Acordar la firma con Matias antes de CHG-16.**
   - `POST /libros` con `stock_inicial`, que deja el movimiento «Stock inicial».
-  - `POST /libros/{id}/reponer`, `GET /libros/{id}/movimientos`, `DELETE /libros/{id}` → 204.
+  - `POST /libros/{id}/reponer`, `GET /libros/{id}/movimientos`, `DELETE /libros/{id}` → 204: rutas protegidas con `SOLO_ADMIN` (usar el alias `UsuarioAdmin` para recibir al usuario del movimiento) y agregadas a `tests/matriz_acceso.py`.
+  - Conserva la división `router_abierto` / `router` de CHG-12 en cada módulo y las constantes de rol.
   - Un libro dado de baja no se vende ni se repone (409).
 - **DoD:** C-13 y C-16; el stock coincide con la suma de movimientos.
 - **Commits:** un módulo por commit, por ejemplo `refactor(libros): repositorio con borrado lógico y UoW`
@@ -294,11 +297,12 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
   - `GET`, `POST` y `DELETE` de `/usuarios/{id}/roles`. Revocar escribe `revocada_en`; reasignar un rol vencido cierra la fila anterior y abre una nueva.
   - RN-05: nadie se revoca su propio ADMIN y nunca quedan cero administradores vigentes (409).
   - `GET /eventos` paginado. Cada alta y cada cambio de rol deja un evento en la misma transacción.
+  - Monta `/usuarios` y `/eventos` en el grupo protegido con `SOLO_ADMIN` (constante de `app/core/dependencies.py`) y agrega sus rutas a `tests/matriz_acceso.py`. Usa `SinPermiso` sólo para 403 (RN-05 es 409).
 - **DoD:** C-07 (revocación) y C-08.
 - **Commit:** `feat(usuarios): alta de personal y gestión de roles con vigencia`
 
 #### CHG-15 · `clientes-repos-uow` — Nico
-- **Entregables:** clientes y perfil pasados a repositorios + UoW; `GET /clientes/{id}/ventas`.
+- **Entregables:** clientes y perfil pasados a repositorios + UoW; `GET /clientes/{id}/ventas`. Conserva el `router` protegido con `PERSONAL` en cada ruta (CHG-12) y suma las rutas nuevas a `tests/matriz_acceso.py`.
 - **Commit:** `refactor(clientes): repositorios y Unit of Work`
 
 #### CHG-16 · `ventas-transaccional` — Matias (Ej6 + Ej8)
@@ -306,8 +310,8 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
   - RN-09 y RN-10 en **un solo bloque `async with uow`**: venta, renglones con el precio copiado, total calculado, descuento de stock y un movimiento por renglón, todo por el punto único de CHG-13.
   - 409 si no alcanza el stock, si el libro está dado de baja o si el cliente o el libro no existen. No queda ninguna escritura.
   - `BackgroundTasks` con `await asyncio.sleep(0.5)` y un log visible con el arranque normal de uvicorn (logger `uvicorn.error` o uno configurado); corre sólo si la venta se confirmó.
-  - `GET /ventas/{id}` sin `requiere_rol`: lo puede ver el personal o el cliente dueño; si no, 403.
-  - `GET /mis-ventas`.
+  - `GET /ventas/{id}` sin `requiere_rol`: lo puede ver el personal o el cliente dueño; si no, 403 (`SinPermiso`). CHG-12 lo dejó con `PERSONAL` provisorio: **quitar `PERSONAL`** de esa ruta, agregar la decisión del servicio y completar C-06 («la cliente ve su venta y no la ajena»).
+  - `GET /mis-ventas` en el grupo protegido, sin rol, y agregada a `tests/matriz_acceso.py` (`AUTENTICADO`).
   - El detalle de una venta (cliente, renglones y libro de cada renglón, aunque esté dado de baja) se resuelve con un número fijo de consultas.
 - **DoD:** C-10, C-11, C-12 y C-15.
 - **Commit:** `feat(ventas): registro atómico con stock y aviso en segundo plano`
