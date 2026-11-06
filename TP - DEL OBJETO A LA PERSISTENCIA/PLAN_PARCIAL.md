@@ -25,7 +25,7 @@ Plan de ejecución del parcial «La librería con acceso, transacciones y despli
 ### Gotchas conocidos (leer antes de empezar)
 
 1. `AGENTS.md` ya describe las reglas del parcial (CHG-00, estado objetivo). Partes del código todavía siguen el patrón del TP 1–4 (limit/offset, servicios que reciben la sesión) hasta que cada change las migre; la configuración ya está migrada (CHG-03: `POSTGRES_*` y `SQL_ECHO`, sin `DATABASE_URL` ni `DB_ECHO`): ver la sección «Transición» de `AGENTS.md`. Ante una contradicción, gana la consigna.
-2. La consigna usa `python seed.py` **en la raíz**; el TP lo tiene en `scripts/seed.py` (CHG-17).
+2. La consigna usa `python seed.py` **en la raíz**; desde CHG-17 está ahí (`seed.py`).
 3. Despliegue (carpeta hermana `Despliegue/`, el TP 1–4 sin cambios del parcial): **ese** proyecto sigue leyendo `DATABASE_URL` y `DB_ECHO`, mientras que la consigna menciona `SQL_ECHO=false` en el env-file. No rompe nada (por defecto queda en false), pero hay que anotarlo en su `DEPLOY.md`. D-05 pasa allá porque su `get_settings()` lanza un error si falta `DATABASE_URL`. Este repositorio, desde CHG-03, ya no lee ninguna de las dos: arma la URL con `POSTGRES_*`, usa `SQL_ECHO` y `Settings` no arranca si falta `POSTGRES_PASSWORD` o `JWT_SECRET`. No mezclar los `.env` de los dos proyectos.
 4. En el contenedor, el seed se corre con `docker exec libreria python -m scripts.seed`.
 5. `--autogenerate` puede manejar mal el paso de `uq_libro_isbn` (UNIQUE) al índice único parcial, y no ve funciones ni disparadores. La migración 0003 se lee línea por línea y la 0004 se escribe a mano.
@@ -71,7 +71,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-14 | `usuarios-admin` | Nico | CHG-12 | pendiente |
 | CHG-15 | `clientes-repos-uow` | Nico | CHG-04, 05, 08 | pendiente |
 | CHG-16 | `ventas-transaccional` | Matias | CHG-12, 13, 15 | pendiente |
-| CHG-17 | `seed-parcial` | Lauti | CHG-08, CHG-10 | pendiente |
+| CHG-17 | `seed-parcial` | Lauti (lo tomó Matias) | CHG-08, CHG-10 | mergeado (#57) |
 | CHG-18 | `casos-http` | Lauti (Nico revisa) | CHG-17 y el change de cada caso | pendiente |
 | CHG-19 | `pytest-integracion` | Matias | CHG-13, 16 | pendiente |
 | CHG-20 | `entrega-zip` | Lauti + Matias | todo | pendiente |
@@ -309,6 +309,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 - **Entregables:**
   - RN-09 y RN-10 en **un solo bloque `async with uow`**: venta, renglones con el precio copiado, total calculado, descuento de stock y un movimiento por renglón, todo por el punto único de CHG-13, que ya existe: `LibroRepository.registrar_movimiento(libro_id, cantidad, motivo, usuario_id, venta_id=None) -> ResultadoMovimiento` (con `stock` y `movimiento`). Lanza `LibroNoEncontrado` (un `NoEncontrado`, 404 en la reposición): en una venta el libro inexistente es un choque con lo guardado, así que **ventas lo atrapa y lo relanza como `Conflicto` (409)**; `LibroDadoDeBaja`, `StockInsuficiente` y `StockExcedido` ya son `Conflicto`.
   - 409 si no alcanza el stock, si el libro está dado de baja o si el cliente o el libro no existen. No queda ninguna escritura.
+  - Cada salida de stock por venta usa el motivo `"Venta"` (el mismo literal que usa `seed.py` para la venta 1, CHG-17).
   - `BackgroundTasks` con `await asyncio.sleep(0.5)` y un log visible con el arranque normal de uvicorn (logger `uvicorn.error` o uno configurado); corre sólo si la venta se confirmó.
   - `GET /ventas/{id}` sin `requiere_rol`: lo puede ver el personal o el cliente dueño; si no, 403 (`SinPermiso`). CHG-12 lo dejó con `PERSONAL` provisorio: **quitar `PERSONAL`** de esa ruta, agregar la decisión del servicio y completar C-06 («la cliente ve su venta y no la ajena»).
   - `GET /mis-ventas` en el grupo protegido, sin rol, y agregada a `tests/matriz_acceso.py` (`AUTENTICADO`).

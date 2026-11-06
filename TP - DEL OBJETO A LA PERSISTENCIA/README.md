@@ -65,9 +65,9 @@ El esquema se crea sólo con Alembic; la app nunca usa `create_all`.
 
 ### 8. Datos iniciales
 ```bash
-python -m scripts.seed
+python seed.py
 ```
-Deja la base en un estado inicial conocido (vacía las tablas y carga editoriales, géneros, autores, libros, 2 clientes —el 2 es Tomás Ríos—, un perfil y una venta, con ids fijos). Se puede correr las veces que haga falta.
+Deja la base en un estado inicial conocido (vacía las tablas y carga 5 usuarios con sus roles, editoriales, géneros, autores, 5 libros con su stock inicial por movimientos, 3 clientes —el 2 es Tomás Ríos—, un perfil y una venta, con ids fijos). Es atómico (o carga todo o no cambia nada) y se puede correr las veces que haga falta. Las contraseñas de prueba de los usuarios sembrados están sólo en `seed.py`.
 
 ### 9. Servidor
 ```bash
@@ -144,7 +144,7 @@ app/
 ├── core/              # config, database, pagination, errors, tipos
 └── modules/<módulo>/  # models.py, schemas.py, service.py, router.py
 migrations/            # Alembic (async)
-scripts/seed.py        # carga inicial
+seed.py                # carga inicial (raíz)
 test/*.http            # casos de prueba C-01 a C-08
 tests/                 # pytest
 ```

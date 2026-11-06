@@ -1,9 +1,9 @@
 @host = http://localhost:8000
 
-# Antes de correr: `python -m scripts.seed` (deja la base en el estado inicial conocido,
+# Antes de correr: `python seed.py` (deja la base en el estado inicial conocido,
 # así los ids y los códigos esperados de abajo coinciden).
 # Datos sembrados: cliente 2 = Tomás Ríos; libro 1 = Rayuela (25000.00, stock 10),
-# libro 4 = Respiración artificial (27000.00, stock 6); la venta 1 ya existe,
+# libro 4 = Respiración artificial (27000.00, stock 3); la venta 1 ya existe,
 # por eso la primera venta de esta corrida recibe el id 2.
 # Cada venta válida DESCUENTA stock: para repetir el caso C-06 hay que volver a sembrar.
 # C-06 va primero a propósito: un 409 por FK (cliente inexistente) ya consumió un id de

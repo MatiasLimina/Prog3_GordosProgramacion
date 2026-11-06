@@ -1,8 +1,7 @@
 -- C-14: movimiento_stock es de sólo agregado (RN-12). Lo garantiza un disparador de la base
 -- (cuarta migración), no la aplicación: este script lo prueba directo con psql.
 --
--- Antes de correr: la base necesita al menos un movimiento de stock. El seed que los carga llega con
--- CHG-17 (`python seed.py`); hasta entonces sirve cualquier base con un movimiento insertado a mano.
+-- Antes de correr: `python seed.py` (el seed ya carga 7 movimientos de stock).
 -- El script elige el de menor id, así que no depende de ids fijos.
 -- Cómo correrlo (desde la carpeta del proyecto):
 --   docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < test/solo_agregado.sql
