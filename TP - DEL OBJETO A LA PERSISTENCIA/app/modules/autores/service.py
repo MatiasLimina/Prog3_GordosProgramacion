@@ -1,77 +1,65 @@
-from fastapi import HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
-
-from app.core.errors import commit_or_409
-from app.core.pagination import Pagination
+from app.core.errors import NoEncontrado
+from app.core.paginacion import Page, ParametrosPagina, envolver
 from app.modules.autores.models import Autor
 from app.modules.autores.schemas import AutorCreate, AutorLibroRead, AutorRead, AutorUpdate
-from app.modules.libros.models import Libro, LibroAutor
+from app.modules.autores.unit_of_work import AutoresUoW
 
-MENSAJES: dict[str, str] = {}
-
-
-async def crear(session: AsyncSession, datos: AutorCreate) -> AutorRead:
-    autor = Autor(**datos.model_dump())
-    session.add(autor)
-    await commit_or_409(session, MENSAJES)
-    return AutorRead.model_validate(autor)
+_NO_EXISTE = "El autor no existe."
 
 
-async def listar(session: AsyncSession, p: Pagination) -> list[AutorRead]:
-    consulta = select(Autor).order_by(Autor.id).limit(p.limit).offset(p.offset)
-    resultado = await session.execute(consulta)
-    autores = resultado.scalars().all()
-    return [AutorRead.model_validate(a) for a in autores]
-
-
-async def obtener(session: AsyncSession, autor_id: int) -> AutorRead:
-    autor = await session.get(Autor, autor_id)
+async def _obtener(uow: AutoresUoW, autor_id: int) -> Autor:
+    """El autor de la ruta (404 si no existe). Se llama dentro de un bloque `async with uow`."""
+    autor = await uow.autores.get_by_id(autor_id)
     if autor is None:
-        raise HTTPException(status_code=404, detail="El autor no existe.")
-    return AutorRead.model_validate(autor)
+        raise NoEncontrado(_NO_EXISTE)
+    return autor
 
 
-async def actualizar(session: AsyncSession, autor_id: int, datos: AutorUpdate) -> AutorRead:
-    autor = await session.get(Autor, autor_id)
-    if autor is None:
-        raise HTTPException(status_code=404, detail="El autor no existe.")
-
-    cambios = datos.model_dump(exclude_unset=True)
-    if cambios:
-        autor.sqlmodel_update(cambios)
-        session.add(autor)
-        await commit_or_409(session, MENSAJES)
-
-    return AutorRead.model_validate(autor)
+async def crear(uow: AutoresUoW, datos: AutorCreate) -> AutorRead:
+    async with uow:
+        autor = await uow.autores.add(Autor(**datos.model_dump()))
+        return AutorRead.model_validate(autor)
 
 
-async def listar_libros_de_autor(
-    session: AsyncSession, autor_id: int, p: Pagination
-) -> list[AutorLibroRead]:
-    # Verificar existencia del autor
-    await obtener(session, autor_id)
+async def listar(uow: AutoresUoW, p: ParametrosPagina) -> Page[AutorRead]:
+    async with uow:
+        total = await uow.autores.count()
+        autores = await uow.autores.get_all(offset=(p.page - 1) * p.size, limit=p.size)
+        return envolver([AutorRead.model_validate(a) for a in autores], total=total, page=p.page, size=p.size)
 
-    consulta = (
-        select(LibroAutor, Libro)
-        .join(Libro, LibroAutor.libro_id == Libro.id)
-        .where(LibroAutor.autor_id == autor_id)
-        .order_by(LibroAutor.orden, Libro.id)
-        .limit(p.limit)
-        .offset(p.offset)
-    )
-    resultado = await session.execute(consulta)
-    filas = resultado.all()
 
-    return [
-        AutorLibroRead(
-            id=libro.id,
-            isbn=libro.isbn,
-            titulo=libro.titulo,
-            precio=libro.precio,
-            stock=libro.stock,
-            rol=la.rol,
-            orden=la.orden,
-        )
-        for la, libro in filas
-    ]
+async def obtener(uow: AutoresUoW, autor_id: int) -> AutorRead:
+    async with uow:
+        return AutorRead.model_validate(await _obtener(uow, autor_id))
+
+
+async def actualizar(uow: AutoresUoW, autor_id: int, datos: AutorUpdate) -> AutorRead:
+    """PATCH: sólo lo enviado (`exclude_unset`)."""
+    async with uow:
+        autor = await _obtener(uow, autor_id)
+        await uow.autores.update(autor, datos.model_dump(exclude_unset=True))
+        return AutorRead.model_validate(autor)
+
+
+async def listar_libros_de_autor(uow: AutoresUoW, autor_id: int, p: ParametrosPagina) -> Page[AutorLibroRead]:
+    """Libros vigentes de un autor, por `orden`, con su `rol` y `orden` (404 si el autor no existe).
+
+    El autor es el recurso de la ruta, por eso se lee primero para dar el 404.
+    """
+    async with uow:
+        await _obtener(uow, autor_id)
+        total = await uow.autorias.contar_por_autor(autor_id)
+        autorias = await uow.autorias.listar_por_autor(autor_id, offset=(p.page - 1) * p.size, limit=p.size)
+        items = [
+            AutorLibroRead(
+                id=la.libro.id,
+                isbn=la.libro.isbn,
+                titulo=la.libro.titulo,
+                precio=la.libro.precio,
+                stock=la.libro.stock,
+                rol=la.rol,
+                orden=la.orden,
+            )
+            for la in autorias
+        ]
+        return envolver(items, total=total, page=p.page, size=p.size)

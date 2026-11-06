@@ -24,11 +24,15 @@ El grupo abierto SHALL contener la salud (`GET /health/live`, `GET /health/ready
 - **THEN** pertenece al grupo abierto y no exige ningún rol
 
 ### Requirement: Rutas protegidas de administración
-El grupo protegido SHALL exigir `ADMIN` en `POST /editoriales/`, `PATCH /editoriales/{id}`, `POST /generos/`, `POST /autores/`, `PATCH /autores/{id}`, `POST /libros/` y `PATCH /libros/{id}`.
+El grupo protegido SHALL exigir `ADMIN` en `POST /editoriales/`, `PATCH /editoriales/{id}`, `POST /generos/`, `POST /autores/`, `PATCH /autores/{id}`, `POST /libros/`, `PATCH /libros/{id}`, `DELETE /libros/{id}`, `POST /libros/{id}/reponer` y `GET /libros/{id}/movimientos`.
 
 #### Scenario: Vendedor en una escritura del catálogo
 - **WHEN** un usuario con sólo `VENDEDOR` vigente pide cada una de esas rutas
 - **THEN** todas responden 403
+
+#### Scenario: El historial de movimientos no es catálogo público
+- **WHEN** se inspecciona el grupo de `GET /libros/{id}/movimientos`
+- **THEN** pertenece al grupo protegido y exige `ADMIN`, y sin cookie responde 401
 
 ### Requirement: Rutas protegidas del personal
 El grupo protegido SHALL exigir `VENDEDOR` o `ADMIN` en `POST /clientes/`, `GET /clientes/`, `GET /clientes/{id}`, `PATCH /clientes/{id}`, `POST /clientes/{id}/perfil`, `GET /clientes/{id}/ventas`, `POST /ventas/` y `GET /ventas/`.

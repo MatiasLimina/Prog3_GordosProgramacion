@@ -1,8 +1,11 @@
 from decimal import Decimal
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class AutorCreate(BaseModel):
+    # extra="forbid": un `id` (o cualquier campo no declarado) en el cuerpo es 422.
+    model_config = ConfigDict(extra="forbid")
+
     nombre: str = Field(min_length=1, max_length=150)
     nacionalidad: str = Field(min_length=1, max_length=100)
 
@@ -15,6 +18,8 @@ class AutorCreate(BaseModel):
 
 
 class AutorUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     nombre: str | None = Field(default=None, min_length=1, max_length=150)
     nacionalidad: str | None = Field(default=None, min_length=1, max_length=100)
 

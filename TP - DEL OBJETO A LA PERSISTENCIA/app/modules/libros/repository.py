@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import Select, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import attributes, joinedload, selectinload
+from sqlalchemy.orm import attributes, contains_eager, joinedload, selectinload
 from sqlalchemy.orm.util import identity_key  # API documentada de SQLAlchemy; no se reexporta en sqlalchemy.orm
 
 from app.core.errors import (
@@ -68,14 +68,34 @@ class LibroRepository(SoftDeleteRepository[Libro]):
 
     async def buscar(self, *, titulo: str | None, genero_id: int | None, offset: int, limit: int) -> list[Libro]:
         """Una página de libros vigentes, por título (sin distinguir mayúsculas) y género, con editorial y género."""
-        consulta = self._filtrada(titulo=titulo, genero_id=genero_id).options(
-            joinedload(Libro.editorial), joinedload(Libro.genero)
-        )
+        consulta = self._con_editorial_y_genero(self._filtrada(titulo=titulo, genero_id=genero_id))
         return await self._listar(consulta, offset=offset, limit=limit)
 
     async def contar(self, *, titulo: str | None, genero_id: int | None) -> int:
         """Cuántos libros vigentes cumplen los mismos filtros que `buscar`."""
         return await self._contar(self._filtrada(titulo=titulo, genero_id=genero_id))
+
+    def _con_editorial_y_genero(self, consulta: Select[tuple[Libro]]) -> Select[tuple[Libro]]:
+        """Agrega la precarga de lo que muestra un `LibroRead`: editorial y género (relaciones a uno)."""
+        return consulta.options(joinedload(Libro.editorial), joinedload(Libro.genero))
+
+    async def listar_por_editorial(self, editorial_id: int, *, offset: int, limit: int) -> list[Libro]:
+        """Una página de los libros vigentes de una editorial, con editorial y género."""
+        consulta = self._consulta_base().where(Libro.editorial_id == editorial_id)
+        return await self._listar(self._con_editorial_y_genero(consulta), offset=offset, limit=limit)
+
+    async def contar_por_editorial(self, editorial_id: int) -> int:
+        """Cuántos libros vigentes tiene la editorial (mismo filtro que `listar_por_editorial`)."""
+        return await self._contar(self._consulta_base().where(Libro.editorial_id == editorial_id))
+
+    async def listar_por_genero(self, genero_id: int, *, offset: int, limit: int) -> list[Libro]:
+        """Una página de los libros vigentes de un género, con editorial y género."""
+        consulta = self._consulta_base().where(Libro.genero_id == genero_id)
+        return await self._listar(self._con_editorial_y_genero(consulta), offset=offset, limit=limit)
+
+    async def contar_por_genero(self, genero_id: int) -> int:
+        """Cuántos libros vigentes tiene el género (mismo filtro que `listar_por_genero`)."""
+        return await self._contar(self._consulta_base().where(Libro.genero_id == genero_id))
 
     async def registrar_movimiento(
         self, libro_id: int, cantidad: int, motivo: str, usuario_id: int, venta_id: int | None = None
@@ -154,6 +174,35 @@ class LibroRepository(SoftDeleteRepository[Libro]):
         if cantidad < 0:
             raise StockInsuficiente(libro_id, disponible=stock, pedido=-cantidad)
         raise StockExcedido(libro_id)
+
+
+class LibroAutorRepository(BaseRepository[LibroAutor]):
+    """Lecturas de las autorías (la relación libro-autor con `rol` y `orden`)."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        super().__init__(session, LibroAutor)
+
+    def _de_autor(self, autor_id: int) -> Select[tuple[LibroAutor]]:
+        """Las autorías del autor sobre libros vigentes, SIN precarga (la comparten `listar` y `contar`)."""
+        return (
+            self._consulta_base()
+            .join(Libro, LibroAutor.libro_id == Libro.id)
+            .where(LibroAutor.autor_id == autor_id, Libro.borrado_en.is_(None))
+        )
+
+    async def listar_por_autor(self, autor_id: int, *, offset: int, limit: int) -> list[LibroAutor]:
+        """Una página de las autorías del autor sobre libros vigentes, por `orden` (con el libro precargado)."""
+        consulta = (
+            self._de_autor(autor_id)
+            .options(contains_eager(LibroAutor.libro))  # reusa el JOIN de `_de_autor`
+            # `_listar` agrega la clave primaria al final: el orden es total.
+            .order_by(LibroAutor.orden)
+        )
+        return await self._listar(consulta, offset=offset, limit=limit)
+
+    async def contar_por_autor(self, autor_id: int) -> int:
+        """Cuántos libros vigentes tiene el autor (mismo filtro que `listar_por_autor`)."""
+        return await self._contar(self._de_autor(autor_id))
 
 
 class MovimientoStockRepository(BaseRepository[MovimientoStock]):

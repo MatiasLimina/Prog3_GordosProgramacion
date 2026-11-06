@@ -67,7 +67,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-10 | `security-core` | Matias | CHG-03 | mergeado (#36) |
 | CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | mergeado (#53) |
 | CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | mergeado (#54) |
-| CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | en curso |
+| CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | mergeado (#56) |
 | CHG-14 | `usuarios-admin` | Nico | CHG-12 | pendiente |
 | CHG-15 | `clientes-repos-uow` | Nico | CHG-04, 05, 08 | pendiente |
 | CHG-16 | `ventas-transaccional` | Matias | CHG-12, 13, 15 | pendiente |
@@ -307,7 +307,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 
 #### CHG-16 · `ventas-transaccional` — Matias (Ej6 + Ej8)
 - **Entregables:**
-  - RN-09 y RN-10 en **un solo bloque `async with uow`**: venta, renglones con el precio copiado, total calculado, descuento de stock y un movimiento por renglón, todo por el punto único de CHG-13.
+  - RN-09 y RN-10 en **un solo bloque `async with uow`**: venta, renglones con el precio copiado, total calculado, descuento de stock y un movimiento por renglón, todo por el punto único de CHG-13, que ya existe: `LibroRepository.registrar_movimiento(libro_id, cantidad, motivo, usuario_id, venta_id=None) -> ResultadoMovimiento` (con `stock` y `movimiento`). Lanza `LibroNoEncontrado` (un `NoEncontrado`, 404 en la reposición): en una venta el libro inexistente es un choque con lo guardado, así que **ventas lo atrapa y lo relanza como `Conflicto` (409)**; `LibroDadoDeBaja`, `StockInsuficiente` y `StockExcedido` ya son `Conflicto`.
   - 409 si no alcanza el stock, si el libro está dado de baja o si el cliente o el libro no existen. No queda ninguna escritura.
   - `BackgroundTasks` con `await asyncio.sleep(0.5)` y un log visible con el arranque normal de uvicorn (logger `uvicorn.error` o uno configurado); corre sólo si la venta se confirmó.
   - `GET /ventas/{id}` sin `requiere_rol`: lo puede ver el personal o el cliente dueño; si no, 403 (`SinPermiso`). CHG-12 lo dejó con `PERSONAL` provisorio: **quitar `PERSONAL`** de esa ruta, agregar la decisión del servicio y completar C-06 («la cliente ve su venta y no la ajena»).

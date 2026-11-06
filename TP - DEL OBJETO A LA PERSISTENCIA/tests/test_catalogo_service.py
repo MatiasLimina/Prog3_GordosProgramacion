@@ -1,10 +1,6 @@
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
-import pytest
-from fastapi import HTTPException
-
-from app.modules.autores import service as autores_service
 from app.modules.libros import service as libros_service
 from app.modules.libros.unit_of_work import LibrosUoW
 
@@ -57,12 +53,3 @@ def test_armar_detalle_libro():
     assert detalle.autores[0].rol == "autor"
     assert detalle.autores[0].orden == 1
 
-
-async def test_obtener_autor_no_existente_lanza_404():
-    session = AsyncMock()
-    session.get.return_value = None
-
-    with pytest.raises(HTTPException) as exc:
-        await autores_service.obtener(session, 999)
-    assert exc.value.status_code == 404
-    assert exc.value.detail == "El autor no existe."

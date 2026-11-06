@@ -225,18 +225,19 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 |---|---|---|
 | ~~`app/core/config.py` con `DATABASE_URL` y `DB_ECHO`~~ | `Settings` con `POSTGRES_*`, `SQL_ECHO` y recursos en el lifespan | CHG-03 ✅ hecho |
 | ~~`health` con `router.py` y `schemas.py`~~ | sólo `router.py` | CHG-03 ✅ hecho |
-| Servicios que reciben `AsyncSession` (catálogo, clientes, ventas) | reciben el UoW; repositorios por entidad | CHG-04 (base), 13, 15, 16 |
-| `app/core/pagination.py` con `limit` / `offset` | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 ✅ hecho (el viejo se migra en 13/15/16) |
-| `app/core/errors.py` (`commit_or_409` / `traducir_integrity` reciben la sesión) | el UoW lanza `Conflicto` (con `mensaje_para`) y `main.py` lo pasa a 409; `commit_or_409` sigue para los módulos viejos hasta 13/15/16 | CHG-04 |
-| `test/*.http` con los casos C-01 a C-08 del TP | casos C-01 a C-16 del parcial (otra numeración y otro significado) | CHG-18 |
+| Servicios que reciben `AsyncSession` (clientes, ventas; el catálogo ya migró) | reciben el UoW; repositorios por entidad | CHG-04 (base), 13 ✅ hecho (catálogo), 15, 16 |
+| `app/core/pagination.py` con `limit` / `offset` | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 ✅ hecho (el catálogo ya migró en CHG-13 ✅; el viejo queda para clientes (15) y ventas (16)) |
+| `app/core/errors.py` (`commit_or_409` / `traducir_integrity` reciben la sesión) | el UoW lanza `Conflicto` (con `mensaje_para`) y `main.py` lo pasa a 409; `commit_or_409` / `traducir_integrity` quedan sólo para clientes y ventas hasta CHG-15/16 (catálogo ya migrado, CHG-13 ✅) | CHG-04, 13 ✅ (catálogo), 15, 16 |
+| `test/*.http` con los casos C-01 a C-08 del TP | casos C-01 a C-16 del parcial (otra numeración y otro significado); desde CHG-13 los listados del catálogo usan el envoltorio (`page`/`size`) y las escrituras piden sesión, y los `.http` se ajustan en CHG-18 | CHG-18 |
 | ~~`tests/` con un conftest que deriva `libreria_test` de `DATABASE_URL`; `env.example` con `DATABASE_URL`~~ | deriva de `Settings` / `POSTGRES_*` | CHG-03 ✅ hecho |
 | `test/libros.http` y `test/ventas.http` mencionan `DB_ECHO=true` | `SQL_ECHO=true` | CHG-18 |
 | ~~Semáforo de bcrypt: `BCRYPT_MAX_CONCURRENTES` ya está en `Settings`, pero el `asyncio.Semaphore` todavía no se crea~~ | el lifespan crea el semáforo y `security.py` lo usa | CHG-10 ✅ hecho |
 | `scripts/seed.py` (`python -m scripts.seed`) | `seed.py` en la raíz (`python seed.py`) | CHG-17 |
-| `libro.stock` editable, ISBN con UNIQUE común | stock por movimientos, ISBN único entre vigentes | CHG-07, 08, 13 |
+| ~~`libro.stock` editable, ISBN con UNIQUE común~~ | stock por movimientos, ISBN único entre vigentes | CHG-07, 08, 13 ✅ hecho |
+| Ventas escribe `libro.stock` sin dejar movimiento y puede vender libros dados de baja | usa el punto único de stock; un libro dado de baja da 409 | CHG-16 |
 | Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11 ✅ (rutas `/auth` hechas), 12 ✅ hecho (`requiere_rol`, grupos abierto/protegido), 14 (administración de usuarios) |
 | `GET /ventas/{id}` con `PERSONAL` provisorio | sin `requiere_rol`: decide el servicio (personal o cliente dueño; si no, 403) | CHG-16 |
-| Routers de catálogo, clientes y ventas divididos en `router_abierto` / `router`, y rutas clasificadas en `tests/matriz_acceso.py` | CHG-13, 15 y 16 conservan la división y agregan sus rutas a la matriz (la suite falla si falta una) | CHG-13, 15, 16 |
+| Routers de catálogo, clientes y ventas divididos en `router_abierto` / `router`, y rutas clasificadas en `tests/matriz_acceso.py` | CHG-13, 15 y 16 conservan la división y agregan sus rutas a la matriz (la suite falla si falta una) | CHG-13 ✅ hecho (catálogo), 15, 16 |
 
 ## 10. Git
 

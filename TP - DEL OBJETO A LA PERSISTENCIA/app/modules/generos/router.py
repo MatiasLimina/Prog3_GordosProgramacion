@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
-from app.core.database import get_session
-from app.core.dependencies import SOLO_ADMIN
+from fastapi import APIRouter, Depends
+
+from app.core.dependencies import SOLO_ADMIN, proveedor_uow
+from app.core.paginacion import Page, ParametrosPagina, paginacion_params
 from app.core.tipos import IdPath
-from app.core.pagination import Pagination, pagination_params
 from app.modules.generos import service
 from app.modules.generos.schemas import GeneroCreate, GeneroRead
+from app.modules.generos.unit_of_work import GenerosUoW
 from app.modules.libros.schemas import LibroRead
 
 # Dos routers con el mismo prefijo (CHG-12): los GET son del catálogo público (grupo abierto de
@@ -15,6 +16,8 @@ from app.modules.libros.schemas import LibroRead
 router_abierto = APIRouter(prefix="/generos", tags=["generos"])
 router = APIRouter(prefix="/generos", tags=["generos"])
 
+GenerosUoWDep = Annotated[GenerosUoW, Depends(proveedor_uow(GenerosUoW))]
+
 
 @router.post(
     "/",
@@ -22,21 +25,19 @@ router = APIRouter(prefix="/generos", tags=["generos"])
     status_code=201,
     dependencies=[Depends(SOLO_ADMIN)],
 )
-async def crear_genero(datos: GeneroCreate, session: AsyncSession = Depends(get_session)):
-    return await service.crear(session, datos)
+async def crear_genero(datos: GeneroCreate, uow: GenerosUoWDep) -> GeneroRead:
+    return await service.crear(uow, datos)
 
 
-@router_abierto.get("/", response_model=list[GeneroRead], status_code=200)
+@router_abierto.get("/", response_model=Page[GeneroRead], status_code=200)
 async def listar_generos(
-    p: Pagination = Depends(pagination_params), session: AsyncSession = Depends(get_session)
-):
-    return await service.listar(session, p)
+    uow: GenerosUoWDep, p: Annotated[ParametrosPagina, Depends(paginacion_params)]
+) -> Page[GeneroRead]:
+    return await service.listar(uow, p)
 
 
-@router_abierto.get("/{genero_id}/libros", response_model=list[LibroRead], status_code=200)
+@router_abierto.get("/{genero_id}/libros", response_model=Page[LibroRead], status_code=200)
 async def listar_libros_de_genero(
-    genero_id: IdPath,
-    p: Pagination = Depends(pagination_params),
-    session: AsyncSession = Depends(get_session),
-):
-    return await service.listar_libros(session, genero_id, p)
+    genero_id: IdPath, uow: GenerosUoWDep, p: Annotated[ParametrosPagina, Depends(paginacion_params)]
+) -> Page[LibroRead]:
+    return await service.listar_libros(uow, genero_id, p)
