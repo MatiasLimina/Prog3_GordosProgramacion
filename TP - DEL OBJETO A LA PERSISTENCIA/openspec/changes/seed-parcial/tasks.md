@@ -1,0 +1,50 @@
+# Tasks
+
+Strict TDD: en cada grupo, primero el test que falla (RED, ejecutado y visto fallar), después el mínimo código (GREEN, ejecutado) y al final el refactor con la suite en verde. Todos los tests nuevos van en `tests/test_seed.py` (marca `db`, base `libreria_test`, fixture `sessionmaker_test`; correr con `REQUIRE_TEST_DB=1 pytest tests/test_seed.py` para que la falta de base no pase como skip). Los datos exactos están en `design.md` → «Datos de la carga»; no hace falta la consigna.
+
+## 0. Línea base
+
+- [x] 0.1 Correr `REQUIRE_TEST_DB=1 pytest` completo y anotar «N passed» como red de seguridad; si algo falla antes de tocar nada, reportarlo como falla preexistente y no arreglarlo acá. Verificación: salida de pytest anotada en el resumen del apply.
+
+## 1. Entrada en la raíz, vaciado atómico y usuarios
+
+- [x] 1.1 RED: reemplazar `tests/test_seed.py` por la versión nueva con un ayudante `correr_seed(sessionmaker_test)` que llama `cargar_datos(s, costo=4, semaforo=asyncio.Semaphore(4))` importado `from seed import USUARIOS, cargar_datos`, y los tests: conteos de `usuario` 5 y `asignacion_rol` 5; roles vigentes por email (admin/admin2 ADMIN, vendedor/nuevo VENDEDOR, ana CLIENTE); `debe_cambiar_password` verdadero sólo en nuevo y todos activos; dos ADMIN vigentes; hash `$2b$` que no contiene la contraseña y `verificar_password` True con la de `USUARIOS`; `evento_seguridad` con una sola fila (`SISTEMA`, «Carga de los datos iniciales») e `intento_acceso` vacía. Verificación: `pytest tests/test_seed.py` falla por `ModuleNotFoundError: seed`.
+- [x] 1.2 GREEN: crear `seed.py` en la raíz con `import app.core.base` y `import app.models` primero, la tupla `USUARIOS` (design D4), `cargar_datos(session, *, costo, semaforo)` que hashea los cinco con `hashear_password` + `asyncio.gather` ANTES de `async with session.begin():`, y dentro: `TRUNCATE <tablas del metadata> RESTART IDENTITY CASCADE` (D1), usuarios, asignaciones y el evento `SISTEMA`; devuelve conteos por tabla. Verificación: los tests de 1.1 pasan.
+- [x] 1.3 RED→GREEN: tests de vaciado y atomicidad — (a) con una editorial extra, un `intento_acceso` y un `movimiento_stock` insertados antes (este último requiere un usuario y un libro previos), el seed los borra y no choca con el disparador; (b) `alembic_version` conserva su revisión; (c) con `monkeypatch` haciendo fallar un paso posterior al TRUNCATE sobre una base ya sembrada más una fila extra, la excepción se propaga y la base conserva la fila extra y los conteos previos. Ajustar `seed.py` si alguno falla. Verificación: los tres tests pasan.
+- [x] 1.4 REFACTOR: separar en funciones privadas por grupo (`_vaciar_tablas`, `_cargar_usuarios`, ...) con comentarios de por qué TRUNCATE (disparador por fila) y por qué la transacción única; suite de `test_seed.py` en verde tras cada paso.
+
+## 2. Catálogo y stock por el punto único
+
+- [x] 2.1 RED: tests de catálogo — conteos (editorial 3, genero 3, autor 6, libro 5, libro_autor 7) y la tabla de libros del diseño (id, título, ISBN, precio `Decimal`, editorial, género, autorías con rol y orden); autor 6 sin libros; todos vigentes. Verificación: fallan contra el `seed.py` del grupo 1.
+- [x] 2.2 RED: tests de stock inicial — para los 5 libros, `stock == SUM(movimiento_stock.cantidad)` (consulta agrupada, ayudante reutilizable en 3.2); cinco movimientos «Stock inicial» (ids 1..5, libros 1..5, cantidades 11/5/10/3/1, `usuario_id` del admin, `venta_id` nulo). Los stocks finales 10/5/8/3/1 se afirman en 3.2, cuando existen las salidas de la venta. Verificación: fallan.
+- [x] 2.3 GREEN: cargar editoriales, géneros, autores, libros SIN `stock` (queda 0) y autorías, y el stock inicial con `LibroRepository(session).registrar_movimiento(libro_id, n, "Stock inicial", admin_id)` en orden de `libro_id` (design D3). Nunca asignar `libro.stock`. Verificación: tests de 2.1 y 2.2 pasan.
+- [x] 2.4 RED→GREEN: tests HTTP con `client` — `GET /libros?titulo=ficc&size=1` con `total` 1 y `pages` 1; `POST /libros` con el cuerpo de ejemplo (ISBN `978-950-00-0006-6`, autores 3 y 4) → 201, iniciando sesión por `/auth/login` con `admin@example.com` y su contraseña de `USUARIOS` (NO `entrar_como`, que inserta `ana@example.com` y choca). Verificación: pasan.
+- [x] 2.5 REFACTOR: constantes de datos (tuplas de libros con su stock inicial) legibles y en el orden que fija los ids; suite verde.
+
+## 3. Clientes, venta 1 y salidas de stock
+
+- [x] 3.1 RED: tests de clientes — ids 1..3 (Lucía, Tomás, Ana Paz) con sus correos; Ana con `usuario_id` del usuario ana, Lucía y Tomás con nulo; un solo perfil (Lucía, teléfono y dirección del diseño); `POST /auth/registro` con `lucia@example.com` → 409 y Lucía sigue sin usuario. Verificación: fallan.
+- [x] 3.2 RED: tests de venta — venta 1 de cliente 1, `fecha` con zona, dos renglones (libro 1 × 1 a 25000.00, libro 3 × 2 a 22000.00), precios iguales a `libro.precio`, total `Decimal("69000.00")`; movimientos 6 y 7 (−1 libro 1, −2 libro 3, motivo «Venta», `venta_id` 1, `usuario_id` del vendedor); 7 movimientos en total; invariante stock = Σ movimientos en los 5 libros con stock final 10/5/8/3/1. Verificación: fallan.
+- [x] 3.3 GREEN: cargar clientes (Ana con `usuario_id` del usuario ana), perfil de Lucía, la venta 1 con renglones (precio copiado del `Libro` cargado, total = Σ precio × cantidad) y sus salidas con `registrar_movimiento(libro_id, -cantidad, "Venta", vendedor_id, venta_id=venta.id)` en orden ascendente de `libro_id` (constante `MOTIVO_VENTA = "Venta"`). Verificación: tests de 3.1 y 3.2 pasan.
+- [x] 3.4 RED→GREEN: tests de casos que dependen del seed — `GET /libros?size=2` igual al ejemplo de la consigna (`total` 5, `pages` 3, Rayuela `978-950-00-0001-1` `25000.00` stock 10 y Antología `978-950-00-0002-8` `30000.00` stock 5; necesita las salidas de la venta); `POST /ventas/` con el ejemplo de la consigna (cliente 2, libro 1 × 2, libro 4 × 1) → 201 con `id` 2 y `total` «77000.00»; venta de 1 Rayuela + 2 Bestiario → 409 y Rayuela sigue con stock 10 (base de C-11). Sesión con `admin@example.com` del seed. Verificación: pasan.
+- [x] 3.5 RED→GREEN: idempotencia — dos corridas seguidas dan los mismos conteos (los del diseño: usuario 5, asignacion_rol 5, intento_acceso 0, evento_seguridad 1, editorial 3, genero 3, autor 6, libro 5, libro_autor 7, movimiento_stock 7, cliente 3, perfil_cliente 1, venta 1, renglon_venta 2) y los mismos ids de usuarios, libros, clientes, venta y movimientos; el dict que devuelve `cargar_datos` coincide con los conteos reales. Verificación: pasa.
+- [x] 3.6 REFACTOR: revisar que `seed.py` no tenga `libro.stock =`, `commit()` intermedios ni `create_all`; suite verde.
+
+## 4. Script, contraseñas y referencias
+
+- [x] 4.1 RED: test que corre `python seed.py` en subproceso (`cwd` = carpeta del proyecto, `env` con `POSTGRES_DB=libreria_test` y `BCRYPT_COST=4`, como `_alembic_upgrade_head` de `conftest.py`): código 0, el resumen menciona los conteos y no contiene ninguna contraseña de `USUARIOS`. Test de que `scripts/seed.py` no existe. Test de que ninguna contraseña de `USUARIOS` aparece en `app/`, `migrations/`, `alembic.ini`, `env.example` ni `docker-compose.yml`. Verificación: fallan el de subproceso (sin `main`) y el de `scripts/seed.py`.
+- [x] 4.2 GREEN: `main()` en `seed.py` — `get_settings()`, `crear_motor`, `crear_fabrica_sesiones`, `asyncio.Semaphore(settings.bcrypt_max_concurrentes)`, `cargar_datos(..., costo=settings.bcrypt_cost, ...)`, `dispose()` en `finally`, resumen impreso sin contraseñas; `if __name__ == "__main__": asyncio.run(main())`. Docstring de uso: `python seed.py` después de `alembic upgrade head`. `git rm scripts/seed.py scripts/__init__.py`. Verificación: tests de 4.1 pasan.
+- [x] 4.3 Actualizar referencias a `python -m scripts.seed` → `python seed.py`: `AGENTS.md` (sección 2, línea del seed, sin el «hoy/desde CHG-17»; sección 9, fila `scripts/seed.py` marcada «CHG-17 ✅ hecho»), `README.md` (paso 8 con lo que carga ahora y árbol: `seed.py` en la raíz, sin `scripts/`), cabecera «Antes de correr» de los cinco `test/*.http` (sólo esa línea; el resto es de CHG-18) y `test/solo_agregado.sql` (el seed ya carga 7 movimientos). NO tocar `docs/evidencia_c07.md` ni las líneas de `PLAN_PARCIAL.md` que hablan del contenedor de `Despliegue`. Verificación: `grep -rn "scripts.seed\|scripts/seed" --include=*.md --include=*.http --include=*.sql --include=*.py .` sólo muestra `docs/evidencia_c07.md`, `PLAN_PARCIAL.md` (Despliegue) y `openspec/changes/archive/`.
+- [x] 4.4 Verificación manual sobre la base de desarrollo: `alembic upgrade head`, `python seed.py` dos veces seguidas (misma salida), `uvicorn app.main:app` y `GET /health/ready` 200, `GET /libros?size=2` igual al ejemplo de la consigna, y `test/solo_agregado.sql` en psql rechaza UPDATE y DELETE sobre el movimiento 1. Anotar el resultado en el resumen del apply.
+
+## 5. Integración y cierre
+
+- [x] 5.1 Correr `REQUIRE_TEST_DB=1 pytest` completo: mismo número de tests que la línea base de 0.1 menos los del `test_seed.py` viejo más los nuevos, todos en verde. Verificación: salida de pytest.
+- [ ] 5.2 Consultar al `advisor` (checkpoint FINAL_DIFF) sobre `git diff main` antes de commitear; resolver BLOCK/CONCERNS. Verificación: veredicto anotado.
+- [ ] 5.3 En el mismo PR: fila CHG-17 de `PLAN_PARCIAL.md` (sección 2) en `mergeado (#N)`; riesgo 2 de la sección de riesgos marcado resuelto; en el backlog de CHG-16 anotar que las salidas de venta usan el motivo «Venta» como el seed. Verificación: diff de `PLAN_PARCIAL.md`.
+
+## Workflow follow-up
+
+- Commit: `feat(seed): datos iniciales del parcial` (rama `feat/seed-parcial`), PR chico revisado por otro integrante.
+- `openspec archive seed-parcial` en la misma rama antes de pedir revisión (AGENTS.md §10).
+- Avisar a CHG-18 (Lauti/Nico) de la tabla de ids y contraseñas del diseño, y a CHG-16 (Matias) del motivo «Venta».

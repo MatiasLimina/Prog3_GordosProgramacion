@@ -25,7 +25,7 @@ Plan de ejecución del parcial «La librería con acceso, transacciones y despli
 ### Gotchas conocidos (leer antes de empezar)
 
 1. `AGENTS.md` ya describe las reglas del parcial (CHG-00, estado objetivo). Partes del código todavía siguen el patrón del TP 1–4 (limit/offset, servicios que reciben la sesión) hasta que cada change las migre; la configuración ya está migrada (CHG-03: `POSTGRES_*` y `SQL_ECHO`, sin `DATABASE_URL` ni `DB_ECHO`): ver la sección «Transición» de `AGENTS.md`. Ante una contradicción, gana la consigna.
-2. La consigna usa `python seed.py` **en la raíz**; el TP lo tiene en `scripts/seed.py` (CHG-17).
+2. La consigna usa `python seed.py` **en la raíz**; desde CHG-17 está ahí (`seed.py`).
 3. Despliegue (carpeta hermana `Despliegue/`, el TP 1–4 sin cambios del parcial): **ese** proyecto sigue leyendo `DATABASE_URL` y `DB_ECHO`, mientras que la consigna menciona `SQL_ECHO=false` en el env-file. No rompe nada (por defecto queda en false), pero hay que anotarlo en su `DEPLOY.md`. D-05 pasa allá porque su `get_settings()` lanza un error si falta `DATABASE_URL`. Este repositorio, desde CHG-03, ya no lee ninguna de las dos: arma la URL con `POSTGRES_*`, usa `SQL_ECHO` y `Settings` no arranca si falta `POSTGRES_PASSWORD` o `JWT_SECRET`. No mezclar los `.env` de los dos proyectos.
 4. En el contenedor, el seed se corre con `docker exec libreria python -m scripts.seed`.
 5. `--autogenerate` puede manejar mal el paso de `uq_libro_isbn` (UNIQUE) al índice único parcial, y no ve funciones ni disparadores. La migración 0003 se lee línea por línea y la 0004 se escribe a mano.

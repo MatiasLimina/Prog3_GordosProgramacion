@@ -38,7 +38,7 @@ python -m venv .venv                 # entorno virtual
 source .venv/Scripts/activate        # activarlo (Linux/macOS: source .venv/bin/activate)
 pip install -r requirements-dev.txt  # app + pytest, pytest-asyncio y httpx
 alembic upgrade head                 # crea el esquema (única forma permitida)
-python -m scripts.seed               # deja la base en estado inicial conocido (hoy: scripts/seed.py; desde CHG-17: `python seed.py` en la raíz)
+python seed.py                       # deja la base en estado inicial conocido (vacía y recarga; atómico e idempotente)
 uvicorn app.main:app --reload        # servidor
 pytest                               # tests automatizados
 ```
@@ -232,7 +232,7 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 | ~~`tests/` con un conftest que deriva `libreria_test` de `DATABASE_URL`; `env.example` con `DATABASE_URL`~~ | deriva de `Settings` / `POSTGRES_*` | CHG-03 ✅ hecho |
 | `test/libros.http` y `test/ventas.http` mencionan `DB_ECHO=true` | `SQL_ECHO=true` | CHG-18 |
 | ~~Semáforo de bcrypt: `BCRYPT_MAX_CONCURRENTES` ya está en `Settings`, pero el `asyncio.Semaphore` todavía no se crea~~ | el lifespan crea el semáforo y `security.py` lo usa | CHG-10 ✅ hecho |
-| `scripts/seed.py` (`python -m scripts.seed`) | `seed.py` en la raíz (`python seed.py`) | CHG-17 |
+| ~~`scripts/seed.py` (`python -m scripts.seed`)~~ | `seed.py` en la raíz (`python seed.py`) | CHG-17 ✅ hecho |
 | ~~`libro.stock` editable, ISBN con UNIQUE común~~ | stock por movimientos, ISBN único entre vigentes | CHG-07, 08, 13 ✅ hecho |
 | Ventas escribe `libro.stock` sin dejar movimiento y puede vender libros dados de baja | usa el punto único de stock; un libro dado de baja da 409 | CHG-16 |
 | Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11 ✅ (rutas `/auth` hechas), 12 ✅ hecho (`requiere_rol`, grupos abierto/protegido), 14 (administración de usuarios) |

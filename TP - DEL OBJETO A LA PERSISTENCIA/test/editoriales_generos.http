@@ -1,6 +1,6 @@
 @host = http://localhost:8000
 
-# Antes de correr: `python -m scripts.seed` (deja la base en el estado inicial conocido,
+# Antes de correr: `python seed.py` (deja la base en el estado inicial conocido,
 # así los ids y los códigos esperados de abajo coinciden).
 
 ### Crear editorial (se captura su id)
