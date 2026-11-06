@@ -61,6 +61,21 @@ class NoAutenticado(Exception):
         self.mensaje = mensaje
 
 
+class SinPermiso(Exception):
+    """La sesión es válida pero no alcanza para esta operación; la app lo responde como 403.
+
+    Es una excepción de dominio: no conoce HTTP. La lanzan `requiere_rol` (falta el rol
+    vigente), el control del cambio obligatorio de contraseña (RN-06) y, desde CHG-16, el
+    servicio de ventas cuando el cliente no es el dueño de la venta. El handler de
+    `app/main.py` la traduce a `403 {"detail": mensaje}`. El mensaje nunca nombra roles ni
+    detalles internos.
+    """
+
+    def __init__(self, mensaje: str) -> None:
+        super().__init__(mensaje)
+        self.mensaje = mensaje
+
+
 class DemasiadosIntentos(Exception):
     """Se superó el límite de intentos de login (RN-07); la app lo responde como 429.
 

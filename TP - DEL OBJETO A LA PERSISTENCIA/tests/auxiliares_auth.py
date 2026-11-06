@@ -73,3 +73,17 @@ def token_de_prueba(usuario_id: int, roles=(), *, ahora=None) -> str:
     return emitir_token(
         usuario_id, roles, secreto=settings.jwt_secret, minutos=settings.jwt_expire_minutes, ahora=ahora
     )
+
+
+async def entrar_como(
+    client, sessionmaker, *roles, email="ana@example.com", debe_cambiar=False
+) -> int:
+    """Deja al `client` con una sesión iniciada como un usuario con esos roles vigentes; devuelve su id.
+
+    Inserta el usuario y pone en el cookie jar un token firmado, sin pasar por `/auth/login`:
+    no escribe en `intento_acceso` ni gasta bcrypt por test. Las cookies del `client` quedan
+    puestas para todas sus peticiones siguientes.
+    """
+    uid = await insertar_usuario(sessionmaker, email, debe_cambiar=debe_cambiar, roles=roles)
+    client.cookies.set("access_token", token_de_prueba(uid, roles))
+    return uid

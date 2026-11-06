@@ -1,6 +1,14 @@
 import pytest
 
+from tests.auxiliares_auth import entrar_como
+
 pytestmark = pytest.mark.db
+
+@pytest.fixture
+async def client(client, sessionmaker_test):
+    """Sesión de ADMIN: las escrituras del catálogo, clientes y ventas son del grupo protegido (CHG-12)."""
+    await entrar_como(client, sessionmaker_test, "ADMIN")
+    return client
 
 
 async def crear(client, nombre="Novela"):

@@ -1,9 +1,9 @@
-"""NoAutenticado (401) y DemasiadosIntentos (429): excepciones de dominio de auth (D6)."""
+"""NoAutenticado (401), DemasiadosIntentos (429) y SinPermiso (403): excepciones de dominio de auth (D6, CHG-12 D7)."""
 import httpx
 import pytest
 from fastapi import FastAPI
 
-from app.core.errors import DemasiadosIntentos, NoAutenticado
+from app.core.errors import DemasiadosIntentos, NoAutenticado, SinPermiso
 from app.main import registrar_handlers
 
 _DETALLE_429 = "Demasiados intentos fallidos. Probá de nuevo más tarde."
@@ -44,3 +44,18 @@ async def test_demasiados_intentos_responde_429_con_retry_after_y_detalle_fijo(s
 def test_las_excepciones_guardan_sus_datos():
     assert NoAutenticado("x").mensaje == "x"
     assert DemasiadosIntentos(17).retry_after == 17
+
+
+@pytest.mark.parametrize("mensaje", ["x", "No tenés permiso para esta operación."])
+async def test_sin_permiso_responde_403_con_su_mensaje(mensaje):
+    r = await _get(_app(SinPermiso(mensaje)))
+    assert r.status_code == 403
+    assert r.json() == {"detail": mensaje}
+
+
+def test_sin_permiso_es_de_dominio_y_guarda_su_mensaje():
+    from fastapi import HTTPException
+
+    error = SinPermiso("x")
+    assert error.mensaje == "x"
+    assert not isinstance(error, HTTPException)
