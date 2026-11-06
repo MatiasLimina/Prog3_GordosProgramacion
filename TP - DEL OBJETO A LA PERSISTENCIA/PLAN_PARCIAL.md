@@ -69,7 +69,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | mergeado (#54) |
 | CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | mergeado (#56) |
 | CHG-14 | `usuarios-admin` | Nico | CHG-12 | pendiente |
-| CHG-15 | `clientes-repos-uow` | Nico | CHG-04, 05, 08 | pendiente |
+| CHG-15 | `clientes-repos-uow` | Nico | CHG-04, 05, 08 | mergeado (#58) |
 | CHG-16 | `ventas-transaccional` | Matias | CHG-12, 13, 15 | pendiente |
 | CHG-17 | `seed-parcial` | Lauti (lo tomó Matias) | CHG-08, CHG-10 | mergeado (#57) |
 | CHG-18 | `casos-http` | Lauti (Nico revisa) | CHG-17 y el change de cada caso | pendiente |
