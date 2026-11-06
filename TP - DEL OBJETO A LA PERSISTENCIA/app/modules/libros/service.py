@@ -74,7 +74,7 @@ async def obtener(uow: LibrosUoW, libro_id: int) -> LibroDetalleRead:
 async def listar(
     uow: LibrosUoW, p: ParametrosPagina, titulo: str | None = None, genero_id: int | None = None
 ) -> Page[LibroRead]:
-    """Página de libros vigentes, con el total de los mismos filtros (RN-10, RN-11)."""
+    """Página de libros vigentes (Ej3), con el total calculado con los mismos filtros."""
     async with uow:
         total = await uow.libros.contar(titulo=titulo, genero_id=genero_id)
         libros = await uow.libros.buscar(
