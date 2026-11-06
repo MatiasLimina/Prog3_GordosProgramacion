@@ -302,7 +302,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 - **Commit:** `feat(usuarios): alta de personal y gestión de roles con vigencia`
 
 #### CHG-15 · `clientes-repos-uow` — Nico
-- **Entregables:** clientes y perfil pasados a repositorios + UoW; `GET /clientes/{id}/ventas`. Conserva el `router` protegido con `PERSONAL` en cada ruta (CHG-12) y suma las rutas nuevas a `tests/matriz_acceso.py`.
+- **Entregables:** clientes y perfil pasados a repositorios + UoW; `GET /clientes/{id}/ventas` y `GET /clientes` con el envoltorio de paginación. Conserva el `router` protegido con `PERSONAL` en cada ruta (CHG-12); no hay rutas nuevas, así que `tests/matriz_acceso.py` no cambia (las seis rutas de clientes ya están clasificadas). `PATCH /clientes/{id}` responde 409 al cambiar el correo de un cliente con cuenta (no se sincroniza con `usuario.email`).
 - **Commit:** `refactor(clientes): repositorios y Unit of Work`
 
 #### CHG-16 · `ventas-transaccional` — Matias (Ej6 + Ej8)
@@ -314,6 +314,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
   - `GET /ventas/{id}` sin `requiere_rol`: lo puede ver el personal o el cliente dueño; si no, 403 (`SinPermiso`). CHG-12 lo dejó con `PERSONAL` provisorio: **quitar `PERSONAL`** de esa ruta, agregar la decisión del servicio y completar C-06 («la cliente ve su venta y no la ajena»).
   - `GET /mis-ventas` en el grupo protegido, sin rol, y agregada a `tests/matriz_acceso.py` (`AUTENTICADO`).
   - El detalle de una venta (cliente, renglones y libro de cada renglón, aunque esté dado de baja) se resuelve con un número fijo de consultas.
+  - **Ya existe por CHG-15** (parte de `main`): `VentaRepository` en `app/modules/ventas/repository.py` con `_con_detalle` (cliente, renglones y libro de cada renglón, sin filtro de baja) y `listar_de_cliente` / `contar_de_cliente`; `armar_lectura` público en `ventas/service.py` (era `_armar_lectura`); `ClienteRepository` y `ClienteNoEncontrado`; `ventas.service.listar(..., cliente_id=)` sin uso desde clientes (se puede borrar). **Falta, y lo agrega CHG-16:** `ClienteRepository.get_por_usuario` para `/mis-ventas` y el chequeo de dueño (que mira `Venta.cliente`), el detalle por id y el listado general en `VentaRepository`, y componerlo en `VentasUoW`.
 - **DoD:** C-10, C-11, C-12 y C-15.
 - **Commit:** `feat(ventas): registro atómico con stock y aviso en segundo plano`
 

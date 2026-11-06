@@ -1,7 +1,7 @@
 # clientes Specification
 
 ## Purpose
-Define el vínculo opcional entre un cliente de la librería y un usuario del sistema, que le da acceso web: un cliente puede no tener usuario, y un usuario identifica a lo sumo a un cliente.
+Define el vínculo opcional entre un cliente de la librería y un usuario del sistema, que le da acceso web: un cliente puede no tener usuario, y un usuario identifica a lo sumo a un cliente. Define también el alta, la consulta, el listado, la edición, el perfil y las ventas de un cliente por la API (`/clientes`), con sus errores 404, 409 y 422.
 
 ## Requirements
 
