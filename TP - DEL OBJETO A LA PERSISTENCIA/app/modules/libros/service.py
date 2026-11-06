@@ -1,10 +1,5 @@
-from fastapi import HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
-from sqlmodel import select
-
-from app.core.errors import commit_or_409
-from app.core.pagination import Pagination
+from app.core.errors import LibroNoEncontrado
+from app.core.paginacion import Page, ParametrosPagina, envolver
 from app.modules.libros.models import Libro, LibroAutor
 from app.modules.libros.schemas import (
     AutorEnLibroRead,
@@ -14,20 +9,11 @@ from app.modules.libros.schemas import (
     LibroDetalleRead,
     LibroRead,
     LibroUpdate,
+    MovimientoStockRead,
+    ReponerIn,
+    ReposicionRead,
 )
-
-MENSAJES = {
-    "uq_libro_isbn_vigente": "Ya existe un libro con ese ISBN.",
-    "fk_libro_editorial_id_editorial": "La editorial indicada no existe.",
-    "fk_libro_genero_id_genero": "El género indicado no existe.",
-    "fk_libro_autor_autor_id_autor": "Uno de los autores indicados no existe.",
-    "fk_libro_autor_libro_id_libro": "El libro indicado no existe.",
-    "pk_libro_autor": "No se puede repetir el mismo autor en un libro.",
-    "ck_libro_precio_positivo": "El precio del libro debe ser mayor a cero.",
-    "ck_libro_stock_no_negativo": "El stock del libro no puede ser negativo.",
-    "ck_libro_autor_orden_positivo": "El orden del autor debe ser mayor o igual a 1.",
-    "ck_libro_autor_rol_valido": "El rol del autor no es válido.",
-}
+from app.modules.libros.unit_of_work import LibrosUoW
 
 
 def _armar_detalle(libro: Libro) -> LibroDetalleRead:
@@ -55,114 +41,100 @@ def _armar_detalle(libro: Libro) -> LibroDetalleRead:
     )
 
 
-async def crear(session: AsyncSession, datos: LibroCreate) -> LibroDetalleRead:
-    """Alta de libro con relaciones.
+async def crear(uow: LibrosUoW, datos: LibroCreate, usuario_id: int) -> LibroDetalleRead:
+    """Alta de libro con relaciones y, si hay `stock_inicial`, su movimiento «Stock inicial».
 
-    Ningún if verifica si los IDs existen: se escribe y la base responde.
-    Si la base rechaza una FK o unicidad, commit_or_409 responde 409 (RN-01, Ejercicio 5).
+    Todo en un solo bloque `async with uow`: el libro, sus autorías y el movimiento se confirman
+    juntos o ninguno. Ningún if verifica si los IDs existen: se escribe y la base responde (el UoW
+    traduce la FK o el UNIQUE a 409). El stock nunca se escribe en el constructor: entra por
+    `registrar_movimiento`, el único punto de escritura (RN-11).
     """
-    # Transitorio hasta CHG-13: el contrato viaja `stock_inicial` y la columna
-    # sigue siendo `stock`; el alta dejará un movimiento «Stock inicial».
     datos_libro = datos.model_dump(exclude={"autores", "stock_inicial"})
-    libro = Libro(stock=datos.stock_inicial, **datos_libro)
-
+    libro = Libro(**datos_libro)  # stock = 0 por defecto: sólo cambia con registrar_movimiento
     for a in datos.autores:
-        autoria = LibroAutor(
-            autor_id=a.autor_id,
-            rol=a.rol,
-            orden=a.orden,
-        )
-        libro.autorias.append(autoria)
+        libro.autorias.append(LibroAutor(autor_id=a.autor_id, rol=a.rol, orden=a.orden))
 
-    session.add(libro)
-    await commit_or_409(session, MENSAJES)
-
-    return await obtener(session, libro.id)
+    async with uow:
+        await uow.libros.add(libro)
+        if datos.stock_inicial > 0:
+            await uow.libros.registrar_movimiento(libro.id, datos.stock_inicial, "Stock inicial", usuario_id)
+        detalle = await uow.libros.get_detalle(libro.id)
+        return _armar_detalle(detalle)
 
 
-async def obtener(session: AsyncSession, libro_id: int) -> LibroDetalleRead:
-    """Detalle de un libro sin N+1 (Ejercicio 6).
-
-    Usa joinedload para editorial y género (a uno) y selectinload para autorias
-    con joinedload de autor (colección). Cantidad fija de consultas en consola.
-    """
-    consulta = (
-        select(Libro)
-        .where(Libro.id == libro_id)
-        .options(
-            joinedload(Libro.editorial),
-            joinedload(Libro.genero),
-            selectinload(Libro.autorias).joinedload(LibroAutor.autor),
-        )
-        # populate_existing: si el Libro ya está en el identity map (p. ej. recién
-        # creado o modificado en esta sesión), se recargan también sus relaciones;
-        # sin esto la precarga se saltea y la respuesta puede salir desactualizada.
-        .execution_options(populate_existing=True)
-    )
-    resultado = await session.execute(consulta)
-    libro = resultado.scalars().first()
-    if libro is None:
-        raise HTTPException(status_code=404, detail="El libro no existe.")
-
-    return _armar_detalle(libro)
+async def obtener(uow: LibrosUoW, libro_id: int) -> LibroDetalleRead:
+    """Detalle de un libro vigente sin N+1: editorial, género y autores se precargan en el repositorio."""
+    async with uow:
+        libro = await uow.libros.get_detalle(libro_id)
+        if libro is None:
+            raise LibroNoEncontrado(libro_id)
+        return _armar_detalle(libro)
 
 
 async def listar(
-    session: AsyncSession,
-    p: Pagination,
-    titulo: str | None = None,
-    genero_id: int | None = None,
-) -> list[LibroRead]:
-    """Listado paginado con precarga de editorial y género (RN-10, RN-11).
+    uow: LibrosUoW, p: ParametrosPagina, titulo: str | None = None, genero_id: int | None = None
+) -> Page[LibroRead]:
+    """Página de libros vigentes, con el total de los mismos filtros (RN-10, RN-11)."""
+    async with uow:
+        total = await uow.libros.contar(titulo=titulo, genero_id=genero_id)
+        libros = await uow.libros.buscar(
+            titulo=titulo, genero_id=genero_id, offset=(p.page - 1) * p.size, limit=p.size
+        )
+        return envolver([LibroRead.model_validate(l) for l in libros], total=total, page=p.page, size=p.size)
 
-    Filtro de título por parámetro ligado (ilike) sin concatenación SQL.
+
+async def actualizar(uow: LibrosUoW, libro_id: int, datos: LibroUpdate) -> LibroDetalleRead:
+    """Actualización parcial de un libro vigente (PATCH con `exclude_unset`): sólo título y precio."""
+    async with uow:
+        libro = await uow.libros.get_by_id(libro_id)  # vigente: uno dado de baja es 404
+        if libro is None:
+            raise LibroNoEncontrado(libro_id)
+        await uow.libros.update(libro, datos.model_dump(exclude_unset=True))
+        detalle = await uow.libros.get_detalle(libro_id)
+        return _armar_detalle(detalle)
+
+
+async def dar_de_baja(uow: LibrosUoW, libro_id: int) -> None:
+    """Baja lógica (`borrado_en`): el libro sale del catálogo pero sus datos, autorías y movimientos se conservan.
+
+    Una segunda baja es 404: el libro ya no es vigente.
     """
-    consulta = (
-        select(Libro)
-        .options(
-            joinedload(Libro.editorial),
-            joinedload(Libro.genero),
+    async with uow:
+        libro = await uow.libros.get_by_id(libro_id)
+        if libro is None:
+            raise LibroNoEncontrado(libro_id)
+        await uow.libros.soft_delete(libro)
+
+
+async def reponer(uow: LibrosUoW, libro_id: int, datos: ReponerIn, usuario_id: int) -> ReposicionRead:
+    """Reposición de stock: una entrada por el punto único, con el ADMIN de la petición como actor.
+
+    El resultado del punto único trae el stock resultante y el movimiento creado, así que no hace
+    falta otra lectura. Libro inexistente: 404 (`LibroNoEncontrado`); dado de baja o stock que
+    pasaría el máximo: 409, ya traducidos por el repositorio y el handler de la app.
+    """
+    async with uow:
+        resultado = await uow.libros.registrar_movimiento(
+            libro_id, datos.cantidad, datos.motivo or "Reposición", usuario_id
         )
-    )
-
-    if titulo:
-        consulta = consulta.where(Libro.titulo.ilike(f"%{titulo}%"))
-
-    if genero_id is not None:
-        consulta = consulta.where(Libro.genero_id == genero_id)
-
-    consulta = consulta.order_by(Libro.id).limit(p.limit).offset(p.offset)
-    resultado = await session.execute(consulta)
-    libros = resultado.scalars().all()
-
-    return [
-        LibroRead(
-            id=l.id,
-            isbn=l.isbn,
-            titulo=l.titulo,
-            precio=l.precio,
-            stock=l.stock,
-            editorial=EditorialSimpleRead.model_validate(l.editorial) if l.editorial else None,  # type: ignore[arg-type]
-            genero=GeneroSimpleRead.model_validate(l.genero) if l.genero else None,
+        return ReposicionRead(
+            libro_id=libro_id,
+            stock=resultado.stock,
+            movimiento=MovimientoStockRead.model_validate(resultado.movimiento),
         )
-        for l in libros
-    ]
 
 
-async def actualizar(
-    session: AsyncSession,
-    libro_id: int,
-    datos: LibroUpdate,
-) -> LibroDetalleRead:
-    """Actualización parcial de libro (PATCH con exclude_unset)."""
-    libro = await session.get(Libro, libro_id)
-    if libro is None:
-        raise HTTPException(status_code=404, detail="El libro no existe.")
+async def listar_movimientos(uow: LibrosUoW, libro_id: int, p: ParametrosPagina) -> Page[MovimientoStockRead]:
+    """Historial de stock de un libro, en el orden en que ocurrió.
 
-    cambios = datos.model_dump(exclude_unset=True)
-    if cambios:
-        libro.sqlmodel_update(cambios)
-        session.add(libro)
-        await commit_or_409(session, MENSAJES)
-
-    return await obtener(session, libro_id)
+    También de un libro dado de baja: sus datos se conservan y el historial es de ADMIN. El libro
+    es el recurso de la ruta, por eso se lee primero para dar el 404.
+    """
+    async with uow:
+        if await uow.libros.get_by_id_including_deleted(libro_id) is None:
+            raise LibroNoEncontrado(libro_id)
+        total = await uow.movimientos.contar_de_libro(libro_id)
+        movimientos = await uow.movimientos.listar_de_libro(libro_id, offset=(p.page - 1) * p.size, limit=p.size)
+        return envolver(
+            [MovimientoStockRead.model_validate(m) for m in movimientos], total=total, page=p.page, size=p.size
+        )

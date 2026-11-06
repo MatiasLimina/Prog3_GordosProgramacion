@@ -12,6 +12,7 @@ from app.core.errors import (
     Conflicto,
     DemasiadosIntentos,
     NoAutenticado,
+    NoEncontrado,
     PeticionInvalida,
     SinPermiso,
     mensaje_para,
@@ -69,6 +70,12 @@ def registrar_handlers(app: FastAPI) -> None:
     @app.exception_handler(PeticionInvalida)
     async def peticion_invalida_handler(request: Request, exc: PeticionInvalida):
         return JSONResponse(status_code=422, content={"detail": exc.mensaje})
+
+    # NoEncontrado la lanzan los servicios cuando el recurso de la ruta no existe (core no conoce
+    # HTTP): mismo cuerpo `{"detail": mensaje}` que el resto de los errores.
+    @app.exception_handler(NoEncontrado)
+    async def no_encontrado_handler(request: Request, exc: NoEncontrado):
+        return JSONResponse(status_code=404, content={"detail": exc.mensaje})
 
     # NoAutenticado y DemasiadosIntentos las lanzan el login y la dependencia del usuario
     # actual (core no conoce HTTP). El 429 lleva `Retry-After` y un detalle fijo.

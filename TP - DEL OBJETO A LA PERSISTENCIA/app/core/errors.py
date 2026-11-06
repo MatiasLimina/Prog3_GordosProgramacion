@@ -47,6 +47,67 @@ class PeticionInvalida(Exception):
         self.mensaje = mensaje
 
 
+class NoEncontrado(Exception):
+    """El recurso de la ruta no existe; la app lo responde como 404 con `mensaje`.
+
+    Es una excepción de dominio: no conoce HTTP. La lanzan los servicios («La editorial no
+    existe.», «El libro no existe.») y el handler de `app/main.py` la traduce a
+    `404 {"detail": mensaje}`.
+    """
+
+    def __init__(self, mensaje: str) -> None:
+        super().__init__(mensaje)
+        self.mensaje = mensaje
+
+
+class LibroNoEncontrado(NoEncontrado):
+    """El libro de un movimiento de stock no existe (404 si nadie la traduce).
+
+    Es una excepción de dominio: no conoce HTTP. NO es un `Conflicto`: en la reposición el
+    libro es el recurso de la ruta (404). Una operación que lo considere un choque con lo
+    guardado (una venta con un libro inexistente) la atrapa y relanza un `Conflicto`.
+    """
+
+    def __init__(self, libro_id: int) -> None:
+        super().__init__("El libro no existe.")
+        self.libro_id = libro_id
+
+
+class LibroDadoDeBaja(Conflicto):
+    """El libro está dado de baja (borrado lógico): no se repone ni se vende (409).
+
+    Es una excepción de dominio: no conoce HTTP.
+    """
+
+    def __init__(self, libro_id: int) -> None:
+        super().__init__(f"El libro {libro_id} está dado de baja.")
+        self.libro_id = libro_id
+
+
+class StockInsuficiente(Conflicto):
+    """Una salida de stock pide más unidades de las que hay (409).
+
+    Es una excepción de dominio: no conoce HTTP.
+    """
+
+    def __init__(self, libro_id: int, *, disponible: int, pedido: int) -> None:
+        super().__init__(f"Stock insuficiente para el libro {libro_id}: hay {disponible}, se pidieron {pedido}.")
+        self.libro_id = libro_id
+        self.disponible = disponible
+        self.pedido = pedido
+
+
+class StockExcedido(Conflicto):
+    """Una entrada de stock haría pasar el stock del máximo de int32 (409).
+
+    Es una excepción de dominio: no conoce HTTP.
+    """
+
+    def __init__(self, libro_id: int) -> None:
+        super().__init__(f"El stock del libro {libro_id} superaría el máximo permitido.")
+        self.libro_id = libro_id
+
+
 class NoAutenticado(Exception):
     """No hay una sesión válida o las credenciales no sirven; la app lo responde como 401.
 
