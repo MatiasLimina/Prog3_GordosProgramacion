@@ -40,8 +40,8 @@ Strict TDD: en cada grupo, primero el test que falla (RED, ejecutado y visto fal
 ## 5. Integración y cierre
 
 - [x] 5.1 Correr `REQUIRE_TEST_DB=1 pytest` completo: mismo número de tests que la línea base de 0.1 menos los del `test_seed.py` viejo más los nuevos, todos en verde. Verificación: salida de pytest.
-- [ ] 5.2 Consultar al `advisor` (checkpoint FINAL_DIFF) sobre `git diff main` antes de commitear; resolver BLOCK/CONCERNS. Verificación: veredicto anotado.
-- [ ] 5.3 En el mismo PR: fila CHG-17 de `PLAN_PARCIAL.md` (sección 2) en `mergeado (#N)`; riesgo 2 de la sección de riesgos marcado resuelto; en el backlog de CHG-16 anotar que las salidas de venta usan el motivo «Venta» como el seed. Verificación: diff de `PLAN_PARCIAL.md`.
+- [x] 5.2 Consultar al `advisor` (checkpoint FINAL_DIFF) sobre `git diff main` antes de commitear; resolver BLOCK/CONCERNS. Verificación: veredicto anotado. Veredicto: CONCERNS sin bloqueos; se agregó el test de login de admin y nuevo y se corrigieron los encabezados de `test/ventas.http` y `test/clientes.http`.
+- [x] 5.3 En el mismo PR: fila CHG-17 de `PLAN_PARCIAL.md` (sección 2) en `mergeado (#N)`; riesgo 2 de la sección de riesgos marcado resuelto; en el backlog de CHG-16 anotar que las salidas de venta usan el motivo «Venta» como el seed. Verificación: diff de `PLAN_PARCIAL.md`.
 
 ## Workflow follow-up
 

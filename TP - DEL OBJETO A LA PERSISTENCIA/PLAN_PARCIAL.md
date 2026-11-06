@@ -71,7 +71,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-14 | `usuarios-admin` | Nico | CHG-12 | pendiente |
 | CHG-15 | `clientes-repos-uow` | Nico | CHG-04, 05, 08 | pendiente |
 | CHG-16 | `ventas-transaccional` | Matias | CHG-12, 13, 15 | pendiente |
-| CHG-17 | `seed-parcial` | Lauti | CHG-08, CHG-10 | pendiente |
+| CHG-17 | `seed-parcial` | Lauti (lo tomó Matias) | CHG-08, CHG-10 | mergeado (#57) |
 | CHG-18 | `casos-http` | Lauti (Nico revisa) | CHG-17 y el change de cada caso | pendiente |
 | CHG-19 | `pytest-integracion` | Matias | CHG-13, 16 | pendiente |
 | CHG-20 | `entrega-zip` | Lauti + Matias | todo | pendiente |
@@ -309,6 +309,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 - **Entregables:**
   - RN-09 y RN-10 en **un solo bloque `async with uow`**: venta, renglones con el precio copiado, total calculado, descuento de stock y un movimiento por renglón, todo por el punto único de CHG-13, que ya existe: `LibroRepository.registrar_movimiento(libro_id, cantidad, motivo, usuario_id, venta_id=None) -> ResultadoMovimiento` (con `stock` y `movimiento`). Lanza `LibroNoEncontrado` (un `NoEncontrado`, 404 en la reposición): en una venta el libro inexistente es un choque con lo guardado, así que **ventas lo atrapa y lo relanza como `Conflicto` (409)**; `LibroDadoDeBaja`, `StockInsuficiente` y `StockExcedido` ya son `Conflicto`.
   - 409 si no alcanza el stock, si el libro está dado de baja o si el cliente o el libro no existen. No queda ninguna escritura.
+  - Cada salida de stock por venta usa el motivo `"Venta"` (el mismo literal que usa `seed.py` para la venta 1, CHG-17).
   - `BackgroundTasks` con `await asyncio.sleep(0.5)` y un log visible con el arranque normal de uvicorn (logger `uvicorn.error` o uno configurado); corre sólo si la venta se confirmó.
   - `GET /ventas/{id}` sin `requiere_rol`: lo puede ver el personal o el cliente dueño; si no, 403 (`SinPermiso`). CHG-12 lo dejó con `PERSONAL` provisorio: **quitar `PERSONAL`** de esa ruta, agregar la decisión del servicio y completar C-06 («la cliente ve su venta y no la ajena»).
   - `GET /mis-ventas` en el grupo protegido, sin rol, y agregada a `tests/matriz_acceso.py` (`AUTENTICADO`).
