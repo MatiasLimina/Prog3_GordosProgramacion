@@ -65,7 +65,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-09a | `schemas-auth-usuarios` | Lauti | CHG-00 | mergeado (#42) |
 | CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | mergeado (#51) |
 | CHG-10 | `security-core` | Matias | CHG-03 | mergeado (#36) |
-| CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | pendiente |
+| CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | mergeado (#53) |
 | CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | pendiente |
 | CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | pendiente |
 | CHG-14 | `usuarios-admin` | Nico | CHG-12 | pendiente |
@@ -269,7 +269,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 #### CHG-12 · `autorizacion-grupos-rutas` — Matias (Ej5)
 - **Archivos:** `app/core/dependencies.py` (ya existe desde CHG-04, con `proveedor_uow`), `app/main.py`.
 - **Entregables:**
-  - `get_usuario_actual` responde 401 si no hay cookie, si el token es inválido o venció, o si el usuario no existe o está inactivo.
+  - `get_usuario_actual` ya existe desde CHG-11 (401 si no hay cookie, si el token es inválido o venció, o si el usuario no existe o está inactivo); CHG-12 lo reutiliza y suma `requiere_rol`, el control RN-06 y los dos grupos (con `/auth` en el grupo abierto).
   - `requiere_rol` responde 403 y consulta los roles vigentes **en la base** en cada petición.
   - Control del cambio obligatorio de contraseña.
   - Dos routers en `main.py`: uno abierto y uno protegido, con el control montado una sola vez.

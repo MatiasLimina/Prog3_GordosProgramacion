@@ -9,10 +9,12 @@ la falta de base es un FALLO (para CI o para no engañarse con skips silenciosos
 Sólo los errores de conexión causan skip; cualquier otro error (esquema, TRUNCATE)
 hace fallar el test.
 """
+import asyncio
 import os
 import secrets
 import subprocess
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import asyncpg
@@ -28,6 +30,7 @@ from sqlmodel import SQLModel
 import app.models  # noqa: F401  (registra todos los modelos en el metadata)
 from app.core.config import get_settings
 from app.core.database import get_session
+from app.core.security import calcular_hash_ficticio
 from app.main import app as fastapi_app
 
 # La suite no depende de la clave real del desarrollador: se genera una en cada corrida
@@ -119,6 +122,34 @@ async def sessionmaker_test(esquema_test):
     await engine.dispose()
 
 
+_COSTO_BCRYPT_TEST = 4  # el mínimo que acepta bcrypt: los tests no esperan ~300 ms por hash
+_CLAVES_ESTADO = ("settings", "hash_ficticio", "semaforo_bcrypt", "sessionmaker")
+
+
+@contextmanager
+def estado_de_app(app, sessionmaker):
+    """Deja en `app.state` lo que el lifespan crearía y, al salir, restaura lo que había.
+
+    `ASGITransport` no corre el lifespan, así que sin esto `app.state` no tiene los recursos
+    que usan los endpoints de auth. Costo de bcrypt bajo; `sessionmaker` es el de la base de
+    test (la fábrica de sesiones propias de `intento_acceso` sale de acá). Lo que no existía
+    se borra al salir y lo que existía vuelve a su valor: ningún test deja estado a otro.
+    """
+    state = app.state._state
+    previo = {c: state[c] for c in _CLAVES_ESTADO if c in state}
+    settings = get_settings().model_copy(update={"bcrypt_cost": _COSTO_BCRYPT_TEST})
+    state["settings"] = settings
+    state["hash_ficticio"] = calcular_hash_ficticio(_COSTO_BCRYPT_TEST)
+    state["semaforo_bcrypt"] = asyncio.Semaphore(settings.bcrypt_max_concurrentes)
+    state["sessionmaker"] = sessionmaker
+    try:
+        yield
+    finally:
+        for clave in _CLAVES_ESTADO:
+            state.pop(clave, None)
+        state.update(previo)
+
+
 @pytest.fixture
 async def client(sessionmaker_test):
     async def get_session_test():
@@ -126,6 +157,7 @@ async def client(sessionmaker_test):
             yield session
 
     fastapi_app.dependency_overrides[get_session] = get_session_test
-    async with AsyncClient(transport=ASGITransport(app=fastapi_app), base_url="http://test") as c:
-        yield c
+    with estado_de_app(fastapi_app, sessionmaker_test):
+        async with AsyncClient(transport=ASGITransport(app=fastapi_app), base_url="http://test") as c:
+            yield c
     fastapi_app.dependency_overrides.clear()
