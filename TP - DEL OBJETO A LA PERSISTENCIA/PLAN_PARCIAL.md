@@ -66,7 +66,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-09b | `schemas-catalogo-ventas` | Lauti | CHG-00 | mergeado (#51) |
 | CHG-10 | `security-core` | Matias | CHG-03 | mergeado (#36) |
 | CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | mergeado (#53) |
-| CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | pendiente |
+| CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | mergeado (#54) |
 | CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | pendiente |
 | CHG-14 | `usuarios-admin` | Nico | CHG-12 | pendiente |
 | CHG-15 | `clientes-repos-uow` | Nico | CHG-04, 05, 08 | pendiente |
