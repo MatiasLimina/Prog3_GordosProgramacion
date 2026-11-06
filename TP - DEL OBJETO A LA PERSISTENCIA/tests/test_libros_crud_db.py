@@ -154,12 +154,13 @@ async def test_libros_de_autor_paginados(client):
         r = await client.post("/libros/", json=body)
         assert r.status_code == 201, r.text
         ids.append(r.json()["id"])
-    r = await client.get(f"/autores/{a}/libros", params={"limit": 2, "offset": 1})
+    r = await client.get(f"/autores/{a}/libros", params={"size": 2, "page": 2})
     assert r.status_code == 200
-    datos = r.json()
-    assert [l["id"] for l in datos] == ids[1:3]
-    assert datos[0]["rol"] == "autor"
-    assert (await client.get(f"/autores/{a}/libros", params={"limit": 200})).status_code == 422
+    pagina = r.json()
+    assert (pagina["total"], pagina["page"], pagina["size"], pagina["pages"]) == (3, 2, 2, 2)
+    assert [l["id"] for l in pagina["items"]] == ids[2:]
+    assert pagina["items"][0]["rol"] == "autor"
+    assert (await client.get(f"/autores/{a}/libros", params={"size": 200})).status_code == 422
     r = await client.get("/autores/999999999/libros")
     assert r.status_code == 404
     assert r.json() == {"detail": "El autor no existe."}

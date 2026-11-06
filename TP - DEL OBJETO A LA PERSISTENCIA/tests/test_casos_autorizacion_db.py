@@ -180,9 +180,9 @@ async def test_c01_un_id_invalido_en_una_ruta_protegida_da_422_y_no_llega_al_ser
     llamadas = []
     real = service.actualizar
 
-    async def espia(session, editorial_id, datos):
+    async def espia(uow, editorial_id, datos):
         llamadas.append(editorial_id)
-        return await real(session, editorial_id, datos)
+        return await real(uow, editorial_id, datos)
 
     monkeypatch.setattr(service, "actualizar", espia)
     await entrar_como(client, sessionmaker_test, "ADMIN")

@@ -21,10 +21,11 @@ async def test_post_crea_con_201_y_devuelve_id(client):
     assert r.json() == {"id": 1, "nombre": "Planeta", "pais": "España"}
 
 
-async def test_post_ignora_id_enviado_por_el_cliente(client):
+async def test_post_con_id_enviado_por_el_cliente_da_422_y_no_crea_nada(client):
+    # BREAKING (CHG-13): antes se ignoraba el `id`; ahora el contrato de entrada es `extra="forbid"`.
     r = await client.post("/editoriales/", json={"id": 99, "nombre": "A", "pais": "B"})
-    assert r.status_code == 201
-    assert r.json()["id"] == 1
+    assert r.status_code == 422
+    assert (await client.get("/editoriales/")).json()["total"] == 0
 
 
 async def test_post_nombre_repetido_da_409_con_mensaje_propio(client):
@@ -69,18 +70,39 @@ async def test_c01_id_no_numerico_da_422(client):
     assert r.status_code == 422
 
 
-async def test_listado_paginado_ordenado_por_id(client):
+async def test_listado_responde_con_el_envoltorio_ordenado_por_id(client):
     for n in "ABCDE":
         await crear(client, n)
-    r = await client.get("/editoriales/", params={"limit": 2, "offset": 1})
-    assert [e["nombre"] for e in r.json()] == ["B", "C"]
-    r = await client.get("/editoriales/")
-    assert len(r.json()) == 5
+    r = await client.get("/editoriales/", params={"size": 2})
+    assert r.status_code == 200
+    datos = r.json()
+    assert set(datos) == {"items", "total", "page", "size", "pages"}
+    assert (datos["total"], datos["page"], datos["size"], datos["pages"]) == (5, 1, 2, 3)
+    assert [e["nombre"] for e in datos["items"]] == ["A", "B"]
+    r = await client.get("/editoriales/", params={"size": 2, "page": 3})
+    assert [e["nombre"] for e in r.json()["items"]] == ["E"]
 
 
-async def test_listado_vacio_y_limit_invalido(client):
-    assert (await client.get("/editoriales/")).json() == []
-    assert (await client.get("/editoriales/", params={"limit": 101})).status_code == 422
+async def test_listado_pagina_mas_alla_de_la_ultima_da_422(client):
+    for n in "ABCDE":
+        await crear(client, n)
+    r = await client.get("/editoriales/", params={"size": 2, "page": 4})
+    assert r.status_code == 422
+    assert "La página 4 no existe: hay 3" in r.text
+
+
+async def test_listado_vacio_tiene_una_pagina_vacia(client):
+    assert (await client.get("/editoriales/")).json() == {"items": [], "total": 0, "page": 1, "size": 20, "pages": 1}
+
+
+async def test_limit_y_offset_ya_no_paginan_y_size_fuera_de_rango_da_422(client):
+    for n in "ABCDE":
+        await crear(client, n)
+    r = await client.get("/editoriales/", params={"limit": 1})
+    assert r.status_code == 200
+    assert len(r.json()["items"]) == 5  # `limit` se ignora: no pagina
+    assert (await client.get("/editoriales/", params={"size": 101})).status_code == 422
+    assert (await client.get("/editoriales/", params={"page": 0})).status_code == 422
 
 
 async def test_patch_parcial_no_pisa_campos_no_enviados(client):
@@ -135,3 +157,16 @@ async def test_patch_omitir_campos_sigue_permitido_tras_el_validador(client):
     r = await client.patch("/editoriales/1", json={"nombre": "Nueva"})
     assert r.status_code == 200
     assert r.json() == {"id": 1, "nombre": "Nueva", "pais": "España"}
+
+
+@pytest.mark.parametrize("body", [{"id": 5}, {"pais": "X", "otro": 1}])
+async def test_patch_con_campo_extra_da_422_y_no_modifica(client, body):
+    await crear(client)
+    r = await client.patch("/editoriales/1", json=body)
+    assert r.status_code == 422
+    assert (await client.get("/editoriales/1")).json() == {"id": 1, "nombre": "Planeta", "pais": "España"}
+
+
+async def test_post_con_campo_extra_da_422(client):
+    r = await client.post("/editoriales/", json={"nombre": "A", "pais": "B", "otro": 1})
+    assert r.status_code == 422

@@ -1,12 +1,17 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class EditorialCreate(BaseModel):
+    # extra="forbid": un `id` (o cualquier campo no declarado) en el cuerpo es 422.
+    model_config = ConfigDict(extra="forbid")
+
     nombre: str = Field(min_length=1, max_length=150)
     pais: str = Field(min_length=1, max_length=100)
 
 
 class EditorialUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     nombre: str | None = Field(default=None, min_length=1, max_length=150)
     pais: str | None = Field(default=None, min_length=1, max_length=100)
 
@@ -22,6 +27,8 @@ class EditorialUpdate(BaseModel):
 
 
 class EditorialRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     nombre: str
     pais: str

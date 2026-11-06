@@ -1,20 +1,22 @@
-"""Inspección del código del módulo `libros` (CHG-13, sin base): la arquitectura Router -> Service -> UoW -> Repository.
+"""Inspección del código del catálogo (CHG-13, sin base): la arquitectura Router -> Service -> UoW -> Repository.
 
-El negocio informa con excepciones de dominio (nunca `HTTPException`), el repositorio no confirma,
-el servicio ya no confirma ni pagina con el módulo viejo y el router no toca la sesión. Se mira el
-árbol sintáctico y no el texto, así un comentario que nombre `HTTPException` no cuenta.
+Vale para `libros`, `editoriales`, `generos` y `autores`. El negocio informa con excepciones de
+dominio (nunca `HTTPException`), el repositorio no confirma, el servicio ya no confirma ni pagina
+con el módulo viejo y el router no toca la sesión. Se mira el árbol sintáctico y no el texto, así
+un comentario que nombre `HTTPException` no cuenta.
 """
 import ast
 from pathlib import Path
 
 import pytest
 
-RAIZ = Path(__file__).resolve().parent.parent / "app" / "modules" / "libros"
+MODULOS = Path(__file__).resolve().parent.parent / "app" / "modules"
+CATALOGO = ["libros", "editoriales", "generos", "autores"]
 
 
-def _nombres(archivo: str) -> set[str]:
+def _nombres(modulo: str, archivo: str) -> set[str]:
     """Todo lo que el archivo importa o nombra (identificadores, atributos y módulos importados)."""
-    arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8"))
+    arbol = ast.parse((MODULOS / modulo / archivo).read_text(encoding="utf-8"))
     nombres: set[str] = set()
     for nodo in ast.walk(arbol):
         if isinstance(nodo, ast.Name):
@@ -29,22 +31,31 @@ def _nombres(archivo: str) -> set[str]:
     return nombres
 
 
+@pytest.mark.parametrize("modulo", CATALOGO)
 @pytest.mark.parametrize("archivo", ["service.py", "repository.py", "unit_of_work.py"])
 @pytest.mark.parametrize("prohibido", ["HTTPException", "commit_or_409", "traducir_integrity", "app.core.pagination"])
-def test_el_negocio_de_libros_no_usa_lo_viejo_ni_errores_http(archivo, prohibido):
-    assert prohibido not in _nombres(archivo)
+def test_el_negocio_del_catalogo_no_usa_lo_viejo_ni_errores_http(modulo, archivo, prohibido):
+    assert prohibido not in _nombres(modulo, archivo)
 
 
-@pytest.mark.parametrize("prohibido", ["AsyncSession", "get_session", "HTTPException"])
-def test_el_router_de_libros_no_importa_la_sesion(prohibido):
-    assert prohibido not in _nombres("router.py")
+@pytest.mark.parametrize("modulo", CATALOGO)
+@pytest.mark.parametrize("prohibido", ["AsyncSession", "get_session", "HTTPException", "app.core.pagination"])
+def test_el_router_del_catalogo_no_importa_la_sesion_ni_la_paginacion_vieja(modulo, prohibido):
+    assert prohibido not in _nombres(modulo, "router.py")
 
 
+@pytest.mark.parametrize("modulo", CATALOGO)
 @pytest.mark.parametrize("archivo", ["service.py", "repository.py"])
-def test_ni_el_servicio_ni_el_repositorio_confirman(archivo):
-    assert "commit" not in _nombres(archivo)
+def test_ni_el_servicio_ni_el_repositorio_confirman(modulo, archivo):
+    assert "commit" not in _nombres(modulo, archivo)
 
 
-def test_los_mensajes_de_409_viven_solo_en_el_uow():
-    assert "MENSAJES" not in {n for n in _nombres("service.py")}
-    assert "MENSAJES" in _nombres("unit_of_work.py")
+@pytest.mark.parametrize("modulo", CATALOGO)
+def test_los_mensajes_de_409_viven_solo_en_el_uow(modulo):
+    assert "MENSAJES" not in _nombres(modulo, "service.py")
+    assert "MENSAJES" in _nombres(modulo, "unit_of_work.py")
+
+
+@pytest.mark.parametrize("modulo", CATALOGO)
+def test_los_servicios_del_catalogo_reciben_el_uow_y_no_la_sesion(modulo):
+    assert "AsyncSession" not in _nombres(modulo, "service.py")
