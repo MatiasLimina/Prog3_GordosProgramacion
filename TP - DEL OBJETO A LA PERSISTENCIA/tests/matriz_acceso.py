@@ -53,6 +53,10 @@ MATRIZ: dict[tuple[str, str], tuple[str, str | frozenset[str]]] = {
     ("PATCH", "/autores/{autor_id}"): (PROTEGIDO, ADMIN),
     ("POST", "/libros/"): (PROTEGIDO, ADMIN),
     ("PATCH", "/libros/{libro_id}"): (PROTEGIDO, ADMIN),
+    # CHG-13: baja lógica, reposición e historial de stock de un libro (consigna: ADMIN)
+    ("DELETE", "/libros/{libro_id}"): (PROTEGIDO, ADMIN),
+    ("POST", "/libros/{libro_id}/reponer"): (PROTEGIDO, ADMIN),
+    ("GET", "/libros/{libro_id}/movimientos"): (PROTEGIDO, ADMIN),
     # personal: VENDEDOR o ADMIN (D9: GET /clientes/ también)
     ("POST", "/clientes/"): (PROTEGIDO, PERSONAL),
     ("GET", "/clientes/"): (PROTEGIDO, PERSONAL),

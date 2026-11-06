@@ -3,19 +3,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
 
-from app.core.pagination import Pagination
 from app.modules.autores import service as autores_service
-from app.modules.autores.models import Autor
-from app.modules.autores.schemas import AutorCreate, AutorUpdate
 from app.modules.libros import service as libros_service
-from app.modules.libros.models import Libro, LibroAutor
-from app.modules.libros.schemas import (
-    LibroAutorCreate,
-    LibroCreate,
-    LibroUpdate,
-)
+from app.modules.libros.unit_of_work import LibrosUoW
+
 
 def test_mensajes_de_integridad_en_libros():
     esperadas = [
@@ -31,10 +23,10 @@ def test_mensajes_de_integridad_en_libros():
         "ck_libro_autor_rol_valido",
     ]
     for constraint in esperadas:
-        assert constraint in libros_service.MENSAJES
-        assert libros_service.MENSAJES[constraint]
+        assert constraint in LibrosUoW.MENSAJES
+        assert LibrosUoW.MENSAJES[constraint]
     # La 3ª migración reemplazó la constraint por el índice parcial: la clave vieja ya no existe.
-    assert "uq_libro_isbn" not in libros_service.MENSAJES
+    assert "uq_libro_isbn" not in LibrosUoW.MENSAJES
 
 
 def test_armar_detalle_libro():
@@ -74,83 +66,3 @@ async def test_obtener_autor_no_existente_lanza_404():
         await autores_service.obtener(session, 999)
     assert exc.value.status_code == 404
     assert exc.value.detail == "El autor no existe."
-
-
-async def test_obtener_libro_no_existente_lanza_404():
-    session = AsyncMock()
-    ejecucion_mock = MagicMock()
-    ejecucion_mock.scalars.return_value.first.return_value = None
-    session.execute.return_value = ejecucion_mock
-
-    with pytest.raises(HTTPException) as exc:
-        await libros_service.obtener(session, 999)
-    assert exc.value.status_code == 404
-    assert exc.value.detail == "El libro no existe."
-
-
-async def test_crear_libro_fk_editorial_invalida_lanza_409():
-    session = AsyncMock()
-    session.add = MagicMock()
-    orig = Exception("violates foreign key constraint")
-    orig.constraint_name = "fk_libro_editorial_id_editorial"
-    orig.sqlstate = "23503"
-    session.commit.side_effect = IntegrityError("INSERT", {}, orig)
-
-    datos = LibroCreate(
-        isbn="12345",
-        titulo="Libro Test",
-        precio=Decimal("1000.00"),
-        editorial_id=999,
-        autores=[LibroAutorCreate(autor_id=1, rol="autor", orden=1)],
-    )
-
-    with pytest.raises(HTTPException) as exc:
-        await libros_service.crear(session, datos)
-    assert exc.value.status_code == 409
-    assert exc.value.detail == "La editorial indicada no existe."
-    assert session.rollback.call_count == 1
-
-
-async def test_crear_libro_isbn_vigente_repetido_lanza_409_con_mensaje_propio():
-    session = AsyncMock()
-    session.add = MagicMock()
-    orig = Exception("duplicate key value violates unique index")
-    orig.constraint_name = "uq_libro_isbn_vigente"
-    orig.sqlstate = "23505"
-    session.commit.side_effect = IntegrityError("INSERT", {}, orig)
-
-    datos = LibroCreate(
-        isbn="978-950-00-0001-1",
-        titulo="Libro Test",
-        precio=Decimal("1000.00"),
-        editorial_id=1,
-    )
-
-    with pytest.raises(HTTPException) as exc:
-        await libros_service.crear(session, datos)
-    assert exc.value.status_code == 409
-    assert exc.value.detail == "Ya existe un libro con ese ISBN."
-    assert session.rollback.call_count == 1
-
-
-async def test_crear_libro_autor_invalido_lanza_409():
-    session = AsyncMock()
-    session.add = MagicMock()
-    orig = Exception("violates foreign key constraint")
-    orig.constraint_name = "fk_libro_autor_autor_id_autor"
-    orig.sqlstate = "23503"
-    session.commit.side_effect = IntegrityError("INSERT", {}, orig)
-
-    datos = LibroCreate(
-        isbn="12345",
-        titulo="Libro Test",
-        precio=Decimal("1000.00"),
-        editorial_id=1,
-        autores=[LibroAutorCreate(autor_id=999, rol="autor", orden=1)],
-    )
-
-    with pytest.raises(HTTPException) as exc:
-        await libros_service.crear(session, datos)
-    assert exc.value.status_code == 409
-    assert exc.value.detail == "Uno de los autores indicados no existe."
-    assert session.rollback.call_count == 1

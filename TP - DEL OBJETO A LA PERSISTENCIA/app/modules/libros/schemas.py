@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -67,7 +68,7 @@ class LibroUpdate(BaseModel):
 
 
 class ReponerIn(BaseModel):
-    """Cuerpo de POST /libros/{id}/reponer (el endpoint llega con CHG-13)."""
+    """Cuerpo de POST /libros/{id}/reponer (ADMIN). Sin `motivo`, el movimiento se anota «Reposición»."""
     model_config = ConfigDict(extra="forbid")
 
     cantidad: int = Field(ge=1, le=INT32_MAX, description="Unidades a reponer (> 0)")
@@ -116,3 +117,23 @@ class LibroRead(BaseModel):
 class LibroDetalleRead(LibroRead):
     """Representación completa de libro con editorial, género y autores (usada en detalle, alta y patch)."""
     autores: list[AutorEnLibroRead] = Field(default_factory=list)
+
+
+class MovimientoStockRead(BaseModel):
+    """Un movimiento de stock tal como se informa: sin datos del usuario más allá de su id."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    libro_id: int
+    venta_id: int | None = None
+    usuario_id: int
+    cantidad: int
+    motivo: str
+    cuando: datetime
+
+
+class ReposicionRead(BaseModel):
+    """Respuesta de POST /libros/{id}/reponer: el stock resultante y el movimiento creado."""
+    libro_id: int
+    stock: int
+    movimiento: MovimientoStockRead

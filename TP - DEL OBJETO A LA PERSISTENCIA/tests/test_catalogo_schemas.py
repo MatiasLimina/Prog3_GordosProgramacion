@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -7,11 +8,14 @@ from app.modules.autores.schemas import (
     AutorCreate,
     AutorUpdate,
 )
+from app.modules.libros.models import MovimientoStock
 from app.modules.libros.schemas import (
     LibroAutorCreate,
     LibroCreate,
     LibroUpdate,
+    MovimientoStockRead,
     ReponerIn,
+    ReposicionRead,
 )
 
 
@@ -163,3 +167,40 @@ def test_reponer_in_rechaza_motivo_vacio():
 def test_reponer_in_rechaza_campo_extra():
     with pytest.raises(ValidationError):
         _reponer(precio="10.00")
+
+
+# --- contratos de salida de movimientos de stock (CHG-13) ---
+
+def _movimiento(**extra):
+    datos = {
+        "id": 7, "libro_id": 1, "venta_id": None, "usuario_id": 2, "cantidad": 3,
+        "motivo": "Reposición", "cuando": datetime(2026, 11, 6, 12, 30, tzinfo=UTC),
+    }
+    datos.update(extra)
+    return MovimientoStock(**datos)
+
+
+def test_movimiento_stock_read_desde_el_modelo_tiene_exactamente_sus_campos():
+    dto = MovimientoStockRead.model_validate(_movimiento())
+    assert set(dto.model_dump()) == {"id", "libro_id", "venta_id", "usuario_id", "cantidad", "motivo", "cuando"}
+    assert (dto.id, dto.libro_id, dto.usuario_id, dto.cantidad, dto.motivo) == (7, 1, 2, 3, "Reposición")
+
+
+def test_movimiento_stock_read_serializa_cuando_en_iso_8601_con_desplazamiento():
+    cuando = datetime(2026, 11, 6, 9, 30, tzinfo=timezone(timedelta(hours=-3)))
+    dto = MovimientoStockRead.model_validate(_movimiento(cuando=cuando))
+    assert dto.model_dump(mode="json")["cuando"] == "2026-11-06T09:30:00-03:00"
+
+
+def test_movimiento_stock_read_admite_venta_id_nulo_y_con_valor():
+    assert MovimientoStockRead.model_validate(_movimiento()).venta_id is None
+    assert MovimientoStockRead.model_validate(_movimiento(venta_id=9, cantidad=-2)).venta_id == 9
+
+
+def test_reposicion_read_serializa_libro_stock_y_movimiento():
+    movimiento = MovimientoStockRead.model_validate(_movimiento())
+    dto = ReposicionRead(libro_id=1, stock=13, movimiento=movimiento)
+    salida = dto.model_dump(mode="json")
+    assert set(salida) == {"libro_id", "stock", "movimiento"}
+    assert (salida["libro_id"], salida["stock"]) == (1, 13)
+    assert salida["movimiento"]["cantidad"] == 3
