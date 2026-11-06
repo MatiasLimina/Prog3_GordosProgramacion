@@ -9,9 +9,8 @@ from typing import ClassVar
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.repository import BaseRepository
 from app.core.unit_of_work import UnitOfWork
-from app.modules.clientes.models import Cliente
+from app.modules.clientes.repository import ClienteRepository
 from app.modules.usuarios.repository import (
     AsignacionRolRepository,
     EventoSeguridadRepository,
@@ -34,8 +33,7 @@ class UsuariosUoW(UnitOfWork):
         # Sólo lectura acá: las filas de intento_acceso se escriben con IntentosUoW.
         self.intentos = IntentoAccesoRepository(session)
         self.eventos = EventoSeguridadRepository(session)
-        # Genérico a propósito: `ClienteRepository` es de CHG-15 (Nico), que cambia esta línea.
-        self.clientes = BaseRepository(session, Cliente)
+        self.clientes = ClienteRepository(session)
 
 
 class IntentosUoW(UnitOfWork):

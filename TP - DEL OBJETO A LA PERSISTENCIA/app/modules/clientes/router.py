@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
-from app.core.database import get_session
-from app.core.dependencies import PERSONAL
-from app.core.pagination import Pagination, pagination_params
+from fastapi import APIRouter, Depends
+
+from app.core.dependencies import PERSONAL, proveedor_uow
+from app.core.paginacion import Page, ParametrosPagina, paginacion_params
 from app.core.tipos import IdPath
 from app.modules.clientes import service
 from app.modules.clientes.schemas import (
@@ -14,9 +14,12 @@ from app.modules.clientes.schemas import (
     PerfilCreate,
     PerfilRead,
 )
+from app.modules.clientes.unit_of_work import ClientesUoW
 from app.modules.ventas.schemas import VentaRead
 
 router = APIRouter(prefix="/clientes", tags=["clientes"])
+
+ClientesUoWDep = Annotated[ClientesUoW, Depends(proveedor_uow(ClientesUoW))]
 
 
 @router.post(
@@ -25,23 +28,20 @@ router = APIRouter(prefix="/clientes", tags=["clientes"])
     status_code=201,
     dependencies=[Depends(PERSONAL)],
 )
-async def crear_cliente(
-    datos: ClienteCreate, session: AsyncSession = Depends(get_session)
-) -> ClienteRead:
-    return await service.crear(session, datos)
+async def crear_cliente(datos: ClienteCreate, uow: ClientesUoWDep) -> ClienteRead:
+    return await service.crear(uow, datos)
 
 
 @router.get(
     "/",
-    response_model=list[ClienteRead],
+    response_model=Page[ClienteRead],
     status_code=200,
     dependencies=[Depends(PERSONAL)],
 )
 async def listar_clientes(
-    p: Pagination = Depends(pagination_params),
-    session: AsyncSession = Depends(get_session),
-) -> list[ClienteRead]:
-    return await service.listar(session, p)
+    uow: ClientesUoWDep, p: Annotated[ParametrosPagina, Depends(paginacion_params)]
+) -> Page[ClienteRead]:
+    return await service.listar(uow, p)
 
 
 @router.get(
@@ -50,10 +50,8 @@ async def listar_clientes(
     status_code=200,
     dependencies=[Depends(PERSONAL)],
 )
-async def obtener_cliente(
-    cliente_id: IdPath, session: AsyncSession = Depends(get_session)
-) -> ClienteDetalleRead:
-    return await service.obtener(session, cliente_id)
+async def obtener_cliente(cliente_id: IdPath, uow: ClientesUoWDep) -> ClienteDetalleRead:
+    return await service.obtener(uow, cliente_id)
 
 
 @router.patch(
@@ -62,10 +60,8 @@ async def obtener_cliente(
     status_code=200,
     dependencies=[Depends(PERSONAL)],
 )
-async def actualizar_cliente(
-    cliente_id: IdPath, datos: ClienteUpdate, session: AsyncSession = Depends(get_session)
-) -> ClienteDetalleRead:
-    return await service.actualizar(session, cliente_id, datos)
+async def actualizar_cliente(cliente_id: IdPath, datos: ClienteUpdate, uow: ClientesUoWDep) -> ClienteDetalleRead:
+    return await service.actualizar(uow, cliente_id, datos)
 
 
 @router.post(
@@ -74,21 +70,17 @@ async def actualizar_cliente(
     status_code=201,
     dependencies=[Depends(PERSONAL)],
 )
-async def crear_perfil(
-    cliente_id: IdPath, datos: PerfilCreate, session: AsyncSession = Depends(get_session)
-) -> PerfilRead:
-    return await service.crear_perfil(session, cliente_id, datos)
+async def crear_perfil(cliente_id: IdPath, datos: PerfilCreate, uow: ClientesUoWDep) -> PerfilRead:
+    return await service.crear_perfil(uow, cliente_id, datos)
 
 
 @router.get(
     "/{cliente_id}/ventas",
-    response_model=list[VentaRead],
+    response_model=Page[VentaRead],
     status_code=200,
     dependencies=[Depends(PERSONAL)],
 )
 async def listar_ventas_del_cliente(
-    cliente_id: IdPath,
-    p: Pagination = Depends(pagination_params),
-    session: AsyncSession = Depends(get_session),
-) -> list[VentaRead]:
-    return await service.listar_ventas_de_cliente(session, cliente_id, p)
+    cliente_id: IdPath, uow: ClientesUoWDep, p: Annotated[ParametrosPagina, Depends(paginacion_params)]
+) -> Page[VentaRead]:
+    return await service.listar_ventas(uow, cliente_id, p)

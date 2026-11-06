@@ -50,7 +50,7 @@ def _consulta_con_precarga():
     )
 
 
-def _armar_lectura(venta: Venta) -> VentaRead:
+def armar_lectura(venta: Venta) -> VentaRead:
     renglones = [
         RenglonRead(
             libro_id=r.libro_id,
@@ -133,7 +133,7 @@ async def obtener(session: AsyncSession, venta_id: int) -> VentaRead:
     venta = resultado.scalars().first()
     if venta is None:
         raise HTTPException(status_code=404, detail="La venta no existe.")
-    return _armar_lectura(venta)
+    return armar_lectura(venta)
 
 
 async def listar(
@@ -144,7 +144,7 @@ async def listar(
         consulta = consulta.where(Venta.cliente_id == cliente_id)
     consulta = consulta.order_by(Venta.id).limit(p.limit).offset(p.offset)
     resultado = await session.execute(consulta)
-    return [_armar_lectura(v) for v in resultado.scalars().all()]
+    return [armar_lectura(v) for v in resultado.scalars().all()]
 
 
 async def avisar_comprobante(venta_id: int, email: str) -> None:
