@@ -1,6 +1,6 @@
-"""Inspección del código del catálogo (CHG-13, sin base): la arquitectura Router -> Service -> UoW -> Repository.
+"""Inspección del código de los módulos migrados (sin base): la arquitectura Router -> Service -> UoW -> Repository.
 
-Vale para `libros`, `editoriales`, `generos` y `autores`. El negocio informa con excepciones de
+Vale para el catálogo (CHG-13: `libros`, `editoriales`, `generos` y `autores`) y `clientes` (CHG-15). El negocio informa con excepciones de
 dominio (nunca `HTTPException`), el repositorio no confirma, el servicio ya no confirma ni pagina
 con el módulo viejo y el router no toca la sesión. Se mira el árbol sintáctico y no el texto, así
 un comentario que nombre `HTTPException` no cuenta.
@@ -12,6 +12,7 @@ import pytest
 
 MODULOS = Path(__file__).resolve().parent.parent / "app" / "modules"
 CATALOGO = ["libros", "editoriales", "generos", "autores"]
+MIGRADOS = CATALOGO + ["clientes"]
 
 
 def _nombres(modulo: str, archivo: str) -> set[str]:
@@ -31,31 +32,31 @@ def _nombres(modulo: str, archivo: str) -> set[str]:
     return nombres
 
 
-@pytest.mark.parametrize("modulo", CATALOGO)
+@pytest.mark.parametrize("modulo", MIGRADOS)
 @pytest.mark.parametrize("archivo", ["service.py", "repository.py", "unit_of_work.py"])
 @pytest.mark.parametrize("prohibido", ["HTTPException", "commit_or_409", "traducir_integrity", "app.core.pagination"])
-def test_el_negocio_del_catalogo_no_usa_lo_viejo_ni_errores_http(modulo, archivo, prohibido):
+def test_el_negocio_migrado_no_usa_lo_viejo_ni_errores_http(modulo, archivo, prohibido):
     assert prohibido not in _nombres(modulo, archivo)
 
 
-@pytest.mark.parametrize("modulo", CATALOGO)
+@pytest.mark.parametrize("modulo", MIGRADOS)
 @pytest.mark.parametrize("prohibido", ["AsyncSession", "get_session", "HTTPException", "app.core.pagination"])
-def test_el_router_del_catalogo_no_importa_la_sesion_ni_la_paginacion_vieja(modulo, prohibido):
+def test_el_router_migrado_no_importa_la_sesion_ni_la_paginacion_vieja(modulo, prohibido):
     assert prohibido not in _nombres(modulo, "router.py")
 
 
-@pytest.mark.parametrize("modulo", CATALOGO)
+@pytest.mark.parametrize("modulo", MIGRADOS)
 @pytest.mark.parametrize("archivo", ["service.py", "repository.py"])
 def test_ni_el_servicio_ni_el_repositorio_confirman(modulo, archivo):
     assert "commit" not in _nombres(modulo, archivo)
 
 
-@pytest.mark.parametrize("modulo", CATALOGO)
+@pytest.mark.parametrize("modulo", MIGRADOS)
 def test_los_mensajes_de_409_viven_solo_en_el_uow(modulo):
     assert "MENSAJES" not in _nombres(modulo, "service.py")
     assert "MENSAJES" in _nombres(modulo, "unit_of_work.py")
 
 
-@pytest.mark.parametrize("modulo", CATALOGO)
-def test_los_servicios_del_catalogo_reciben_el_uow_y_no_la_sesion(modulo):
+@pytest.mark.parametrize("modulo", MIGRADOS)
+def test_los_servicios_migrados_reciben_el_uow_y_no_la_sesion(modulo):
     assert "AsyncSession" not in _nombres(modulo, "service.py")
