@@ -10,6 +10,7 @@ from app.modules.generos.models import Genero
 from app.modules.libros.models import Libro, LibroAutor
 from app.modules.ventas.models import RenglonVenta, Venta
 from scripts.seed import cargar_datos
+from tests.auxiliares_auth import entrar_como
 
 pytestmark = pytest.mark.db
 
@@ -105,6 +106,8 @@ async def test_seed_pisa_datos_previos(sessionmaker_test):
 
 async def test_post_libro_del_ejemplo_de_la_consigna_da_201(client, sessionmaker_test):
     await correr_seed(sessionmaker_test)
+    # El seed vacía TODAS las tablas (también `usuario`): la sesión de ADMIN va después (CHG-12).
+    await entrar_como(client, sessionmaker_test, "ADMIN")
     r = await client.post(
         "/libros/",
         json={
@@ -154,6 +157,8 @@ async def test_venta_sembrada_es_coherente(sessionmaker_test):
 
 async def test_post_venta_del_ejemplo_de_la_consigna_da_201(client, sessionmaker_test):
     await correr_seed(sessionmaker_test)
+    # El seed vacía TODAS las tablas (también `usuario`): la sesión de ADMIN va después (CHG-12).
+    await entrar_como(client, sessionmaker_test, "ADMIN")
     r = await client.post(
         "/ventas/",
         json={"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 2}, {"libro_id": 4, "cantidad": 1}]},

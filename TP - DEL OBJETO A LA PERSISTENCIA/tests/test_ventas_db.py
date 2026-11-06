@@ -1,5 +1,6 @@
 """Endpoints de ventas con base real."""
 import logging
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -7,8 +8,15 @@ from sqlalchemy import event, select
 
 from app.modules.libros.models import Libro
 from app.modules.ventas import service as ventas_service
+from tests.auxiliares_auth import entrar_como
 
 pytestmark = pytest.mark.db
+
+@pytest.fixture
+async def client(client, sessionmaker_test):
+    """Sesión de ADMIN: las escrituras del catálogo, clientes y ventas son del grupo protegido (CHG-12)."""
+    await entrar_como(client, sessionmaker_test, "ADMIN")
+    return client
 
 
 async def crear_cliente(client, nombre="Tomás Ríos", email="tomas@example.com"):
@@ -259,10 +267,15 @@ class ContadorSQL:
 
 
 async def consultas_de(client, sessionmaker_test, ruta):
+    """Cuenta las consultas de la OPERACIÓN: descuenta las dos lecturas fijas de la autorización
+    (usuario actual y roles vigentes, CHG-12). Exige que sean exactamente dos, para que una carga
+    perezosa de `usuario` dentro de la operación no quede escondida en el descuento."""
     with ContadorSQL(sessionmaker_test.kw["bind"]) as contador:
         r = await client.get(ruta)
     assert r.status_code == 200, r.text
-    return len(contador.sentencias), r.json()
+    de_autorizacion = [q for q in contador.sentencias if re.search(r"FROM (usuario|asignacion_rol)\b", q)]
+    assert len(de_autorizacion) == 2, de_autorizacion
+    return len(contador.sentencias) - 2, r.json()
 
 
 async def test_detalle_de_venta_emite_las_mismas_consultas_con_1_o_3_renglones(client, sessionmaker_test):

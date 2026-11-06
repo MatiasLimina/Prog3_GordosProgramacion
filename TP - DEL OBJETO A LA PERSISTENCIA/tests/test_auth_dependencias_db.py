@@ -155,3 +155,42 @@ async def test_uow_con_sesion_propia_entrega_una_sesion_distinta_por_peticion(se
     await _get(app)
     await _get(app)
     assert sesiones[0] is not sesiones[1]
+
+
+# ---- entrar_como: sesión de prueba sin pasar por /auth/login (CHG-12, design D10) ----
+
+async def test_entrar_como_deja_al_client_con_una_cookie_que_vale_en_auth_yo(client, sessionmaker_test):
+    from tests.auxiliares_auth import entrar_como
+
+    uid = await entrar_como(client, sessionmaker_test, "ADMIN")
+
+    r = await client.get("/auth/yo")
+    assert r.status_code == 200
+    assert r.json()["usuario"]["id"] == uid
+    assert r.json()["roles_vigentes"] == ["ADMIN"]
+
+
+@pytest.mark.parametrize("roles", [("VENDEDOR",), ("VENDEDOR", "ADMIN"), ()])
+async def test_entrar_como_asigna_exactamente_los_roles_pedidos(client, sessionmaker_test, roles):
+    from tests.auxiliares_auth import entrar_como
+
+    await entrar_como(client, sessionmaker_test, *roles)
+
+    assert (await client.get("/auth/yo")).json()["roles_vigentes"] == sorted(roles)
+
+
+async def test_entrar_como_con_debe_cambiar_deja_el_flag_en_el_usuario(client, sessionmaker_test):
+    from tests.auxiliares_auth import contar, entrar_como
+
+    uid = await entrar_como(client, sessionmaker_test, "VENDEDOR", email="otra@example.com", debe_cambiar=True)
+
+    assert await contar(sessionmaker_test, "usuario", "id = :u AND debe_cambiar_password", u=uid) == 1
+    assert (await client.get("/auth/yo")).json()["usuario"]["debe_cambiar_password"] is True
+
+
+async def test_entrar_como_no_deja_filas_de_intento_de_acceso(client, sessionmaker_test):
+    from tests.auxiliares_auth import contar, entrar_como
+
+    await entrar_como(client, sessionmaker_test, "ADMIN")
+
+    assert await contar(sessionmaker_test, "intento_acceso") == 0

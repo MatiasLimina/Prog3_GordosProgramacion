@@ -7,9 +7,13 @@ Hoy:
   clave y duración del token y `cookie_secure`, leídos de `app.state`.
 - `get_usuario_actual` (CHG-11): cookie -> token -> usuario, con las cinco causas de 401.
 
-CHG-12 reutiliza `get_usuario_actual` y suma `requiere_rol` y el control del cambio
-obligatorio (RN-06). Todas reciben la misma sesión (`Depends(get_session)`, que FastAPI
-cachea por petición), así una petición autenticada usa una sola conexión del pool.
+Desde CHG-12:
+- `requiere_rol(*roles)` y sus constantes `SOLO_ADMIN` / `PERSONAL` (alias `UsuarioAdmin` /
+  `UsuarioPersonal`): exigen un rol VIGENTE leído de la base en cada petición (RN-04).
+- `control_cambio_obligatorio` (RN-06): bloquea con 403 al usuario que debe cambiar su
+  contraseña; se monta UNA sola vez, en el grupo protegido de `app/main.py`.
+Todas reciben la misma sesión (`Depends(get_session)`, que FastAPI cachea por petición),
+así una petición autenticada usa una sola conexión del pool.
 """
 import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -21,10 +25,10 @@ from pydantic import SecretStr
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.database import get_session
-from app.core.errors import NoAutenticado
+from app.core.errors import NoAutenticado, SinPermiso
 from app.core.security import TokenInvalido, verificar_token
 from app.core.unit_of_work import UnitOfWork
-from app.modules.usuarios.repository import UsuarioRepository
+from app.modules.usuarios.repository import AsignacionRolRepository, UsuarioRepository
 
 
 def proveedor_uow[U: UnitOfWork](clase: type[U]) -> Callable[..., Awaitable[U]]:
@@ -174,3 +178,73 @@ async def get_usuario_actual(
     if actual is None:
         raise NoAutenticado(_MENSAJE_SIN_SESION)
     return actual
+
+
+MENSAJE_SIN_PERMISO = "No tenés permiso para esta operación."
+MENSAJE_CAMBIO_PENDIENTE = "Tenés que cambiar la contraseña antes de continuar."
+
+# Los roles que existen (CHECK de `asignacion_rol`): sirve para que un typo en un router
+# falle al importar y no se convierta en una ruta que nadie puede usar.
+_ROLES_VALIDOS = frozenset({"ADMIN", "VENDEDOR", "CLIENTE"})
+
+
+def requiere_rol(*roles: str) -> Callable[..., Awaitable[UsuarioActual]]:
+    """Fábrica de la dependencia que exige alguno de `roles` VIGENTES (RN-04).
+
+    Los roles se leen de `asignacion_rol` en la base en CADA petición, no del token: el token
+    los lleva sólo como dato informativo, así revocar o vencer un rol surte efecto en la
+    petición siguiente con la misma cookie (C-07). Lanza `SinPermiso` (403) con un mensaje
+    fijo que no nombra roles; el 401 sale antes, de `get_usuario_actual`.
+
+    Usa la MISMA sesión que el resto de la petición (`get_session` se cachea por petición):
+    una petición autorizada toma una sola conexión del pool. La lectura va en un bloque corto
+    del UoW base, igual que en `get_usuario_actual`: confirma una transacción vacía y
+    devuelve la conexión antes de que corra el servicio (bloques sucesivos, nunca anidados).
+
+    Devuelve el `UsuarioActual` para que el router lo reciba (actor de un movimiento de stock,
+    vendedor de una venta) sin otra lectura. Los routers NO la llaman en línea: usan siempre
+    `SOLO_ADMIN` / `PERSONAL` (o sus alias), porque FastAPI cachea por función y dos
+    `requiere_rol("ADMIN")` distintos consultarían los roles dos veces.
+    """
+    exigidos = frozenset(roles)
+    desconocidos = exigidos - _ROLES_VALIDOS
+    if not exigidos or desconocidos:
+        raise ValueError(f"Roles inválidos: {sorted(desconocidos) or 'ninguno indicado'}")
+
+    async def _requiere(
+        usuario: Annotated[UsuarioActual, Depends(get_usuario_actual)],
+        session: Annotated[AsyncSession, Depends(get_session)],
+    ) -> UsuarioActual:
+        async with UnitOfWork(session):
+            vigentes = await AsignacionRolRepository(session).roles_vigentes(usuario.id)
+        if exigidos.isdisjoint(vigentes):
+            raise SinPermiso(MENSAJE_SIN_PERMISO)
+        return usuario
+
+    _requiere.roles = exigidos  # lo lee el test de la matriz de acceso
+    return _requiere
+
+
+SOLO_ADMIN = requiere_rol("ADMIN")
+PERSONAL = requiere_rol("VENDEDOR", "ADMIN")
+
+UsuarioAdmin = Annotated[UsuarioActual, Depends(SOLO_ADMIN)]
+UsuarioPersonal = Annotated[UsuarioActual, Depends(PERSONAL)]
+
+
+async def control_cambio_obligatorio(
+    usuario: Annotated[UsuarioActual, Depends(get_usuario_actual)],
+) -> UsuarioActual:
+    """Bloquea con 403 a quien tiene el cambio de contraseña pendiente (RN-06).
+
+    Se monta una sola vez, como dependencia del grupo protegido (`app/main.py`). Orden
+    resultante en una ruta protegida: 401 (sesión) -> RN-06 (403) -> rol de la ruta (403) ->
+    422 (parámetros y cuerpo) -> handler; por eso el cambio pendiente gana sobre la falta de
+    rol. No consulta la base otra vez: `debe_cambiar_password` ya lo leyó de la base
+    `get_usuario_actual` en ESTA petición (no sale del token), así que un cambio de contraseña
+    hecho con la misma cookie se ve en la petición siguiente (C-09). Como depende de
+    `get_usuario_actual`, también da el 401 de las rutas protegidas que no piden rol.
+    """
+    if usuario.debe_cambiar_password:
+        raise SinPermiso(MENSAJE_CAMBIO_PENDIENTE)
+    return usuario

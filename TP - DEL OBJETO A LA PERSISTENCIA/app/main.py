@@ -1,23 +1,31 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
 from app.core.config import get_settings
 from app.core.database import crear_fabrica_sesiones, crear_motor
-from app.core.errors import Conflicto, DemasiadosIntentos, NoAutenticado, PeticionInvalida, mensaje_para
+from app.core.dependencies import control_cambio_obligatorio
+from app.core.errors import (
+    Conflicto,
+    DemasiadosIntentos,
+    NoAutenticado,
+    PeticionInvalida,
+    SinPermiso,
+    mensaje_para,
+)
 from app.core.security import calcular_hash_ficticio
 import app.models  # noqa: F401  (registra todos los modelos en el metadata)
-from app.modules.autores.router import router as autores_router
-from app.modules.clientes.router import router as clientes_router
-from app.modules.editoriales.router import router as editoriales_router
-from app.modules.generos.router import router as generos_router
+from app.modules.autores import router as autores
+from app.modules.clientes import router as clientes
+from app.modules.editoriales import router as editoriales
+from app.modules.generos import router as generos
 from app.modules.health.router import router as health_router
-from app.modules.libros.router import router as libros_router
+from app.modules.libros import router as libros
 from app.modules.usuarios.router import auth_router
-from app.modules.ventas.router import router as ventas_router
+from app.modules.ventas import router as ventas
 
 
 @asynccontextmanager
@@ -68,6 +76,11 @@ def registrar_handlers(app: FastAPI) -> None:
     async def no_autenticado_handler(request: Request, exc: NoAutenticado):
         return JSONResponse(status_code=401, content={"detail": exc.mensaje})
 
+    # SinPermiso la lanzan requiere_rol y el control del cambio obligatorio (core no conoce HTTP).
+    @app.exception_handler(SinPermiso)
+    async def sin_permiso_handler(request: Request, exc: SinPermiso):
+        return JSONResponse(status_code=403, content={"detail": exc.mensaje})
+
     @app.exception_handler(DemasiadosIntentos)
     async def demasiados_intentos_handler(request: Request, exc: DemasiadosIntentos):
         return JSONResponse(
@@ -80,11 +93,26 @@ def registrar_handlers(app: FastAPI) -> None:
 app = FastAPI(title="Librería", lifespan=lifespan)
 registrar_handlers(app)
 
-app.include_router(health_router)
-app.include_router(auth_router)
-app.include_router(editoriales_router)
-app.include_router(generos_router)
-app.include_router(autores_router)
-app.include_router(libros_router)
-app.include_router(clientes_router)
-app.include_router(ventas_router)
+# Dos grupos de rutas (CHG-12):
+# - `abierto`: salud, TODO `/auth` y los GET del catálogo público. No pasa por el control del
+#   cambio obligatorio de contraseña (RN-06). `/auth/yo` y `/auth/cambiar-password` piden
+#   sesión por su cuenta (401 sin ella) pero tienen que atender a quien debe cambiar la
+#   contraseña; por eso `/auth` entero va acá: FastAPI SUMA las dependencias de un router y
+#   no las resta, así que no se puede montar bajo el protegido y «sacarle» el control.
+# - `protegido`: el control de RN-06 se declara UNA sola vez, acá. Pide sesión (401) y bloquea
+#   con 403 al usuario con el cambio pendiente; el rol de cada ruta (`SOLO_ADMIN` /
+#   `PERSONAL`) lo declara su propio router. `tests/matriz_acceso.py` clasifica cada ruta y
+#   `tests/test_grupos_de_rutas.py` falla si una ruta nueva no está clasificada.
+abierto = APIRouter()
+protegido = APIRouter(dependencies=[Depends(control_cambio_obligatorio)])
+
+abierto.include_router(health_router)
+abierto.include_router(auth_router)
+for modulo in (editoriales, generos, autores, libros):
+    abierto.include_router(modulo.router_abierto)
+    protegido.include_router(modulo.router)
+for modulo in (clientes, ventas):
+    protegido.include_router(modulo.router)
+
+app.include_router(abierto)
+app.include_router(protegido)

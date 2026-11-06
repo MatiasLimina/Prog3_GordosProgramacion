@@ -234,7 +234,9 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 | ~~Semáforo de bcrypt: `BCRYPT_MAX_CONCURRENTES` ya está en `Settings`, pero el `asyncio.Semaphore` todavía no se crea~~ | el lifespan crea el semáforo y `security.py` lo usa | CHG-10 ✅ hecho |
 | `scripts/seed.py` (`python -m scripts.seed`) | `seed.py` en la raíz (`python seed.py`) | CHG-17 |
 | `libro.stock` editable, ISBN con UNIQUE común | stock por movimientos, ISBN único entre vigentes | CHG-07, 08, 13 |
-| Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11 ✅ (rutas `/auth` hechas), 12, 14 |
+| Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11 ✅ (rutas `/auth` hechas), 12 ✅ hecho (`requiere_rol`, grupos abierto/protegido), 14 (administración de usuarios) |
+| `GET /ventas/{id}` con `PERSONAL` provisorio | sin `requiere_rol`: decide el servicio (personal o cliente dueño; si no, 403) | CHG-16 |
+| Routers de catálogo, clientes y ventas divididos en `router_abierto` / `router`, y rutas clasificadas en `tests/matriz_acceso.py` | CHG-13, 15 y 16 conservan la división y agregan sus rutas a la matriz (la suite falla si falta una) | CHG-13, 15, 16 |
 
 ## 10. Git
 
