@@ -316,6 +316,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
   - `GET /mis-ventas` en el grupo protegido, sin rol, y agregada a `tests/matriz_acceso.py` (`AUTENTICADO`).
   - El detalle de una venta (cliente, renglones y libro de cada renglón, aunque esté dado de baja) se resuelve con un número fijo de consultas.
   - **Ya existe por CHG-15** (parte de `main`): `VentaRepository` en `app/modules/ventas/repository.py` con `_con_detalle` (cliente, renglones y libro de cada renglón, sin filtro de baja) y `listar_de_cliente` / `contar_de_cliente`; `armar_lectura` público en `ventas/service.py` (era `_armar_lectura`); `ClienteRepository` y `ClienteNoEncontrado`; `ventas.service.listar(..., cliente_id=)` sin uso desde clientes (se puede borrar). **Falta, y lo agrega CHG-16:** `ClienteRepository.get_por_usuario` para `/mis-ventas` y el chequeo de dueño (que mira `Venta.cliente`), el detalle por id y el listado general en `VentaRepository`, y componerlo en `VentasUoW`.
+- **Decidido (Matias, 2026-11-07; Q1–Q6 del design del change):** (Q1) el punto único devuelve también el `precio` vigente en su mismo `UPDATE ... RETURNING` (`ResultadoMovimiento.precio`, toca `libros/repository.py`, aviso a Nico); (Q2) quien no es personal recibe 403 también por una venta inexistente; (Q3) el dueño es el usuario vinculado al cliente (`cliente.usuario_id`), sin exigir `CLIENTE` vigente; (Q4) `/mis-ventas` de un usuario sin cliente vinculado es 200 con envoltorio vacío; (Q5) los 409 de stock y de baja traen el texto del punto único; (Q6) `ROLES_PERSONAL` exportada desde `core/dependencies.py`. Retira `app/core/pagination.py`, `commit_or_409` y `traducir_integrity`; el listado de ventas usa el envoltorio `{items, total, page, size, pages}` (BREAKING para los `.http`, CHG-18).
 - **DoD:** C-10, C-11, C-12 y C-15.
 - **Commit:** `feat(ventas): registro atómico con stock y aviso en segundo plano`
 
@@ -341,6 +342,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 
 #### CHG-19 · `pytest-integracion` — Matias
 - **Entregables:** tests de que el stock coincide con la suma de movimientos después de cada venta, de la atomicidad de RN-02 y RN-10, y del conteo de consultas de C-15 (2 contra 4 renglones).
+- **Ya cubierto por CHG-16** (`tests/test_ventas_db.py`, `tests/test_ventas_acceso_db.py`, `tests/test_ventas_repository_db.py`): stock = suma de movimientos tras ventas buenas y rechazadas, atomicidad de RN-10 (409 sin venta, renglones ni movimientos) y el conteo de sentencias igual con 2 y con 4 renglones. Falta la atomicidad de RN-02 y lo que CHG-19 quiera agregar.
 - **Commit:** `test(integracion): invariantes de stock y atomicidad`
 
 #### CHG-20 · `entrega-zip` — Lauti + Matias
