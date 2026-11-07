@@ -5,7 +5,9 @@ from typing import Annotated, Literal
 from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
-_ROLES = Literal["ADMIN", "VENDEDOR", "CLIENTE"]
+# Un solo nombre público para los roles: lo usan los contratos de asignación, `/auth/yo` y el
+# `{rol}` de las rutas de administración (un rol desconocido es 422 por el tipo).
+Rol = Literal["ADMIN", "VENDEDOR", "CLIENTE"]
 
 
 def _validar_password(password: str) -> str:
@@ -58,7 +60,7 @@ class UsuarioCreate(_Entrada):
 
 
 class AsignacionRolCreate(_Entrada):
-    rol: _ROLES
+    rol: Rol
     vence_en: datetime | None = None
 
     @field_validator("vence_en")
@@ -88,7 +90,7 @@ class AsignacionRolRead(BaseModel):
 
     id: int
     usuario_id: int
-    rol: _ROLES
+    rol: Rol
     desde: datetime
     vence_en: datetime | None = None
     revocada_en: datetime | None = None
@@ -103,5 +105,14 @@ class LoginRead(BaseModel):
 
 class AuthYoRead(BaseModel):
     usuario: UsuarioRead
-    roles_vigentes: list[_ROLES]
-    roles_token: list[_ROLES]
+    roles_vigentes: list[Rol]
+    roles_token: list[Rol]
+
+
+class EventoSeguridadRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    cuando: datetime
+    actor: str
+    accion: str

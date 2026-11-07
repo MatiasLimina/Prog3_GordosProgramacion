@@ -57,6 +57,12 @@ MATRIZ: dict[tuple[str, str], tuple[str, str | frozenset[str]]] = {
     ("DELETE", "/libros/{libro_id}"): (PROTEGIDO, ADMIN),
     ("POST", "/libros/{libro_id}/reponer"): (PROTEGIDO, ADMIN),
     ("GET", "/libros/{libro_id}/movimientos"): (PROTEGIDO, ADMIN),
+    # CHG-14: administración de usuarios, roles e historial de seguridad (consigna: ADMIN)
+    ("POST", "/usuarios/"): (PROTEGIDO, ADMIN),
+    ("GET", "/usuarios/{usuario_id}/roles"): (PROTEGIDO, ADMIN),
+    ("POST", "/usuarios/{usuario_id}/roles"): (PROTEGIDO, ADMIN),
+    ("DELETE", "/usuarios/{usuario_id}/roles/{rol}"): (PROTEGIDO, ADMIN),
+    ("GET", "/eventos/"): (PROTEGIDO, ADMIN),
     # personal: VENDEDOR o ADMIN (D9: GET /clientes/ también)
     ("POST", "/clientes/"): (PROTEGIDO, PERSONAL),
     ("GET", "/clientes/"): (PROTEGIDO, PERSONAL),

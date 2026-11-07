@@ -8,12 +8,33 @@ import math
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.core.dependencies import ParametrosSeguridad, UsuarioActual
-from app.core.errors import DemasiadosIntentos, NoAutenticado, PeticionInvalida
+from app.core.dependencies import MENSAJE_SIN_PERMISO, ParametrosSeguridad, UsuarioActual
+from app.core.errors import (
+    AdminConVencimiento,
+    AutoRevocacionAdmin,
+    DemasiadosIntentos,
+    NoAutenticado,
+    PeticionInvalida,
+    RolNoVigente,
+    SinAdministradores,
+    SinPermiso,
+    UsuarioNoEncontrado,
+)
+from app.core.paginacion import Page, ParametrosPagina, envolver
 from app.core.security import emitir_token, hashear_password, verificar_password
 from app.modules.clientes.models import Cliente
 from app.modules.usuarios.models import AsignacionRol, EventoSeguridad, IntentoAcceso, Usuario
-from app.modules.usuarios.schemas import AuthYoRead, CambioPasswordCreate, LoginCreate, RegistroCreate, UsuarioRead
+from app.modules.usuarios.schemas import (
+    AsignacionRolCreate,
+    AsignacionRolRead,
+    AuthYoRead,
+    CambioPasswordCreate,
+    EventoSeguridadRead,
+    LoginCreate,
+    RegistroCreate,
+    UsuarioCreate,
+    UsuarioRead,
+)
 from app.modules.usuarios.unit_of_work import IntentosUoW, UsuariosUoW
 
 logger = logging.getLogger(__name__)
@@ -192,3 +213,136 @@ async def cambiar_password(
     async with uow:
         await uow.usuarios.update(usuario, {"password_hash": hash_nuevo, "debe_cambiar_password": False})
         await uow.eventos.add(EventoSeguridad(actor=actual.email, accion="Cambio de contraseña"))
+
+
+# ---------------------------------------------------------------------------
+# Administración de usuarios (CHG-14, Nico). Todas las operaciones son del ADMIN: el router
+# las protege con `SOLO_ADMIN` y le pasa el `UsuarioActual` como `actor` (valores simples:
+# sobreviven a un rollback). Una operación de escritura = un solo bloque `async with uow`.
+# ---------------------------------------------------------------------------
+
+
+async def dar_de_alta_personal(
+    uow: UsuariosUoW, datos: UsuarioCreate, actor: UsuarioActual, seg: ParametrosSeguridad
+) -> UsuarioRead:
+    """Alta de personal (RN-16): usuario con contraseña provisoria y su evento, o ninguno.
+
+    - El hash va ANTES del bloque: bcrypt tarda ~300 ms y no debe correr con una conexión tomada.
+    - No consulta si el correo existe: la base decide (UNIQUE -> `Conflicto` 409 del UoW).
+    - `debe_cambiar_password` queda en `True`: la contraseña es provisoria (RN-06).
+    - NO asigna rol (design D1): los roles se dan después con `asignar_rol`, así cada rol queda con
+      su vencimiento, quién lo otorgó y su propia línea de historial.
+    - El evento se agrega dentro del bloque y después del usuario: si falla, el UoW revierte todo.
+    """
+    password_hash = await hashear_password(datos.password, costo=seg.costo, semaforo=seg.semaforo)
+    async with uow:
+        usuario = await uow.usuarios.add(
+            Usuario(
+                email=datos.email,
+                nombre=datos.nombre,
+                password_hash=password_hash,
+                debe_cambiar_password=True,
+            )
+        )
+        await uow.eventos.add(EventoSeguridad(actor=actor.email, accion=f"Alta de personal: usuario {usuario.id}"))
+        return UsuarioRead.model_validate(usuario)
+
+
+async def listar_roles(uow: UsuariosUoW, usuario_id: int) -> list[AsignacionRolRead]:
+    """Historial completo de asignaciones del usuario (vigentes, vencidas y revocadas), sin paginar.
+
+    Acá la lectura del usuario ES la operación: si no existe, 404. El historial de un usuario es
+    corto y la consigna sólo pagina `/eventos`.
+    """
+    async with uow:
+        if await uow.usuarios.get_by_id(usuario_id) is None:
+            raise UsuarioNoEncontrado(usuario_id)
+        return [AsignacionRolRead.model_validate(a) for a in await uow.asignaciones.historial(usuario_id)]
+
+
+async def asignar_rol(
+    uow: UsuariosUoW, usuario_id: int, datos: AsignacionRolCreate, actor: UsuarioActual
+) -> AsignacionRolRead:
+    """Asigna un rol con `vence_en` opcional (RN-03, RN-16): asignación y evento, o nada.
+
+    Sin consulta previa: la base decide. Si hay una fila abierta pero VENCIDA de ese rol se cierra
+    con `revocada_en = vence_en` (`cerrar_vencida`) antes del INSERT; si la abierta sigue vigente
+    no se toca y el índice único parcial da 409 (`Conflicto` del UoW). Si el usuario no existe,
+    la FK del INSERT da `UsuarioNoEncontrado` (404): excepción explícita a AGENTS §8, ver
+    `AsignacionRolRepository.asignar`.
+
+    Cerrar la vencida y abrir la nueva es UN cambio de rol: una sola línea de evento, en el mismo
+    bloque y después de la escritura que registra.
+
+    `ADMIN` no lleva vencimiento (D3b, RN-05: el sistema no puede quedarse sin administradores
+    por vencimiento). La regla vive acá y no en `AsignacionRolCreate`: ese contrato es genérico
+    (no distingue roles) y esto es una regla de negocio. Es una comparación pura, antes del bloque.
+    """
+    if datos.rol == "ADMIN" and datos.vence_en is not None:
+        raise AdminConVencimiento()
+    async with uow:
+        await uow.asignaciones.cerrar_vencida(usuario_id, datos.rol)
+        asignacion = await uow.asignaciones.asignar(
+            AsignacionRol(usuario_id=usuario_id, rol=datos.rol, vence_en=datos.vence_en, otorgada_por=actor.id)
+        )
+        await uow.eventos.add(
+            EventoSeguridad(actor=actor.email, accion=f"Asignación del rol {datos.rol} al usuario {usuario_id}")
+        )
+        return AsignacionRolRead.model_validate(asignacion)
+
+
+async def revocar_rol(uow: UsuariosUoW, usuario_id: int, rol: str, actor: UsuarioActual) -> AsignacionRolRead:
+    """Revoca el rol vigente del usuario sin borrar la fila (RN-05, RN-16): revocación y evento, o nada.
+
+    RN-05, autoprotección: nadie se revoca su propio `ADMIN` (409, nunca 403). Es una comparación
+    pura y se rechaza antes de abrir el UoW.
+
+    RN-05, nunca cero administradores, también con revocaciones simultáneas. Sin protección, dos
+    ADMIN que se revocan a la vez (A revoca a B y B revoca a A) cuentan cada uno 1 porque no ven la
+    revocación sin confirmar del otro y confirman los dos: cero ADMIN (*write skew*). Por eso, para
+    revocar un `ADMIN`: (1) `bloquear_admins_vigentes` toma `FOR UPDATE` las filas `ADMIN` vigentes
+    (`ORDER BY id`, para que nadie tome los bloqueos en otro orden y se produzca un *deadlock*);
+    (2) se comprueba que el propio actor sigue entre ellas; (3) se revoca; (4) recién ahí se cuenta,
+    porque `FOR UPDATE` no se puede combinar con `count()` en la misma consulta.
+
+    El paso (2) cierra una carrera de AUTORIZACIÓN, no de conteo. `SOLO_ADMIN` verificó el `ADMIN` del
+    actor en su propia transacción, ya confirmada, ANTES de este bloque; la espera del bloqueo en (1)
+    puede durar lo que tarde otra transacción. Con tres ADMIN, si A revoca a B y B revoca a C a la vez,
+    B ya pasó `SOLO_ADMIN`, espera en (1) y, cuando A confirma, la base reevalúa el `WHERE` y devuelve las
+    filas de A y C pero no la de B. Sin (2), B revocaría a C (quedaría A: el conteo da 1) siendo ya un
+    no-administrador. Con (2) el actor que no figura entre las filas bloqueadas recibe `SinPermiso`
+    (403) y no se escribe nada; también cubre el cruce de dos ADMIN que se revocan entre sí (la
+    perdedora recibe 403 y no «409 sin administradores»). Es gratis: el bloqueo ya trajo esos
+    `usuario_id`. El conteo del paso (4) queda como defensa en profundidad: con el actor comprobado y
+    la autorrevocación prohibida, el actor sigue siendo ADMIN y el conteo no puede dar 0.
+
+    No lee antes de escribir: `revocar_vigente` es un `UPDATE ... RETURNING`. Sólo si no tocó nada se
+    lee el usuario, para elegir entre 404 «el usuario no existe» y 404 «no tiene ese rol vigente»
+    (un rol vencido tampoco es revocable: no está vigente).
+    """
+    if rol == "ADMIN" and usuario_id == actor.id:
+        raise AutoRevocacionAdmin()
+    async with uow:
+        if rol == "ADMIN" and actor.id not in await uow.asignaciones.bloquear_admins_vigentes():
+            raise SinPermiso(MENSAJE_SIN_PERMISO)  # el actor dejó de ser ADMIN mientras esperaba el bloqueo
+        revocada = await uow.asignaciones.revocar_vigente(usuario_id, rol)
+        if revocada is None:
+            if await uow.usuarios.get_by_id(usuario_id) is None:
+                raise UsuarioNoEncontrado(usuario_id)
+            raise RolNoVigente(usuario_id, rol)
+        if rol == "ADMIN" and await uow.asignaciones.contar_admins_vigentes() == 0:
+            raise SinAdministradores()
+        await uow.eventos.add(
+            EventoSeguridad(actor=actor.email, accion=f"Revocación del rol {rol} al usuario {usuario_id}")
+        )
+        return AsignacionRolRead.model_validate(revocada)
+
+
+async def listar_eventos(uow: UsuariosUoW, p: ParametrosPagina) -> Page[EventoSeguridadRead]:
+    """Historial de seguridad paginado, del más reciente al más viejo (`envolver` da el 422 fuera de rango)."""
+    async with uow:
+        total = await uow.eventos.count()
+        eventos = await uow.eventos.listar_recientes((p.page - 1) * p.size, p.size)
+        return envolver(
+            [EventoSeguridadRead.model_validate(e) for e in eventos], total=total, page=p.page, size=p.size
+        )
