@@ -73,7 +73,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-16 | `ventas-transaccional` | Matias | CHG-12, 13, 15 | mergeado (#61) |
 | CHG-17 | `seed-parcial` | Lauti (lo tomó Matias) | CHG-08, CHG-10 | mergeado (#57) |
 | CHG-18 | `casos-http` | Lauti (Nico revisa) | CHG-17 y el change de cada caso | pendiente |
-| CHG-19 | `pytest-integracion` | Matias | CHG-13, 16 | pendiente |
+| CHG-19 | `pytest-integracion` | Matias | CHG-13, 16 | mergeado (#62) |
 | CHG-20 | `entrega-zip` | Lauti + Matias | todo | pendiente |
 
 ---
@@ -342,7 +342,7 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 
 #### CHG-19 · `pytest-integracion` — Matias
 - **Entregables:** tests de que el stock coincide con la suma de movimientos después de cada venta, de la atomicidad de RN-02 y RN-10, y del conteo de consultas de C-15 (2 contra 4 renglones).
-- **Ya cubierto por CHG-16** (`tests/test_ventas_db.py`, `tests/test_ventas_acceso_db.py`, `tests/test_ventas_repository_db.py`): stock = suma de movimientos tras ventas buenas y rechazadas, atomicidad de RN-10 (409 sin venta, renglones ni movimientos) y el conteo de sentencias igual con 2 y con 4 renglones. Falta la atomicidad de RN-02 y lo que CHG-19 quiera agregar.
+- **Ya cubierto por CHG-16** (`tests/test_ventas_db.py`, `tests/test_ventas_acceso_db.py`, `tests/test_ventas_repository_db.py`): stock = suma de movimientos tras ventas buenas y rechazadas, atomicidad de RN-10 (409 sin venta, renglones ni movimientos) y el conteo de sentencias igual con 2 y con 4 renglones. CHG-19 agregó la atomicidad de RN-02 con fallas inyectadas en cada punto del bloque del auto-registro (`tests/test_auth_registro_db.py`) y el recorrido C-10 → C-13 sobre el seed con el invariante de stock tras cada paso (`tests/test_integracion_recorrido_db.py`).
 - **Commit:** `test(integracion): invariantes de stock y atomicidad`
 
 #### CHG-20 · `entrega-zip` — Lauti + Matias
