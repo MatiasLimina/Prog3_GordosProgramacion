@@ -2,7 +2,8 @@
 
 Los casos de rechazo dependen de la cuarta migración (disparador BEFORE UPDATE OR DELETE FOR EACH ROW,
 SQLSTATE 23001 y CONSTRAINT `movimiento_stock_solo_agregado`). INSERT y TRUNCATE siguen permitidos:
-el conftest y el seed vacían con TRUNCATE.
+el seed vacía con TRUNCATE. El conftest vacía con DELETE y apaga los disparadores sólo en esa
+transacción (`session_replication_role = replica`).
 """
 from collections.abc import Mapping
 from typing import ClassVar
