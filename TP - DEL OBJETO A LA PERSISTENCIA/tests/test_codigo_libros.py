@@ -1,6 +1,6 @@
 """Inspección del código de los módulos migrados (sin base): la arquitectura Router -> Service -> UoW -> Repository.
 
-Vale para el catálogo (CHG-13: `libros`, `editoriales`, `generos` y `autores`) y `clientes` (CHG-15). El negocio informa con excepciones de
+Vale para el catálogo (CHG-13: `libros`, `editoriales`, `generos` y `autores`), `clientes` (CHG-15) y `usuarios` (CHG-14; el auth de CHG-11 ya cumplía lo mismo). El negocio informa con excepciones de
 dominio (nunca `HTTPException`), el repositorio no confirma, el servicio ya no confirma ni pagina
 con el módulo viejo y el router no toca la sesión. Se mira el árbol sintáctico y no el texto, así
 un comentario que nombre `HTTPException` no cuenta.
@@ -12,7 +12,7 @@ import pytest
 
 MODULOS = Path(__file__).resolve().parent.parent / "app" / "modules"
 CATALOGO = ["libros", "editoriales", "generos", "autores"]
-MIGRADOS = CATALOGO + ["clientes"]
+MIGRADOS = CATALOGO + ["clientes", "usuarios"]
 
 
 def _nombres(modulo: str, archivo: str) -> set[str]:
