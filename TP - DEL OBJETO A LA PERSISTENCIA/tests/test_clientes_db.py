@@ -35,7 +35,9 @@ async def registrar_cliente_con_cuenta(client, email="bea@example.com", nombre="
     """Cliente con usuario vinculado, creado por el auto-registro (RN-02); devuelve el id del cliente."""
     r = await registrar(client, email=email, nombre=nombre)
     assert r.status_code == 201, r.text
-    return (await client.get("/clientes/", params={"size": 100})).json()["items"][-1]["id"]
+    items = (await client.get("/clientes/", params={"size": 100})).json()["items"]
+    # Se busca por correo, no por posición: no depende de que la base arranque vacía.
+    return next(c["id"] for c in items if c["email"] == email)
 
 
 async def crear_cliente(client, nombre="Ana Pérez", email="ana@example.com"):
@@ -265,7 +267,9 @@ async def test_el_patch_rechazado_no_hace_consultas_de_mas(client, sessionmaker_
     with contar_sentencias(sessionmaker_test) as aceptado:
         r = await client.patch(f"/clientes/{sin_cuenta}", json={"email": "beto2@example.com"})
         assert r.status_code == 200
-    assert len(rechazado) <= len(aceptado)
+    # El aceptado hace la lectura y el UPDATE; el rechazado, sólo la lectura. Con `<=`
+    # una consulta de más en el camino rechazado pasaría inadvertida.
+    assert len(rechazado) == len(aceptado) - 1
 
 
 # --- perfil ---
