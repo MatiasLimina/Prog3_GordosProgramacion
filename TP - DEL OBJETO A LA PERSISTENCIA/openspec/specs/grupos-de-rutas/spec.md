@@ -45,13 +45,6 @@ El grupo protegido SHALL exigir `VENDEDOR` o `ADMIN` en `POST /clientes/`, `GET 
 - **WHEN** un usuario con sólo `CLIENTE` vigente pide cada una de esas rutas
 - **THEN** todas responden 403
 
-### Requirement: Detalle de venta provisorio
-`GET /ventas/{id}` SHALL pertenecer al grupo protegido y, mientras no exista la comprobación de dueño de la venta, MUST exigir `VENDEDOR` o `ADMIN` (cerrado por defecto).
-
-#### Scenario: Cliente pide el detalle de una venta
-- **WHEN** un usuario con sólo `CLIENTE` vigente pide `GET /ventas/1`
-- **THEN** la respuesta es 403
-
 ### Requirement: El grupo abierto no pide sesión
 Las rutas del grupo abierto marcadas «Cualquiera» SHALL responder sin cookie con su código normal, y MUST NOT responder 401 ni 403 por falta de sesión o por el cambio de contraseña pendiente.
 
@@ -113,3 +106,33 @@ Un parámetro de ruta que no es un entero válido SHALL responder 422 sin ejecut
 #### Scenario: Ruta protegida con sesión
 - **WHEN** un administrador con sesión pide `PATCH /editoriales/abc` con un cuerpo válido
 - **THEN** la respuesta es 422 y no se modifica ninguna editorial
+
+### Requirement: Detalle de venta protegido sin rol
+`GET /ventas/{id}` SHALL pertenecer al grupo protegido sin exigir ningún rol en la ruta: responde 401 sin sesión y 403 con el cambio de contraseña pendiente, y quién puede ver cada venta (personal o cliente dueño) lo decide la operación, no la ruta.
+
+#### Scenario: Clasificación del detalle de venta
+- **WHEN** se inspecciona el grupo de `GET /ventas/{id}`
+- **THEN** pertenece al grupo protegido, figura como «autenticado» en la clasificación y no declara ningún rol
+
+#### Scenario: Cliente dueño sin rol de personal
+- **WHEN** un usuario con sólo CLIENTE vigente pide el detalle de una venta de su cliente vinculado
+- **THEN** la respuesta es 200, no 403
+
+#### Scenario: Detalle sin sesión
+- **WHEN** se pide `GET /ventas/1` sin cookie
+- **THEN** la respuesta es 401
+
+### Requirement: Mis ventas sólo autenticada
+`GET /mis-ventas` SHALL pertenecer al grupo protegido y pedir sólo una sesión válida (RN-14): sin cookie responde 401, con el cambio de contraseña pendiente 403, y cualquier usuario autenticado sin el cambio pendiente es atendido, tenga o no un rol.
+
+#### Scenario: Clasificación de mis ventas
+- **WHEN** se inspecciona el grupo de `GET /mis-ventas`
+- **THEN** pertenece al grupo protegido, figura como «autenticado» y no declara ningún rol
+
+#### Scenario: Mis ventas con el cambio pendiente
+- **WHEN** un usuario con `debe_cambiar_password` verdadero pide `GET /mis-ventas` con su cookie
+- **THEN** la respuesta es 403
+
+#### Scenario: Mis ventas sin sesión
+- **WHEN** se pide `GET /mis-ventas` sin cookie
+- **THEN** la respuesta es 401
