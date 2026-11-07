@@ -235,7 +235,7 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 | ~~`scripts/seed.py` (`python -m scripts.seed`)~~ | `seed.py` en la raíz (`python seed.py`) | CHG-17 ✅ hecho |
 | ~~`libro.stock` editable, ISBN con UNIQUE común~~ | stock por movimientos, ISBN único entre vigentes | CHG-07, 08, 13 ✅ hecho |
 | Ventas escribe `libro.stock` sin dejar movimiento y puede vender libros dados de baja | usa el punto único de stock; un libro dado de baja da 409 | CHG-16 |
-| Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11 ✅ (rutas `/auth` hechas), 12 ✅ hecho (`requiere_rol`, grupos abierto/protegido), 14 (administración de usuarios) |
+| ~~Sin usuarios ni roles~~ | módulo `usuarios`, auth y autorización | CHG-06, 10, 11 ✅ (rutas `/auth` hechas), 12 ✅ hecho (`requiere_rol`, grupos abierto/protegido), 14 ✅ hecho (administración de usuarios y roles, `/eventos`) |
 | `GET /ventas/{id}` con `PERSONAL` provisorio | sin `requiere_rol`: decide el servicio (personal o cliente dueño; si no, 403) | CHG-16 |
 | Routers de catálogo, clientes y ventas divididos en `router_abierto` / `router`, y rutas clasificadas en `tests/matriz_acceso.py` | CHG-13, 15 y 16 conservan la división y clasifican en la matriz sus rutas nuevas (la suite falla si falta una; CHG-15 no trae rutas nuevas: las seis de clientes ya estaban) | CHG-13 ✅ hecho (catálogo), 15 ✅ hecho (clientes), 16 |
 
