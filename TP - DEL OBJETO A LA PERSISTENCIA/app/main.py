@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
 
 
 def registrar_handlers(app: FastAPI) -> None:
-    # Red de seguridad: un IntegrityError que no pasó por traducir_integrity
+    # Red de seguridad: un IntegrityError que escapó sin pasar por el UoW
     # igual responde 409 (mensaje genérico por sqlstate), nunca 500 ni texto interno.
     @app.exception_handler(IntegrityError)
     async def integrity_error_handler(request: Request, exc: IntegrityError):
@@ -120,6 +120,8 @@ for modulo in (editoriales, generos, autores, libros):
     protegido.include_router(modulo.router)
 for modulo in (clientes, ventas):
     protegido.include_router(modulo.router)
+# CHG-16: `/mis-ventas` (sólo pide sesión, RN-14) vive en el protegido pero no cuelga de `/ventas`.
+protegido.include_router(ventas.router_propio)
 # CHG-14: administración de usuarios e historial de seguridad (solo ADMIN, declarado en cada router).
 protegido.include_router(usuarios_router)
 protegido.include_router(eventos_router)

@@ -534,3 +534,31 @@ async def test_un_movimiento_con_usuario_inexistente_da_conflicto_con_mensaje_pr
                 await uow.libros.registrar_movimiento(libro_id, 3, "Reposición", 999999)
     assert excinfo.value.mensaje == "El usuario indicado no existe."
     assert await _estado(sessionmaker_test, libro_id) == (0, [])  # el UoW revirtió el UPDATE también
+
+
+# ---- CHG-16 (Q1): el punto único devuelve también el precio vigente ----
+
+@pytest.mark.parametrize(("cantidad", "stock_final"), [(-2, 4), (3, 9)])
+async def test_registrar_movimiento_devuelve_el_precio_vigente_sin_lecturas_extra(sessionmaker_test, cantidad, stock_final):
+    from app.modules.libros.repository import LibroRepository
+
+    libro_id, usuario_id = await _preparar(sessionmaker_test, stock=6)
+    async with sessionmaker_test() as s:
+        with _contar_sentencias(sessionmaker_test) as sentencias:
+            resultado = await LibroRepository(s).registrar_movimiento(libro_id, cantidad, "Venta", usuario_id)
+        assert resultado.stock == stock_final
+        assert resultado.precio == Decimal("10.00")
+        # Sólo el UPDATE ... RETURNING y el INSERT del movimiento: el precio no cuesta otra consulta.
+        assert [q.split()[0] for q in sentencias] == ["UPDATE", "INSERT"]
+        await s.rollback()
+
+
+async def test_registrar_movimiento_devuelve_el_precio_actual_del_libro(sessionmaker_test):
+    from app.modules.libros.repository import LibroRepository
+
+    libro_id, usuario_id = await _preparar(sessionmaker_test, stock=6)
+    async with sessionmaker_test() as s:
+        await s.execute(text("UPDATE libro SET precio = 25000.00 WHERE id = :i"), {"i": libro_id})
+        resultado = await LibroRepository(s).registrar_movimiento(libro_id, -1, "Venta", usuario_id)
+        assert resultado.precio == Decimal("25000.00")
+        await s.rollback()

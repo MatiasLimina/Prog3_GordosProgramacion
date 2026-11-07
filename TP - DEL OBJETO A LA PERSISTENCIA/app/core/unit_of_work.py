@@ -75,8 +75,6 @@ class UnitOfWork:
             await self.session.rollback()
             if isinstance(error, IntegrityError):
                 # `from None`: el cliente nunca ve el texto de la base ni la constraint (RN-15).
-                # `commit_or_409` y `traducir_integrity` (errors.py) siguen para los módulos
-                # que todavía reciben la sesión; se borran en CHG-16 con el último consumidor.
                 raise Conflicto(mensaje_para(error, self.MENSAJES)) from None
             if error is not exc:
                 raise error  # falló el commit: se revierte y se deja pasar sin traducir

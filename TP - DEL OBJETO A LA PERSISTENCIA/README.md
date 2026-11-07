@@ -141,7 +141,7 @@ Evidencia: [docs/evidencia_c07.md](docs/evidencia_c07.md) — sentencias SQL y c
 app/
 ├── main.py            # app, lifespan y routers
 ├── models.py          # registro central de modelos (para Alembic)
-├── core/              # config, database, pagination, errors, tipos
+├── core/              # config, database, paginacion, repository, unit_of_work, errors, tipos
 └── modules/<módulo>/  # models.py, schemas.py, service.py, router.py
 migrations/            # Alembic (async)
 seed.py                # carga inicial (raíz)

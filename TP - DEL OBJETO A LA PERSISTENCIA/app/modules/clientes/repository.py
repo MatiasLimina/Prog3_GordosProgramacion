@@ -27,6 +27,11 @@ class ClienteRepository(BaseRepository[Cliente]):
         )
         return (await self.session.execute(consulta)).scalar_one_or_none()
 
+    async def get_por_usuario(self, usuario_id: int) -> Cliente | None:
+        """El cliente vinculado a ese usuario (`cliente.usuario_id` es UNIQUE), o `None` si no tiene."""
+        consulta = self._consulta_base().where(Cliente.usuario_id == usuario_id)
+        return (await self.session.execute(consulta)).scalar_one_or_none()
+
 
 class PerfilClienteRepository(BaseRepository[PerfilCliente]):
     def __init__(self, session: AsyncSession) -> None:
