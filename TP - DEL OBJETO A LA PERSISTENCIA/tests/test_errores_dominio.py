@@ -119,3 +119,82 @@ async def test_la_app_las_responde_con_detail_y_sin_otras_claves(ruta, estado, d
 
 def test_la_app_real_tiene_registrado_el_handler_de_no_encontrado():
     assert NoEncontrado in app_real.exception_handlers
+
+
+# ---- CHG-14: administración de usuarios y roles (design D8) ----
+
+def test_usuario_no_encontrado_es_no_encontrado_y_no_es_conflicto():
+    from app.core.errors import UsuarioNoEncontrado
+
+    error = UsuarioNoEncontrado(7)
+    assert isinstance(error, NoEncontrado)
+    assert not isinstance(error, Conflicto)
+    assert error.usuario_id == 7
+    assert error.mensaje == "El usuario no existe."
+
+
+def test_rol_no_vigente_es_no_encontrado_y_guarda_usuario_y_rol():
+    from app.core.errors import RolNoVigente
+
+    error = RolNoVigente(7, "VENDEDOR")
+    assert isinstance(error, NoEncontrado)
+    assert not isinstance(error, Conflicto)
+    assert (error.usuario_id, error.rol) == (7, "VENDEDOR")
+    assert error.mensaje == "El usuario no tiene ese rol vigente."
+
+
+def test_autorrevocacion_de_admin_es_conflicto_y_no_es_sin_permiso():
+    from app.core.errors import AutoRevocacionAdmin, SinPermiso
+
+    error = AutoRevocacionAdmin()
+    assert isinstance(error, Conflicto)
+    assert not isinstance(error, SinPermiso)
+    assert error.mensaje == "No podés revocarte tu propio rol de administrador."
+
+
+def test_sin_administradores_es_conflicto_con_su_mensaje():
+    from app.core.errors import SinAdministradores
+
+    error = SinAdministradores()
+    assert isinstance(error, Conflicto)
+    assert error.mensaje == "No se puede revocar: el sistema quedaría sin administradores vigentes."
+
+
+def test_admin_con_vencimiento_es_peticion_invalida_y_no_conflicto():
+    from app.core.errors import AdminConVencimiento, PeticionInvalida
+
+    error = AdminConVencimiento()
+    assert isinstance(error, PeticionInvalida)
+    assert not isinstance(error, Conflicto)
+    assert error.mensaje == "El rol ADMIN no puede tener vencimiento."
+
+
+@pytest.mark.parametrize(
+    ("clase", "args", "estado", "detalle"),
+    [
+        ("UsuarioNoEncontrado", (7,), 404, "El usuario no existe."),
+        ("RolNoVigente", (7, "VENDEDOR"), 404, "El usuario no tiene ese rol vigente."),
+        ("AutoRevocacionAdmin", (), 409, "No podés revocarte tu propio rol de administrador."),
+        (
+            "SinAdministradores",
+            (),
+            409,
+            "No se puede revocar: el sistema quedaría sin administradores vigentes.",
+        ),
+        ("AdminConVencimiento", (), 422, "El rol ADMIN no puede tener vencimiento."),
+    ],
+)
+async def test_la_app_responde_las_excepciones_de_usuarios_con_detail(clase, args, estado, detalle):
+    import app.core.errors as errores
+
+    app = FastAPI()
+    registrar_handlers(app)
+
+    @app.get("/x")
+    async def x():
+        raise getattr(errores, clase)(*args)
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/x")
+    assert r.status_code == estado
+    assert r.json() == {"detail": detalle}
