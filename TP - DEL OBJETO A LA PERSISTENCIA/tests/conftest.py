@@ -6,7 +6,7 @@ base, así no hay credenciales nuevas en ningún archivo. Crear la base una vez 
 
 Si la base no responde, los tests marcados `db` se SALTEAN. Con REQUIRE_TEST_DB=1
 la falta de base es un FALLO (para CI o para no engañarse con skips silenciosos).
-Sólo los errores de conexión causan skip; cualquier otro error (esquema, TRUNCATE)
+Sólo los errores de conexión causan skip; cualquier otro error (esquema, vaciado de tablas)
 hace fallar el test.
 """
 import asyncio
@@ -111,13 +111,35 @@ async def esquema_test():
     return url
 
 
+# Todas las secuencias del esquema vuelven a 1 (lo mismo que `RESTART IDENTITY`).
+_REINICIAR_SECUENCIAS = text(
+    "SELECT setval(c.oid, 1, false) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+    "WHERE c.relkind = 'S' AND n.nspname = 'public'"
+)
+
+
+async def _vaciar_tablas(conn) -> None:
+    """Deja todas las tablas vacías y los ids desde 1.
+
+    Con `DELETE` y no con `TRUNCATE`: `TRUNCATE` crea archivos nuevos para cada tabla, índice
+    y secuencia, y en el volumen de Docker Desktop (WSL2) eso cuesta ~3,6 s por test; con las
+    pocas filas que deja un test, `DELETE` tarda ~70 ms. `session_replication_role = replica`
+    apaga los disparadores sólo dentro de esta transacción: el de sólo agregado de
+    `movimiento_stock` (RN-12) rechaza el `DELETE`, y sin las FK el orden de borrado no importa.
+    Requiere superusuario (el usuario del Postgres de `docker-compose.yml` lo es).
+    """
+    await conn.execute(text("SET LOCAL session_replication_role = replica"))
+    for tabla in reversed(SQLModel.metadata.sorted_tables):
+        await conn.execute(text(f'DELETE FROM "{tabla.name}"'))
+    await conn.execute(_REINICIAR_SECUENCIAS)
+
+
 @pytest.fixture
 async def sessionmaker_test(esquema_test):
     engine = create_async_engine(esquema_test, poolclass=NullPool, connect_args={"timeout": 3})
     # Aislamiento: cada test arranca con tablas vacías e ids desde 1.
-    tablas = ", ".join(f'"{t.name}"' for t in SQLModel.metadata.sorted_tables)
     async with engine.begin() as conn:
-        await conn.execute(text(f"TRUNCATE {tablas} RESTART IDENTITY CASCADE"))
+        await _vaciar_tablas(conn)
     yield async_sessionmaker(engine, expire_on_commit=False)
     await engine.dispose()
 
