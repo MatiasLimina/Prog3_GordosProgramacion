@@ -1,7 +1,8 @@
 """Rutas HTTP de autenticación: construyen el UoW, llaman al servicio y devuelven el contrato.
 
 Sin lógica de negocio: los errores son excepciones de dominio que traducen los handlers de
-`app/main.py`. CHG-14 agrega acá su propio `router` (`/usuarios`, `/eventos`).
+`app/main.py`. `auth_router` es el de CHG-11; `router` (`/usuarios`) y `eventos_router` (`/eventos`)
+son la administración de usuarios de CHG-14, ambos solo-ADMIN y montados en el grupo protegido.
 """
 from typing import Annotated
 
@@ -9,15 +10,31 @@ from fastapi import APIRouter, Depends, Request, Response
 
 from app.core.dependencies import (
     NOMBRE_COOKIE,
+    SOLO_ADMIN,
     ParametrosSeguridad,
     UsuarioActual,
+    UsuarioAdmin,
     get_parametros_seguridad,
     get_usuario_actual,
     proveedor_uow,
     proveedor_uow_sesion_propia,
 )
+from app.core.paginacion import Page, ParametrosPagina, paginacion_params
+from app.core.tipos import IdPath
 from app.modules.usuarios import service
-from app.modules.usuarios.schemas import AuthYoRead, CambioPasswordCreate, LoginCreate, LoginRead, RegistroCreate, UsuarioRead
+from app.modules.usuarios.schemas import (
+    AsignacionRolCreate,
+    AsignacionRolRead,
+    AuthYoRead,
+    CambioPasswordCreate,
+    EventoSeguridadRead,
+    LoginCreate,
+    LoginRead,
+    RegistroCreate,
+    Rol,
+    UsuarioCreate,
+    UsuarioRead,
+)
 from app.modules.usuarios.unit_of_work import IntentosUoW, UsuariosUoW
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -83,3 +100,43 @@ async def cambiar_password(
 ) -> dict[str, str]:
     await service.cambiar_password(uow, usuario, datos, seg)
     return {"mensaje": "Contraseña actualizada"}
+
+
+# ---------------------------------------------------------------------------
+# Administración de usuarios (CHG-14). Solo ADMIN: la dependencia `SOLO_ADMIN` va en el router y
+# los handlers que necesitan al actor reciben `UsuarioAdmin` (la misma función: FastAPI la
+# resuelve una sola vez por petición). Se montan en el grupo protegido de `app/main.py`.
+# ---------------------------------------------------------------------------
+router = APIRouter(prefix="/usuarios", tags=["usuarios"], dependencies=[Depends(SOLO_ADMIN)])
+eventos_router = APIRouter(prefix="/eventos", tags=["eventos"], dependencies=[Depends(SOLO_ADMIN)])
+
+
+@router.post("/", response_model=UsuarioRead, status_code=201)
+async def alta_de_personal(
+    datos: UsuarioCreate, actor: UsuarioAdmin, uow: UsuariosUoWDep, seg: SeguridadDep
+) -> UsuarioRead:
+    return await service.dar_de_alta_personal(uow, datos, actor, seg)
+
+
+@router.get("/{usuario_id}/roles", response_model=list[AsignacionRolRead])
+async def listar_roles(usuario_id: IdPath, uow: UsuariosUoWDep) -> list[AsignacionRolRead]:
+    return await service.listar_roles(uow, usuario_id)
+
+
+@router.post("/{usuario_id}/roles", response_model=AsignacionRolRead, status_code=201)
+async def asignar_rol(
+    usuario_id: IdPath, datos: AsignacionRolCreate, actor: UsuarioAdmin, uow: UsuariosUoWDep
+) -> AsignacionRolRead:
+    return await service.asignar_rol(uow, usuario_id, datos, actor)
+
+
+@router.delete("/{usuario_id}/roles/{rol}", response_model=AsignacionRolRead)
+async def revocar_rol(usuario_id: IdPath, rol: Rol, actor: UsuarioAdmin, uow: UsuariosUoWDep) -> AsignacionRolRead:
+    return await service.revocar_rol(uow, usuario_id, rol, actor)
+
+
+@eventos_router.get("/", response_model=Page[EventoSeguridadRead])
+async def listar_eventos(
+    uow: UsuariosUoWDep, p: Annotated[ParametrosPagina, Depends(paginacion_params)]
+) -> Page[EventoSeguridadRead]:
+    return await service.listar_eventos(uow, p)

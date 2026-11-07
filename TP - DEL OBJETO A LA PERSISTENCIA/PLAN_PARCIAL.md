@@ -68,7 +68,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-11 | `auth-endpoints` | Matias | CHG-04, 08, 09a, 10 | mergeado (#53) |
 | CHG-12 | `autorizacion-grupos-rutas` | Matias | CHG-11 | mergeado (#54) |
 | CHG-13 | `catalogo-repos-uow` | Nico | CHG-04, 05, 08, 09b | mergeado (#56) |
-| CHG-14 | `usuarios-admin` | Nico | CHG-12 | pendiente |
+| CHG-14 | `usuarios-admin` | Nico | CHG-12 | mergeado (#60) |
 | CHG-15 | `clientes-repos-uow` | Nico | CHG-04, 05, 08 | mergeado (#58) |
 | CHG-16 | `ventas-transaccional` | Matias | CHG-12, 13, 15 | pendiente |
 | CHG-17 | `seed-parcial` | Lauti (lo tomó Matias) | CHG-08, CHG-10 | mergeado (#57) |
@@ -294,7 +294,8 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 #### CHG-14 · `usuarios-admin` — Nico (Ej5 + RN-16)
 - **Entregables:**
   - `POST /usuarios`: alta de personal con contraseña provisoria y `debe_cambiar_password=true`.
-  - `GET`, `POST` y `DELETE` de `/usuarios/{id}/roles`. Revocar escribe `revocada_en`; reasignar un rol vencido cierra la fila anterior y abre una nueva.
+  - `GET /usuarios/{id}/roles` (historial), `POST /usuarios/{id}/roles` y `DELETE /usuarios/{id}/roles/{rol}` (ruta de la consigna; antes decía `DELETE /usuarios/{id}/roles`). Revocar escribe `revocada_en` y no borra; reasignar un rol vencido cierra la fila anterior con `revocada_en = vence_en` (no `now()`: nadie la revocó, venció) y abre una nueva. `ADMIN` no lleva vencimiento (422, validado en el servicio).
+  - El alta de personal **no asigna rol** (acordado con Matias y Lauti): el rol se da después con `POST /usuarios/{id}/roles`.
   - RN-05: nadie se revoca su propio ADMIN y nunca quedan cero administradores vigentes (409).
   - `GET /eventos` paginado. Cada alta y cada cambio de rol deja un evento en la misma transacción.
   - Monta `/usuarios` y `/eventos` en el grupo protegido con `SOLO_ADMIN` (constante de `app/core/dependencies.py`) y agrega sus rutas a `tests/matriz_acceso.py`. Usa `SinPermiso` sólo para 403 (RN-05 es 409).

@@ -134,3 +134,38 @@ def test_schemas_de_salida_no_exponen_password_hash():
         roles_token=["CLIENTE"],
     )
     assert "password_hash" not in yo.model_dump()["usuario"]
+
+
+# ---- CHG-14: historial de seguridad y un solo tipo público de rol (design D10) ----
+
+def test_evento_seguridad_read_serializa_exactamente_sus_cuatro_campos_con_zona():
+    from app.modules.usuarios.models import EventoSeguridad
+    from app.modules.usuarios.schemas import EventoSeguridadRead
+
+    evento = EventoSeguridad(
+        id=1,
+        cuando=datetime(2026, 11, 7, 12, 0, tzinfo=timezone.utc),
+        actor="SISTEMA",
+        accion="Carga de los datos iniciales",
+    )
+    salida = EventoSeguridadRead.model_validate(evento)
+    assert set(salida.model_dump()) == {"id", "cuando", "actor", "accion"}
+    assert salida.cuando.utcoffset() is not None
+    assert (salida.actor, salida.accion) == ("SISTEMA", "Carga de los datos iniciales")
+
+
+def test_rol_es_publico_y_tiene_exactamente_los_tres_roles():
+    from typing import get_args
+
+    from app.modules.usuarios.schemas import Rol
+
+    assert set(get_args(Rol)) == {"ADMIN", "VENDEDOR", "CLIENTE"}
+
+
+def test_los_tres_contratos_con_roles_comparten_el_tipo_rol():
+    from app.modules.usuarios.schemas import AsignacionRolRead, Rol
+
+    assert AsignacionRolCreate.model_fields["rol"].annotation == Rol
+    assert AsignacionRolRead.model_fields["rol"].annotation == Rol
+    assert AuthYoRead.model_fields["roles_vigentes"].annotation == list[Rol]
+    assert AuthYoRead.model_fields["roles_token"].annotation == list[Rol]

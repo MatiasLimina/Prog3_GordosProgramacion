@@ -175,6 +175,63 @@ class DemasiadosIntentos(Exception):
         self.retry_after = retry_after
 
 
+class UsuarioNoEncontrado(NoEncontrado):
+    """El usuario de la ruta no existe (404 con «El usuario no existe.»).
+
+    Es una excepción de dominio: no conoce HTTP. La lanzan la administración de usuarios y el
+    repositorio de asignaciones (cuando la FK de la asignación dice que el usuario no existe,
+    CHG-14); CHG-16 la puede reutilizar, igual que `LibroNoEncontrado`.
+    """
+
+    def __init__(self, usuario_id: int) -> None:
+        super().__init__("El usuario no existe.")
+        self.usuario_id = usuario_id
+
+
+class RolNoVigente(NoEncontrado):
+    """El usuario existe pero no tiene ese rol vigente (404 con «El usuario no tiene ese rol vigente.»).
+
+    Es una excepción de dominio: no conoce HTTP. El rol vigente es el recurso de la ruta de la
+    revocación; si no hay, no existe: no es un choque con lo guardado.
+    """
+
+    def __init__(self, usuario_id: int, rol: str) -> None:
+        super().__init__("El usuario no tiene ese rol vigente.")
+        self.usuario_id = usuario_id
+        self.rol = rol
+
+
+class AutoRevocacionAdmin(Conflicto):
+    """Un ADMIN pidió revocarse su propio rol `ADMIN` (409, RN-05; nunca 403).
+
+    Es una excepción de dominio: no conoce HTTP.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("No podés revocarte tu propio rol de administrador.")
+
+
+class SinAdministradores(Conflicto):
+    """La revocación dejaría al sistema sin ningún `ADMIN` vigente (409, RN-05).
+
+    Es una excepción de dominio: no conoce HTTP.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("No se puede revocar: el sistema quedaría sin administradores vigentes.")
+
+
+class AdminConVencimiento(PeticionInvalida):
+    """Se pidió asignar `ADMIN` con `vence_en` (422): el rol `ADMIN` no vence (RN-05).
+
+    Es una excepción de dominio: no conoce HTTP. Es una regla de negocio y no del contrato de
+    asignación, que es genérico y no distingue roles.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("El rol ADMIN no puede tener vencimiento.")
+
+
 def _buscar_atributo(error: IntegrityError, nombre: str) -> str | None:
     """Busca un atributo en `orig` y, si no está, en `orig.__cause__`.
 

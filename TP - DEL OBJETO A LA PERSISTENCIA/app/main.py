@@ -25,7 +25,7 @@ from app.modules.editoriales import router as editoriales
 from app.modules.generos import router as generos
 from app.modules.health.router import router as health_router
 from app.modules.libros import router as libros
-from app.modules.usuarios.router import auth_router
+from app.modules.usuarios.router import auth_router, eventos_router, router as usuarios_router
 from app.modules.ventas import router as ventas
 
 
@@ -120,6 +120,9 @@ for modulo in (editoriales, generos, autores, libros):
     protegido.include_router(modulo.router)
 for modulo in (clientes, ventas):
     protegido.include_router(modulo.router)
+# CHG-14: administración de usuarios e historial de seguridad (solo ADMIN, declarado en cada router).
+protegido.include_router(usuarios_router)
+protegido.include_router(eventos_router)
 
 app.include_router(abierto)
 app.include_router(protegido)
