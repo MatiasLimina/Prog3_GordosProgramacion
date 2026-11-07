@@ -225,10 +225,10 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 |---|---|---|
 | ~~`app/core/config.py` con `DATABASE_URL` y `DB_ECHO`~~ | `Settings` con `POSTGRES_*`, `SQL_ECHO` y recursos en el lifespan | CHG-03 ✅ hecho |
 | ~~`health` con `router.py` y `schemas.py`~~ | sólo `router.py` | CHG-03 ✅ hecho |
-| Servicios que reciben `AsyncSession` (clientes, ventas; el catálogo ya migró) | reciben el UoW; repositorios por entidad | CHG-04 (base), 13 ✅ hecho (catálogo), 15, 16 |
-| `app/core/pagination.py` con `limit` / `offset` | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 ✅ hecho (el catálogo ya migró en CHG-13 ✅; el viejo queda para clientes (15) y ventas (16)) |
-| `app/core/errors.py` (`commit_or_409` / `traducir_integrity` reciben la sesión) | el UoW lanza `Conflicto` (con `mensaje_para`) y `main.py` lo pasa a 409; `commit_or_409` / `traducir_integrity` quedan sólo para clientes y ventas hasta CHG-15/16 (catálogo ya migrado, CHG-13 ✅) | CHG-04, 13 ✅ (catálogo), 15, 16 |
-| `test/*.http` con los casos C-01 a C-08 del TP | casos C-01 a C-16 del parcial (otra numeración y otro significado); desde CHG-13 los listados del catálogo usan el envoltorio (`page`/`size`) y las escrituras piden sesión, y los `.http` se ajustan en CHG-18 | CHG-18 |
+| Servicios que reciben `AsyncSession` (ventas; el catálogo y clientes ya migraron) | reciben el UoW; repositorios por entidad | CHG-04 (base), 13 ✅ hecho (catálogo), 15 ✅ hecho (clientes), 16 |
+| `app/core/pagination.py` con `limit` / `offset` | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 ✅ hecho (el catálogo ya migró en CHG-13 ✅ y clientes en CHG-15 ✅; el viejo queda para ventas (16)) |
+| `app/core/errors.py` (`commit_or_409` / `traducir_integrity` reciben la sesión) | el UoW lanza `Conflicto` (con `mensaje_para`) y `main.py` lo pasa a 409; `commit_or_409` / `traducir_integrity` quedan sólo para ventas hasta CHG-16 (catálogo y clientes ya migrados, CHG-13 ✅ y CHG-15 ✅) | CHG-04, 13 ✅ (catálogo), 15 ✅ (clientes), 16 |
+| `test/*.http` con los casos C-01 a C-08 del TP | casos C-01 a C-16 del parcial (otra numeración y otro significado); desde CHG-13 los listados del catálogo y desde CHG-15 los de clientes usan el envoltorio (`page`/`size`), las escrituras del catálogo piden sesión y el 409 de correo repetido de clientes dice «correo»; los `.http` se ajustan en CHG-18 | CHG-18 |
 | ~~`tests/` con un conftest que deriva `libreria_test` de `DATABASE_URL`; `env.example` con `DATABASE_URL`~~ | deriva de `Settings` / `POSTGRES_*` | CHG-03 ✅ hecho |
 | `test/libros.http` y `test/ventas.http` mencionan `DB_ECHO=true` | `SQL_ECHO=true` | CHG-18 |
 | ~~Semáforo de bcrypt: `BCRYPT_MAX_CONCURRENTES` ya está en `Settings`, pero el `asyncio.Semaphore` todavía no se crea~~ | el lifespan crea el semáforo y `security.py` lo usa | CHG-10 ✅ hecho |
@@ -237,7 +237,7 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 | Ventas escribe `libro.stock` sin dejar movimiento y puede vender libros dados de baja | usa el punto único de stock; un libro dado de baja da 409 | CHG-16 |
 | Sin usuarios ni roles | módulo `usuarios`, auth y autorización | CHG-06, 10, 11 ✅ (rutas `/auth` hechas), 12 ✅ hecho (`requiere_rol`, grupos abierto/protegido), 14 (administración de usuarios) |
 | `GET /ventas/{id}` con `PERSONAL` provisorio | sin `requiere_rol`: decide el servicio (personal o cliente dueño; si no, 403) | CHG-16 |
-| Routers de catálogo, clientes y ventas divididos en `router_abierto` / `router`, y rutas clasificadas en `tests/matriz_acceso.py` | CHG-13, 15 y 16 conservan la división y agregan sus rutas a la matriz (la suite falla si falta una) | CHG-13 ✅ hecho (catálogo), 15, 16 |
+| Routers de catálogo, clientes y ventas divididos en `router_abierto` / `router`, y rutas clasificadas en `tests/matriz_acceso.py` | CHG-13, 15 y 16 conservan la división y clasifican en la matriz sus rutas nuevas (la suite falla si falta una; CHG-15 no trae rutas nuevas: las seis de clientes ya estaban) | CHG-13 ✅ hecho (catálogo), 15 ✅ hecho (clientes), 16 |
 
 ## 10. Git
 
