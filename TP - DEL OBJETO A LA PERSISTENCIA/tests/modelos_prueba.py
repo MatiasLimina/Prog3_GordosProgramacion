@@ -1,6 +1,6 @@
 """Modelos sólo de test, fuera de `SQLModel.metadata`.
 
-Tienen su propio `registry()`: así el `TRUNCATE` de `tests/conftest.py` y el autogenerate
+Tienen su propio `registry()`: así el vaciado de tablas de `tests/conftest.py` y el autogenerate
 de Alembic no ven sus tablas. Cada test que las necesita las crea y las borra con SQL
 explícito (nunca `create_all`; el esquema real sólo se crea con Alembic).
 """
