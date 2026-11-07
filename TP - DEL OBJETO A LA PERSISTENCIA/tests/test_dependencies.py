@@ -90,3 +90,12 @@ async def test_el_uow_llega_sin_bloque_abierto_y_el_router_no_confirma():
     _, a, b = visto[0]
     assert a.session.info == {} and b.session.info == {}  # ningún bloque abierto
     assert (sesiones[0].commits, sesiones[0].rollbacks) == (0, 0)
+
+
+# ---- CHG-16 (Q6): una sola definición de «personal» ----
+
+def test_roles_personal_es_vendedor_y_admin_y_lo_usa_la_dependencia_personal():
+    from app.core.dependencies import PERSONAL, ROLES_PERSONAL
+
+    assert ROLES_PERSONAL == frozenset({"VENDEDOR", "ADMIN"})
+    assert PERSONAL.roles == ROLES_PERSONAL

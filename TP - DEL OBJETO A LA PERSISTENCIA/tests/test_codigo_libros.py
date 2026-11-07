@@ -1,6 +1,6 @@
 """Inspección del código de los módulos migrados (sin base): la arquitectura Router -> Service -> UoW -> Repository.
 
-Vale para el catálogo (CHG-13: `libros`, `editoriales`, `generos` y `autores`), `clientes` (CHG-15) y `usuarios` (CHG-14; el auth de CHG-11 ya cumplía lo mismo). El negocio informa con excepciones de
+Vale para el catálogo (CHG-13: `libros`, `editoriales`, `generos` y `autores`), `clientes` (CHG-15), `ventas` (CHG-16) y `usuarios` (CHG-14; el auth de CHG-11 ya cumplía lo mismo). El negocio informa con excepciones de
 dominio (nunca `HTTPException`), el repositorio no confirma, el servicio ya no confirma ni pagina
 con el módulo viejo y el router no toca la sesión. Se mira el árbol sintáctico y no el texto, así
 un comentario que nombre `HTTPException` no cuenta.
@@ -12,7 +12,7 @@ import pytest
 
 MODULOS = Path(__file__).resolve().parent.parent / "app" / "modules"
 CATALOGO = ["libros", "editoriales", "generos", "autores"]
-MIGRADOS = CATALOGO + ["clientes", "usuarios"]
+MIGRADOS = CATALOGO + ["clientes", "ventas", "usuarios"]
 
 
 def _nombres(modulo: str, archivo: str) -> set[str]:
@@ -60,3 +60,13 @@ def test_los_mensajes_de_409_viven_solo_en_el_uow(modulo):
 @pytest.mark.parametrize("modulo", MIGRADOS)
 def test_los_servicios_migrados_reciben_el_uow_y_no_la_sesion(modulo):
     assert "AsyncSession" not in _nombres(modulo, "service.py")
+
+
+def test_lo_viejo_del_core_ya_no_existe():
+    """CHG-16 retiró con su último consumidor el paginador de limit/offset y los ayudantes con sesión."""
+    core = MODULOS.parent / "core"
+    assert not (core / "pagination.py").exists()
+    errores = ast.parse((core / "errors.py").read_text(encoding="utf-8"))
+    definidos = {n.name for n in ast.walk(errores) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    assert "commit_or_409" not in definidos
+    assert "traducir_integrity" not in definidos

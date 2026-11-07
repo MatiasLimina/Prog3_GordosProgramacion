@@ -25,7 +25,7 @@ from pydantic import SecretStr
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.database import get_session
-from app.core.errors import NoAutenticado, SinPermiso
+from app.core.errors import MENSAJE_SIN_PERMISO, NoAutenticado, SinPermiso  # noqa: F401  (se reexporta)
 from app.core.security import TokenInvalido, verificar_token
 from app.core.unit_of_work import UnitOfWork
 from app.modules.usuarios.repository import AsignacionRolRepository, UsuarioRepository
@@ -180,7 +180,6 @@ async def get_usuario_actual(
     return actual
 
 
-MENSAJE_SIN_PERMISO = "No tenés permiso para esta operación."
 MENSAJE_CAMBIO_PENDIENTE = "Tenés que cambiar la contraseña antes de continuar."
 
 # Los roles que existen (CHECK de `asignacion_rol`): sirve para que un typo en un router
@@ -225,8 +224,11 @@ def requiere_rol(*roles: str) -> Callable[..., Awaitable[UsuarioActual]]:
     return _requiere
 
 
+# Quién es «personal» (RN-04): la ruta (`PERSONAL`) y el servicio de ventas comparten esta definición.
+ROLES_PERSONAL = frozenset({"VENDEDOR", "ADMIN"})
+
 SOLO_ADMIN = requiere_rol("ADMIN")
-PERSONAL = requiere_rol("VENDEDOR", "ADMIN")
+PERSONAL = requiere_rol(*ROLES_PERSONAL)
 
 UsuarioAdmin = Annotated[UsuarioActual, Depends(SOLO_ADMIN)]
 UsuarioPersonal = Annotated[UsuarioActual, Depends(PERSONAL)]

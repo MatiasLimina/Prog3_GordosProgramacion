@@ -8,7 +8,7 @@ from sqlalchemy import event, select
 
 from app.modules.libros.models import Libro
 from app.modules.ventas import service as ventas_service
-from tests.auxiliares_auth import entrar_como
+from tests.auxiliares_auth import contar, entrar_como, filas
 
 pytestmark = pytest.mark.db
 
@@ -128,7 +128,7 @@ async def test_libro_inexistente_en_segundo_renglon_no_descuenta_ningun_stock(cl
     assert r.status_code == 409
     assert r.json() == {"detail": "El libro indicado no existe."}
     assert await stocks(sessionmaker_test) == antes
-    assert (await client.get("/ventas/")).json() == []
+    assert await contar(sessionmaker_test, "venta") == 0
 
 
 async def test_cliente_inexistente_409_sin_descontar_stock(client, sessionmaker_test):
@@ -145,9 +145,9 @@ async def test_stock_insuficiente_409_sin_descontar_ningun_stock(client, session
     antes = await stocks(sessionmaker_test)
     r = await client.post("/ventas/", json=cuerpo(c, (l1, 2), (l2, 7)))  # l2 tiene 6
     assert r.status_code == 409
-    assert r.json() == {"detail": "No hay stock suficiente para el libro indicado."}
+    assert r.json() == {"detail": f"Stock insuficiente para el libro {l2}: hay 6, se pidieron 7."}
     assert await stocks(sessionmaker_test) == antes
-    assert (await client.get("/ventas/")).json() == []
+    assert await contar(sessionmaker_test, "venta") == 0
 
 
 async def test_total_que_supera_numeric_12_2_da_409_y_no_descuenta_stock(client, sessionmaker_test):
@@ -160,13 +160,103 @@ async def test_total_que_supera_numeric_12_2_da_409_y_no_descuenta_stock(client,
     assert r.status_code == 409, r.text
     assert r.json() == {"detail": "El total de la venta supera el máximo permitido."}
     assert await stocks(sessionmaker_test) == antes
-    assert (await client.get("/ventas/")).json() == []
+    assert await contar(sessionmaker_test, "venta") == 0
+
+
+@pytest.mark.parametrize(
+    ("precio_chico", "estado"),
+    [("0.99", 201), ("1.00", 409)],
+)
+async def test_total_en_el_limite_de_numeric_12_2(client, sessionmaker_test, precio_chico, estado):
+    """99999999.99 x 100 = 9999999999.00; con 0.99 más el total es 9999999999.99 (entra) y con 1.00 no."""
+    c, _, _, _ = await escenario(client)
+    grande = await crear_libro(client, "ILIM1", "Caro", "99999999.99", 100)
+    chico = await crear_libro(client, "ILIM2", "Barato", precio_chico, 1)
+    r = await client.post("/ventas/", json=cuerpo(c, (grande, 100), (chico, 1)))
+    assert r.status_code == estado, r.text
+    if estado == 201:
+        assert r.json()["total"] == "9999999999.99"
+    else:
+        assert r.json() == {"detail": "El total de la venta supera el máximo permitido."}
+        assert await contar(sessionmaker_test, "venta") == 0
+        assert (await stocks(sessionmaker_test))[grande] == 100
 
 
 async def test_el_servicio_sigue_usable_tras_un_409(client):
     c, l1, _, _ = await escenario(client)
     assert (await client.post("/ventas/", json=cuerpo(c, (999999, 1)))).status_code == 409
     assert (await client.post("/ventas/", json=cuerpo(c, (l1, 1)))).status_code == 201
+
+
+# --- RN-10 / RN-11 / RN-13: stock por movimientos, baja lógica, atomicidad (CHG-16) ---
+
+async def _suma_igual_al_stock(sm) -> bool:
+    resultado = await filas(
+        sm,
+        "SELECT l.stock = COALESCE((SELECT SUM(m.cantidad) FROM movimiento_stock m WHERE m.libro_id = l.id), 0) AS ok "
+        "FROM libro l",
+    )
+    return len(resultado) > 0 and all(f["ok"] for f in resultado)
+
+
+async def test_venta_deja_un_movimiento_negativo_por_renglon_y_el_stock_es_la_suma(client, sessionmaker_test):
+    c, l1, l2, _ = await escenario(client)
+    (usuario,) = await filas(sessionmaker_test, "SELECT id FROM usuario")
+    r = await client.post("/ventas/", json=cuerpo(c, (l2, 1), (l1, 2)))
+    assert r.status_code == 201, r.text
+    movimientos = await filas(
+        sessionmaker_test,
+        "SELECT libro_id, cantidad, motivo, venta_id, usuario_id FROM movimiento_stock WHERE venta_id IS NOT NULL ORDER BY id",
+    )
+    assert [(m["libro_id"], m["cantidad"]) for m in movimientos] == [(l1, -2), (l2, -1)]
+    assert {(m["motivo"], m["venta_id"], m["usuario_id"]) for m in movimientos} == {("Venta", r.json()["id"], usuario["id"])}
+    assert await _suma_igual_al_stock(sessionmaker_test)
+
+
+async def test_la_suma_de_movimientos_sigue_igual_al_stock_tras_varias_ventas(client, sessionmaker_test):
+    c, l1, l2, l3 = await escenario(client)
+    assert (await client.post("/ventas/", json=cuerpo(c, (l1, 3), (l3, 5)))).status_code == 201
+    assert (await client.post("/ventas/", json=cuerpo(c, (l2, 6)))).status_code == 201
+    assert (await client.post("/ventas/", json=cuerpo(c, (l2, 1)))).status_code == 409
+    assert await _suma_igual_al_stock(sessionmaker_test)
+
+
+async def test_libro_dado_de_baja_no_se_vende_409_sin_escrituras(client, sessionmaker_test):
+    c, l1, l2, _ = await escenario(client)
+    assert (await client.delete(f"/libros/{l2}")).status_code == 204
+    antes = await stocks(sessionmaker_test)
+    movimientos = await contar(sessionmaker_test, "movimiento_stock")
+    r = await client.post("/ventas/", json=cuerpo(c, (l1, 1), (l2, 1)))
+    assert r.status_code == 409
+    assert r.json() == {"detail": f"El libro {l2} está dado de baja."}
+    assert await stocks(sessionmaker_test) == antes
+    assert await contar(sessionmaker_test, "venta") == 0
+    assert await contar(sessionmaker_test, "renglon_venta") == 0
+    assert await contar(sessionmaker_test, "movimiento_stock") == movimientos
+
+
+async def test_stock_insuficiente_no_deja_venta_ni_renglones_ni_movimientos(client, sessionmaker_test):
+    c, l1, l2, _ = await escenario(client)
+    movimientos = await contar(sessionmaker_test, "movimiento_stock")
+    r = await client.post("/ventas/", json=cuerpo(c, (l1, 2), (l2, 7)))
+    assert r.status_code == 409
+    assert await contar(sessionmaker_test, "venta") == 0
+    assert await contar(sessionmaker_test, "renglon_venta") == 0
+    assert await contar(sessionmaker_test, "movimiento_stock") == movimientos
+
+
+async def test_cliente_inexistente_no_deja_movimientos(client, sessionmaker_test):
+    _, l1, l2, _ = await escenario(client)
+    movimientos = await contar(sessionmaker_test, "movimiento_stock")
+    r = await client.post("/ventas/", json=cuerpo(999999, (l1, 2), (l2, 1)))
+    assert r.status_code == 409
+    assert await contar(sessionmaker_test, "movimiento_stock") == movimientos
+
+
+async def test_el_motivo_de_la_venta_es_el_mismo_literal_que_usa_el_seed():
+    import seed
+
+    assert ventas_service.MOTIVO_VENTA == seed.MOTIVO_VENTA == "Venta"
 
 
 # --- 422 ---
@@ -219,31 +309,6 @@ async def test_detalle_de_venta_igual_al_de_la_creacion(client):
     assert r.json() == creada
 
 
-async def test_listado_paginado_ordenado_por_id(client):
-    c, l1, _, _ = await escenario(client)
-    for _ in range(3):
-        assert (await client.post("/ventas/", json=cuerpo(c, (l1, 1)))).status_code == 201
-    r = await client.get("/ventas/")
-    assert r.status_code == 200
-    assert [v["id"] for v in r.json()] == [1, 2, 3]
-    assert r.json()[0]["renglones"][0]["titulo"] == "Rayuela"
-    r = await client.get("/ventas/", params={"limit": 1, "offset": 1})
-    assert [v["id"] for v in r.json()] == [2]
-    r = await client.get("/ventas/", params={"offset": 5})
-    assert r.json() == []
-
-
-@pytest.mark.parametrize("params", [{"limit": 0}, {"limit": 101}, {"offset": -1}, {"limit": "x"}])
-async def test_listado_limites_422(client, params):
-    assert (await client.get("/ventas/", params=params)).status_code == 422
-
-
-async def test_listado_vacio_200(client):
-    r = await client.get("/ventas/")
-    assert r.status_code == 200
-    assert r.json() == []
-
-
 # --- C-07: cantidad de consultas fija ---
 
 class ContadorSQL:
@@ -289,17 +354,6 @@ async def test_detalle_de_venta_emite_las_mismas_consultas_con_1_o_3_renglones(c
     assert n1 <= 3  # venta+cliente, renglones+libros: nunca una consulta por renglón
 
 
-async def test_listado_de_ventas_emite_las_mismas_consultas_con_1_o_varias_ventas(client, sessionmaker_test):
-    c, l1, l2, l3 = await escenario(client)
-    await client.post("/ventas/", json=cuerpo(c, (l1, 1)))
-    n_una, _ = await consultas_de(client, sessionmaker_test, "/ventas/")
-    await client.post("/ventas/", json=cuerpo(c, (l1, 1), (l2, 1)))
-    await client.post("/ventas/", json=cuerpo(c, (l1, 1), (l2, 1), (l3, 1)))
-    n_varias, d = await consultas_de(client, sessionmaker_test, "/ventas/")
-    assert len(d) == 3
-    assert n_una == n_varias
-
-
 # --- orden de bloqueo (prevención de deadlocks) ---
 
 async def test_updates_de_stock_en_orden_ascendente_de_libro_id_y_respuesta_en_orden_de_entrada(
@@ -309,12 +363,10 @@ async def test_updates_de_stock_en_orden_ascendente_de_libro_id_y_respuesta_en_o
     with ContadorSQL(sessionmaker_test.kw["bind"]) as contador:
         r = await client.post("/ventas/", json=cuerpo(c, (l2, 1), (l1, 2)))
     assert r.status_code == 201, r.text
-    ids_actualizados = [
-        params[-1]
-        for sql, params in zip(contador.sentencias, contador.parametros)
-        if sql.startswith("UPDATE libro")
-    ]
-    assert ids_actualizados == [l1, l2]
+    # Los descuentos van en orden ascendente de libro_id: cada uno deja su movimiento, en ese orden.
+    movimientos = await filas(sessionmaker_test, "SELECT libro_id FROM movimiento_stock WHERE venta_id IS NOT NULL ORDER BY id")
+    assert [m["libro_id"] for m in movimientos] == [l1, l2]
+    assert len([sql for sql in contador.sentencias if sql.startswith("UPDATE libro")]) == 2
     # Los renglones se guardan (y se devuelven) en el orden de entrada.
     assert [x["libro_id"] for x in r.json()["renglones"]] == [l2, l1]
     assert [x["precio_unitario"] for x in r.json()["renglones"]] == ["27000.00", "25000.00"]

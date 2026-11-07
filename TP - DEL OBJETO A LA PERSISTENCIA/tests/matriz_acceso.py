@@ -9,7 +9,7 @@ Cada entrada es `(método, ruta) -> (grupo, acceso)`, con la ruta tal como la de
 - `CUALQUIERA`: no pide sesión (sólo en el grupo abierto);
 - `AUTENTICADO`: pide sesión (401 sin ella) pero ningún rol; en el abierto son `/auth/yo` y
   `/auth/cambiar-password` (no pasan por el control del cambio obligatorio), en el protegido
-  irá `/mis-ventas` (CHG-16);
+  están `/ventas/{venta_id}` y `/mis-ventas` (CHG-16);
 - un `frozenset` de roles: alguno de ellos vigente (`SOLO_ADMIN` / `PERSONAL`).
 """
 import re
@@ -72,8 +72,9 @@ MATRIZ: dict[tuple[str, str], tuple[str, str | frozenset[str]]] = {
     ("GET", "/clientes/{cliente_id}/ventas"): (PROTEGIDO, PERSONAL),
     ("POST", "/ventas/"): (PROTEGIDO, PERSONAL),
     ("GET", "/ventas/"): (PROTEGIDO, PERSONAL),
-    # PROVISORIO (D8): el estado final es protegido SIN rol y decide el servicio (CHG-16).
-    ("GET", "/ventas/{venta_id}"): (PROTEGIDO, PERSONAL),
+    # CHG-16: sin rol de ruta; decide el servicio (personal o cliente dueño; si no, 403).
+    ("GET", "/ventas/{venta_id}"): (PROTEGIDO, AUTENTICADO),
+    ("GET", "/mis-ventas"): (PROTEGIDO, AUTENTICADO),
 }
 
 

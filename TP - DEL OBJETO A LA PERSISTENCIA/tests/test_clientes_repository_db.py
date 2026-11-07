@@ -372,3 +372,41 @@ async def test_ningun_repositorio_confirma(sessionmaker_test, monkeypatch):
         assert confirmaciones == []
         await s.rollback()
     assert await _contar(sessionmaker_test, "cliente") == 0
+
+
+# ---- CHG-16: get_por_usuario (/mis-ventas) ----
+
+async def test_get_por_usuario_devuelve_el_cliente_vinculado_con_una_sola_sentencia(sessionmaker_test):
+    from app.modules.clientes.models import Cliente
+    from app.modules.clientes.repository import ClienteRepository
+    from app.modules.usuarios.models import Usuario
+
+    async with sessionmaker_test() as s:
+        u1 = Usuario(email="u1@example.com", nombre="Uno", password_hash="hash-no-real")
+        u2 = Usuario(email="u2@example.com", nombre="Dos", password_hash="hash-no-real")
+        s.add_all([u1, u2])
+        await s.flush()
+        s.add_all([
+            Cliente(nombre="Uno", email="u1@example.com", usuario_id=u1.id),
+            Cliente(nombre="Dos", email="u2@example.com", usuario_id=u2.id),
+        ])
+        await s.commit()
+        id1, id2 = u1.id, u2.id
+    async with sessionmaker_test() as s:
+        with _contar_sentencias(sessionmaker_test) as sentencias:
+            cliente = await ClienteRepository(s).get_por_usuario(id2)
+        assert cliente.email == "u2@example.com"
+        assert len(sentencias) == 1
+        assert (await ClienteRepository(s).get_por_usuario(id1)).email == "u1@example.com"
+
+
+async def test_get_por_usuario_sin_cliente_vinculado_es_none(sessionmaker_test):
+    from app.modules.clientes.repository import ClienteRepository
+    from app.modules.usuarios.models import Usuario
+
+    await _cliente(sessionmaker_test)  # un cliente sin usuario
+    async with sessionmaker_test() as s:
+        u = Usuario(email="solo@example.com", nombre="Solo", password_hash="hash-no-real")
+        s.add(u)
+        await s.commit()
+        assert await ClienteRepository(s).get_por_usuario(u.id) is None

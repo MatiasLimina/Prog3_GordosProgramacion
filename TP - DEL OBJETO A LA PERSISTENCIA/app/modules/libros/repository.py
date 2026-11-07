@@ -5,6 +5,7 @@ el alta del libro (`stock_inicial`), la reposición y las ventas pasan por ahí,
 `libro.stock`. Ningún repositorio confirma: confirmar es del UnitOfWork de quien llama.
 """
 from dataclasses import dataclass
+from decimal import Decimal
 
 from sqlalchemy import Select, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,9 +25,13 @@ from app.modules.libros.models import Libro, LibroAutor, MovimientoStock
 
 @dataclass(frozen=True)
 class ResultadoMovimiento:
-    """Lo que deja una escritura de stock: el stock resultante y el movimiento creado."""
+    """Lo que deja una escritura de stock: el stock resultante, el precio vigente y el movimiento creado.
+
+    `precio` es el del libro en la misma sentencia que bloquea la fila (una venta lo copia al renglón).
+    """
 
     stock: int
+    precio: Decimal
     movimiento: MovimientoStock
 
 
@@ -106,7 +111,7 @@ class LibroRepository(SoftDeleteRepository[Libro]):
         (|cantidad| > INT32_MAX) son errores de programación (`ValueError`, sin tocar la base).
         Hace `flush()` y NUNCA `commit()`: confirma el UoW de quien llama.
 
-        Devuelve el stock resultante y el movimiento (con `id` y `cuando` ya cargados). Rechaza con
+        Devuelve el stock resultante, el precio vigente y el movimiento (con `id` y `cuando` ya cargados). Rechaza con
         excepciones de dominio, sin escribir nada: `LibroNoEncontrado` (404 si nadie la traduce),
         `LibroDadoDeBaja`, `StockInsuficiente` y `StockExcedido` (409).
 
@@ -129,19 +134,20 @@ class LibroRepository(SoftDeleteRepository[Libro]):
             update(Libro)
             .where(Libro.id == libro_id, Libro.borrado_en.is_(None), limite)
             .values(stock=Libro.stock + cantidad)
-            .returning(Libro.stock)
+            .returning(Libro.stock, Libro.precio)
             .execution_options(synchronize_session=False)
         )
-        stock = resultado.scalar_one_or_none()
-        if stock is None:
+        fila = resultado.one_or_none()
+        if fila is None:
             await self._rechazar(libro_id, cantidad)
+        stock, precio = fila.stock, fila.precio
         self._sincronizar_libro_cargado(libro_id, stock)
         movimiento = MovimientoStock(
             libro_id=libro_id, cantidad=cantidad, motivo=motivo, usuario_id=usuario_id, venta_id=venta_id
         )
         self.session.add(movimiento)
         await self.session.flush()
-        return ResultadoMovimiento(stock=stock, movimiento=movimiento)
+        return ResultadoMovimiento(stock=stock, precio=precio, movimiento=movimiento)
 
     def _sincronizar_libro_cargado(self, libro_id: int, stock: int) -> None:
         """Deja el `Libro` ya cargado en la sesión (si lo hay) con el stock que devolvió la base.

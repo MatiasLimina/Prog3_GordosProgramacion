@@ -198,3 +198,57 @@ async def test_la_app_responde_las_excepciones_de_usuarios_con_detail(clase, arg
         r = await c.get("/x")
     assert r.status_code == estado
     assert r.json() == {"detail": detalle}
+
+
+# ---- CHG-16: ventas (design D4) ----
+
+def test_libro_inexistente_en_venta_es_conflicto_y_no_es_no_encontrado():
+    from app.core.errors import LibroInexistenteEnVenta
+
+    error = LibroInexistenteEnVenta(5)
+    assert isinstance(error, Conflicto)
+    assert not isinstance(error, NoEncontrado)
+    assert error.libro_id == 5
+    assert error.mensaje == "El libro indicado no existe."
+
+
+def test_total_excedido_es_conflicto_con_su_mensaje():
+    from app.core.errors import TotalExcedido
+
+    error = TotalExcedido()
+    assert isinstance(error, Conflicto)
+    assert error.mensaje == "El total de la venta supera el máximo permitido."
+
+
+def test_venta_no_encontrada_es_no_encontrado_y_no_es_conflicto():
+    from app.core.errors import VentaNoEncontrada
+
+    error = VentaNoEncontrada(9)
+    assert isinstance(error, NoEncontrado)
+    assert not isinstance(error, Conflicto)
+    assert error.venta_id == 9
+    assert error.mensaje == "La venta no existe."
+
+
+@pytest.mark.parametrize(
+    ("clase", "args", "estado", "detalle"),
+    [
+        ("LibroInexistenteEnVenta", (5,), 409, "El libro indicado no existe."),
+        ("TotalExcedido", (), 409, "El total de la venta supera el máximo permitido."),
+        ("VentaNoEncontrada", (9,), 404, "La venta no existe."),
+    ],
+)
+async def test_la_app_responde_las_excepciones_de_ventas_con_detail(clase, args, estado, detalle):
+    import app.core.errors as errores
+
+    app = FastAPI()
+    registrar_handlers(app)
+
+    @app.get("/x")
+    async def x():
+        raise getattr(errores, clase)(*args)
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/x")
+    assert r.status_code == estado
+    assert r.json() == {"detail": detalle}
