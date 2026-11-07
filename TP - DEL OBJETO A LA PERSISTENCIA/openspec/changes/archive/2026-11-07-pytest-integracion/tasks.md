@@ -29,13 +29,13 @@ Regla de RED para todo el change (design.md, D3): son tests de caracterización 
 ## 3. Verificación integral
 
 - [x] 3.1 Correr `pytest -q` completo y verificar que todo pasa con la cantidad de tests de la línea base más los nuevos; `git diff --stat -- app/ seed.py migrations/` vacío.
-- [ ] 3.2 Consultar al `advisor` (FINAL_DIFF) sobre `git diff main...HEAD` y resolver o reportar lo que marque antes de pedir revisión.
+- [x] 3.2 Consultar al `advisor` (FINAL_DIFF) sobre `git diff main...HEAD` y resolver o reportar lo que marque antes de pedir revisión.
 
 ## 4. Plan y documentación (mismo PR, AGENTS.md §10)
 
 - [x] 4.1 En `PLAN_PARCIAL.md`, sección CHG-19: reemplazar «Falta la atomicidad de RN-02 y lo que CHG-19 quiera agregar» por lo que agregó el change (fallas inyectadas de RN-02 en `tests/test_auth_registro_db.py` y el recorrido C-10→C-13 sobre el seed en `tests/test_integracion_recorrido_db.py`); verificar con `grep -n "CHG-19" PLAN_PARCIAL.md`.
-- [ ] 4.2 En `PLAN_PARCIAL.md` (tabla de seguimiento, sección 2), fila CHG-19 en `mergeado (#N)` con el número del PR; revisar que la «Transición» de `AGENTS.md` (§9) no quede desactualizada por este change (no nombra CHG-19: confirmar con `grep -n "CHG-19" AGENTS.md`).
-- [ ] 4.3 Commit `test(integracion): invariantes de stock y atomicidad` (sólo cuando Matias lo pida) y verificar `git status` limpio.
+- [x] 4.2 En `PLAN_PARCIAL.md` (tabla de seguimiento, sección 2), fila CHG-19 en `mergeado (#N)` con el número del PR; revisar que la «Transición» de `AGENTS.md` (§9) no quede desactualizada por este change (no nombra CHG-19: confirmar con `grep -n "CHG-19" AGENTS.md`).
+- [x] 4.3 Commit `test(integracion): invariantes de stock y atomicidad` (sólo cuando Matias lo pida) y verificar `git status` limpio.
 
 ## Workflow follow-up
 
