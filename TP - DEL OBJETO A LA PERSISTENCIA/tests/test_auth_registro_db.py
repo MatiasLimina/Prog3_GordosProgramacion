@@ -95,12 +95,16 @@ async def test_correo_de_cliente_que_ya_tiene_usuario_tambien_da_409(client, ses
         await s.flush()
         s.add(Cliente(nombre="Vero", email="vero@example.com", usuario_id=usuario.id))
         await s.commit()
+        usuario_id = usuario.id
 
     r = await registrar(client, "vero@example.com", "Vero 2")
 
     assert r.status_code == 409
     assert r.json() == {"detail": "Ya existe un cliente con ese correo."}
     assert await contar(sessionmaker_test, "usuario") == 1
+    assert await contar(sessionmaker_test, "asignacion_rol") == 0
+    cliente = (await filas(sessionmaker_test, "SELECT * FROM cliente"))[0]
+    assert (cliente["usuario_id"], cliente["nombre"], cliente["email"]) == (usuario_id, "Vero", "vero@example.com")
 
 
 @pytest.mark.parametrize(
@@ -157,3 +161,54 @@ async def test_un_cuerpo_invalido_no_llega_a_hashear_ni_a_abrir(client, monkeypa
     r = await client.post("/auth/registro", json={"email": "x@example.com", "nombre": "X", "password": "ñ" * 37})
     assert r.status_code == 422
     assert llamadas == []
+
+
+# ---- atomicidad: fallas inyectadas (RN-02) ----
+# Las pruebas de arriba fallan siempre por un IntegrityError de la base. Acá la falla es una
+# excepción propia del test, a mitad del bloque: el rollback tiene que ser del bloque entero.
+
+class FalloInyectado(Exception):
+    """Excepción propia del test: no se confunde con ninguna falla real de la app."""
+
+
+async def _falla(*args, **kwargs):
+    raise FalloInyectado("falla inyectada por el test")
+
+
+class _UsuarioReadQueFalla:
+    # Depende de cómo el servicio arma la respuesta: `registrar` llama a
+    # `UsuarioRead.model_validate(usuario)` por el nombre del módulo, dentro del bloque y
+    # después de las tres escrituras. Si un refactor cambia eso, este parche deja de aplicar
+    # y el test falla con un error claro (no pasa en falso).
+    @staticmethod
+    def model_validate(*args, **kwargs):
+        raise FalloInyectado("falla inyectada tras las tres escrituras")
+
+
+def _inyectar(monkeypatch, punto: str) -> None:
+    from app.modules.clientes.repository import ClienteRepository
+    from app.modules.usuarios import service
+    from app.modules.usuarios.repository import AsignacionRolRepository
+
+    if punto == "tras_usuario":
+        monkeypatch.setattr(AsignacionRolRepository, "add", _falla)
+    elif punto == "tras_asignacion":
+        monkeypatch.setattr(ClienteRepository, "add", _falla)
+    else:
+        monkeypatch.setattr(service, "UsuarioRead", _UsuarioReadQueFalla)
+
+
+@pytest.mark.parametrize("punto", ["tras_usuario", "tras_asignacion", "tras_las_tres"])
+async def test_una_falla_a_mitad_del_registro_no_deja_ninguna_fila(client, sessionmaker_test, monkeypatch, punto):
+    _inyectar(monkeypatch, punto)
+
+    with pytest.raises(FalloInyectado):
+        await registrar(client)
+
+    assert await _conteos(sessionmaker_test) == (0, 0, 0), f"{punto}: quedaron filas tras la falla"
+
+    # el correo queda libre: sin la falla, el mismo registro se completa
+    monkeypatch.undo()
+    r = await registrar(client)
+    assert r.status_code == 201, f"{punto}: el correo no quedó libre: {r.text}"
+    assert await _conteos(sessionmaker_test) == (1, 1, 1), f"{punto}: el reintento no dejó las tres filas"
