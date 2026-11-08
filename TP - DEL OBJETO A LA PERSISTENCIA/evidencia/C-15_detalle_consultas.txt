@@ -1,0 +1,83 @@
+C-15 · El detalle de una venta emite un número FIJO de consultas (sin N+1)
+===========================================================================
+Fecha:    2026-11-08
+Commit:   66847d1 (rama chore/entrega-zip; el código de la app no cambia en esta rama)
+Servidor: uvicorn app.main:app con SQL_ECHO=true; base cargada con "python seed.py"
+Pasos:    los de test/c15_detalle_consultas.http, en el mismo orden (login del administrador,
+          GET /ventas/1, POST /ventas/ con los libros 1 a 4 x 1 para el cliente 2, GET de la venta nueva)
+
+Cómo se repite:
+  1. python seed.py
+  2. SQL_ECHO=true en .env (o en el entorno) y uvicorn app.main:app
+  3. correr test/c15_detalle_consultas.http con REST Client y contar, en la consola, las sentencias
+     SQL que salen entre un pedido y la línea de acceso de uvicorn del siguiente.
+
+Cómo se cuenta: una sentencia es un SELECT/INSERT/UPDATE/DELETE que emite el motor. No se cuentan
+BEGIN (implicit), COMMIT, ROLLBACK ni las líneas de parámetros. uvicorn escribe la línea de acceso
+de un pedido DESPUÉS de sus consultas, así que las consultas de un pedido son las que están entre
+la línea de acceso anterior (exclusive) y la suya (inclusive).
+
+Resumen
+-------
+| Pedido                       | Renglones | Consultas del pedido | Consultas del detalle de la venta |
+|------------------------------|-----------|----------------------|-----------------------------------|
+| GET /ventas/1                | 2         | 4                    | 2                                 |
+| GET /ventas/2 (venta nueva)  | 4         | 4                    | 2                                 |
+
+Resultado: la MISMA cantidad con 2 y con 4 renglones. Las 2 consultas que no son del detalle
+son las de la sesión: el usuario (get_usuario_actual) y sus roles vigentes (requiere_rol); las
+hace el mismo usuario en los dos pedidos, así que las cifras son comparables. Las 2 del
+detalle son una por la venta con su cliente (joinedload) y una por los renglones con el libro de
+cada uno (selectinload + joinedload), sin importar cuántos renglones haya.
+
+(El login y el POST /ventas/ de la secuencia no se muestran: el login lleva cookies y el POST
+no es lo que se mide. Tampoco se muestra la línea de log del comprobante de la venta, que la
+BackgroundTask escribe después del POST.)
+
+Consola de uvicorn: GET /ventas/1 (venta del seed, 2 renglones)
+---------------------------------------------------------------
+2026-11-08 17:16:22,468 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-11-08 17:16:22,468 INFO sqlalchemy.engine.Engine SELECT usuario.id, usuario.email, usuario.nombre, usuario.password_hash, usuario.activo, usuario.debe_cambiar_password 
+FROM usuario 
+WHERE usuario.id = $1::INTEGER
+2026-11-08 17:16:22,469 INFO sqlalchemy.engine.Engine [generated in 0.00013s] (1,)
+2026-11-08 17:16:22,471 INFO sqlalchemy.engine.Engine COMMIT
+2026-11-08 17:16:22,472 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-11-08 17:16:22,472 INFO sqlalchemy.engine.Engine SELECT asignacion_rol.rol 
+FROM asignacion_rol 
+WHERE asignacion_rol.usuario_id = $1::INTEGER AND asignacion_rol.revocada_en IS NULL AND (asignacion_rol.vence_en IS NULL OR asignacion_rol.vence_en > now()) ORDER BY asignacion_rol.rol
+2026-11-08 17:16:22,472 INFO sqlalchemy.engine.Engine [cached since 1.378s ago] (1,)
+2026-11-08 17:16:22,476 INFO sqlalchemy.engine.Engine SELECT venta.id, venta.cliente_id, venta.fecha, venta.total, cliente_1.id AS id_1, cliente_1.nombre, cliente_1.email, cliente_1.usuario_id 
+FROM venta LEFT OUTER JOIN cliente AS cliente_1 ON cliente_1.id = venta.cliente_id 
+WHERE venta.id = $1::INTEGER
+2026-11-08 17:16:22,476 INFO sqlalchemy.engine.Engine [generated in 0.00012s] (1,)
+2026-11-08 17:16:22,480 INFO sqlalchemy.engine.Engine SELECT renglon_venta.venta_id, renglon_venta.id, renglon_venta.libro_id, renglon_venta.cantidad, renglon_venta.precio_unitario, libro_1.id, libro_1.isbn, libro_1.titulo, libro_1.precio, libro_1.stock, libro_1.editorial_id, libro_1.genero_id, libro_1.borrado_en 
+FROM renglon_venta LEFT OUTER JOIN libro AS libro_1 ON libro_1.id = renglon_venta.libro_id 
+WHERE renglon_venta.venta_id IN ($1::INTEGER)
+2026-11-08 17:16:22,480 INFO sqlalchemy.engine.Engine [generated in 0.00028s] (1,)
+2026-11-08 17:16:22,483 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:47156 - "GET /ventas/1 HTTP/1.1" 200 OK
+
+Consola de uvicorn: GET /ventas/2 (venta de la secuencia, 4 renglones)
+---------------------------------------------------------------------
+2026-11-08 17:16:25,086 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-11-08 17:16:25,086 INFO sqlalchemy.engine.Engine SELECT usuario.id, usuario.email, usuario.nombre, usuario.password_hash, usuario.activo, usuario.debe_cambiar_password 
+FROM usuario 
+WHERE usuario.id = $1::INTEGER
+2026-11-08 17:16:25,086 INFO sqlalchemy.engine.Engine [cached since 2.618s ago] (1,)
+2026-11-08 17:16:25,088 INFO sqlalchemy.engine.Engine COMMIT
+2026-11-08 17:16:25,089 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-11-08 17:16:25,089 INFO sqlalchemy.engine.Engine SELECT asignacion_rol.rol 
+FROM asignacion_rol 
+WHERE asignacion_rol.usuario_id = $1::INTEGER AND asignacion_rol.revocada_en IS NULL AND (asignacion_rol.vence_en IS NULL OR asignacion_rol.vence_en > now()) ORDER BY asignacion_rol.rol
+2026-11-08 17:16:25,089 INFO sqlalchemy.engine.Engine [cached since 3.995s ago] (1,)
+2026-11-08 17:16:25,091 INFO sqlalchemy.engine.Engine SELECT venta.id, venta.cliente_id, venta.fecha, venta.total, cliente_1.id AS id_1, cliente_1.nombre, cliente_1.email, cliente_1.usuario_id 
+FROM venta LEFT OUTER JOIN cliente AS cliente_1 ON cliente_1.id = venta.cliente_id 
+WHERE venta.id = $1::INTEGER
+2026-11-08 17:16:25,091 INFO sqlalchemy.engine.Engine [cached since 2.615s ago] (2,)
+2026-11-08 17:16:25,092 INFO sqlalchemy.engine.Engine SELECT renglon_venta.venta_id, renglon_venta.id, renglon_venta.libro_id, renglon_venta.cantidad, renglon_venta.precio_unitario, libro_1.id, libro_1.isbn, libro_1.titulo, libro_1.precio, libro_1.stock, libro_1.editorial_id, libro_1.genero_id, libro_1.borrado_en 
+FROM renglon_venta LEFT OUTER JOIN libro AS libro_1 ON libro_1.id = renglon_venta.libro_id 
+WHERE renglon_venta.venta_id IN ($1::INTEGER)
+2026-11-08 17:16:25,092 INFO sqlalchemy.engine.Engine [cached since 2.612s ago] (2,)
+2026-11-08 17:16:25,093 INFO sqlalchemy.engine.Engine COMMIT
+INFO:     127.0.0.1:47156 - "GET /ventas/2 HTTP/1.1" 200 OK

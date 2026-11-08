@@ -350,7 +350,8 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 - **Entregables:**
   - `README.md` con los nombres y apellidos de los integrantes y los pasos desde cero: venv, dependencias, `.env` y cómo generar la clave de firma, `alembic upgrade head`, `python seed.py` y uvicorn.
   - `evidencia/` con C-14 (psql) y C-15 (consola).
-  - Script que arma `Parcial_Cap1a6_<Grupo>.zip` con `parcial/` y `despliegue/`, sin `.venv`, `__pycache__` ni `.env`.
+  - Script que arma `Parcial_Cap1a6_<Grupo>.zip` con `parcial/` y `despliegue/`, sin `.venv`, `__pycache__` ni `.env`: `scripts/armar_zip.py` (test en `tests/test_armar_zip.py`); lista los archivos con `git ls-files`, aborta si git versiona un `.env` y deja el zip en `dist/Parcial_Cap1a6_GordosProgramacion.zip` (ignorada por git).
+  - Evidencia capturada: `evidencia/C-14_solo_agregado.txt` y `evidencia/C-15_detalle_consultas.txt`.
   - Revisión del historial de git en busca de secretos.
   - Revisión final del diff con el advisor.
 - **Commit:** `chore(entrega): README, evidencia y armado del zip`

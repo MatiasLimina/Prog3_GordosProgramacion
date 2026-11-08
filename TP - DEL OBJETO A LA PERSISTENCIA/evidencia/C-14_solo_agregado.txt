@@ -1,0 +1,78 @@
+C-14 · movimiento_stock es de sólo agregado (RN-12)
+=====================================================
+Fecha:    2026-11-08
+Commit:   66847d1 (rama chore/entrega-zip; el script test/solo_agregado.sql no cambia en esta rama)
+Base:     PostgreSQL 16 en Docker, esquema de "alembic upgrade head" y carga inicial de "python seed.py"
+
+Cómo se repite (desde la carpeta del proyecto):
+  python seed.py
+  docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -a' < test/solo_agregado.sql
+
+Qué se ve: el UPDATE (paso 2) y el DELETE (paso 3) sobre el movimiento de menor id los rechaza el
+disparador movimiento_stock_solo_agregado con el SQLSTATE 23001, y la fila del paso 1 es idéntica a la
+del paso 4 (cantidad, motivo y cuando sin cambios).
+
+Nota de captura: "-a" hace que psql repita cada sentencia antes de su resultado. Para que los errores
+(stderr) queden en orden con la salida normal dentro de este archivo, la captura corrió psql con
+"stdbuf -oL ... 2>&1"; en una terminal no hace falta.
+
+----- salida de psql -----
+
+-- C-14: movimiento_stock es de sólo agregado (RN-12). Lo garantiza un disparador de la base
+-- (cuarta migración), no la aplicación: este script lo prueba directo con psql.
+--
+-- Antes de correr: `python seed.py` (el seed ya carga 7 movimientos de stock).
+-- El script elige el de menor id, así que no depende de ids fijos.
+-- Cómo correrlo (desde la carpeta del proyecto):
+--   docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < test/solo_agregado.sql
+-- o, con psql instalado en el host (el puerto del host es POSTGRES_PORT, p. ej. 5433):
+--   psql -h localhost -p <POSTGRES_PORT> -U <POSTGRES_USER> -d <POSTGRES_DB> -f test/solo_agregado.sql
+--
+-- Sin BEGIN explícito: cada sentencia corre en su propia transacción, así el DELETE muestra el error
+-- del disparador y no «current transaction is aborted».
+-- VERBOSITY verbose: psql muestra el SQLSTATE (23001) y el contexto de la función PL/pgSQL.
+\set VERBOSITY verbose
+
+-- 1) El movimiento antes de los intentos.
+SELECT id, libro_id, usuario_id, cantidad, motivo, cuando
+FROM movimiento_stock
+WHERE id = (SELECT min(id) FROM movimiento_stock);
+ id | libro_id | usuario_id | cantidad |    motivo     |            cuando             
+----+----------+------------+----------+---------------+-------------------------------
+  1 |        1 |          1 |       11 | Stock inicial | 2026-11-08 20:15:33.306012+00
+(1 row)
+
+
+-- 2) UPDATE sobre ese movimiento.
+-- Esperado: ERROR:  23001: movimiento_stock es de sólo agregado: no se permite UPDATE sobre el movimiento <id>.
+--           Los errores se corrigen con un movimiento que compense.
+UPDATE movimiento_stock
+SET cantidad = cantidad + 1
+WHERE id = (SELECT min(id) FROM movimiento_stock);
+ERROR:  23001: movimiento_stock es de sólo agregado: no se permite UPDATE sobre el movimiento 1. Los errores se corrigen con un movimiento que compense.
+CONTEXT:  PL/pgSQL function movimiento_stock_solo_agregado() line 3 at RAISE
+TABLE NAME:  movimiento_stock
+CONSTRAINT NAME:  movimiento_stock_solo_agregado
+LOCATION:  exec_stmt_raise, pl_exec.c:3897
+
+-- 3) DELETE sobre el mismo movimiento.
+-- Esperado: ERROR:  23001: movimiento_stock es de sólo agregado: no se permite DELETE sobre el movimiento <id>.
+--           Los errores se corrigen con un movimiento que compense.
+DELETE FROM movimiento_stock
+WHERE id = (SELECT min(id) FROM movimiento_stock);
+ERROR:  23001: movimiento_stock es de sólo agregado: no se permite DELETE sobre el movimiento 1. Los errores se corrigen con un movimiento que compense.
+CONTEXT:  PL/pgSQL function movimiento_stock_solo_agregado() line 3 at RAISE
+TABLE NAME:  movimiento_stock
+CONSTRAINT NAME:  movimiento_stock_solo_agregado
+LOCATION:  exec_stmt_raise, pl_exec.c:3897
+
+-- 4) El movimiento después de los intentos.
+-- Esperado: la misma fila que en el paso 1 (cantidad, motivo y cuando sin cambios).
+SELECT id, libro_id, usuario_id, cantidad, motivo, cuando
+FROM movimiento_stock
+WHERE id = (SELECT min(id) FROM movimiento_stock);
+ id | libro_id | usuario_id | cantidad |    motivo     |            cuando             
+----+----------+------------+----------+---------------+-------------------------------
+  1 |        1 |          1 |       11 | Stock inicial | 2026-11-08 20:15:33.306012+00
+(1 row)
+
