@@ -72,7 +72,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-15 | `clientes-repos-uow` | Nico | CHG-04, 05, 08 | mergeado (#58) |
 | CHG-16 | `ventas-transaccional` | Matias | CHG-12, 13, 15 | mergeado (#61) |
 | CHG-17 | `seed-parcial` | Lauti (lo tomó Matias) | CHG-08, CHG-10 | mergeado (#57) |
-| CHG-18 | `casos-http` | Lauti (Nico revisa) | CHG-17 y el change de cada caso | pendiente |
+| CHG-18 | `casos-http` | Lauti (lo tomó Matias; Nico revisa) | CHG-17 y el change de cada caso | mergeado (#63) |
 | CHG-19 | `pytest-integracion` | Matias | CHG-13, 16 | mergeado (#62) |
 | CHG-20 | `entrega-zip` | Lauti + Matias | todo | pendiente |
 
@@ -335,9 +335,10 @@ CHG-11 es el punto donde se juntan las dos ramas críticas: no arranca hasta que
 - **DoD:** en los 5 libros, el stock es igual a la suma de sus movimientos.
 - **Commit:** `feat(seed): datos iniciales del parcial`
 
-#### CHG-18 · `casos-http` — Lauti (Nico revisa)
+#### CHG-18 · `casos-http` — Lauti (lo tomó Matias; Nico revisa)
 - **Entregables:** archivos `.http` en `test/` para C-01 a C-16, cada uno con la respuesta esperada en un comentario. Las sesiones múltiples usan `# @name` y `# @no-cookie-jar` con `Cookie: {{loginX.response.headers.Set-Cookie}}`.
 - **Leer antes:** consigna págs. 21–23.
+- **Hecho (#63):** un `test/cNN_*.http` por caso (C-14 sigue en `solo_agregado.sql`), contraseñas del seed como variables al inicio de cada archivo, `test/invariante_stock.sql` para el punto 5 de la DoD y un runner (`tests/casos_http.py`, `tests/test_casos_http_db.py`) que corre cada caso sobre el seed y compara cada código con su `# Esperado`. Los `.http` del TP 1–4 se borraron. Se entregó en un solo commit, no uno por caso.
 - **Commits:** uno por caso, por ejemplo `test(http): C-05 límite de intentos`
 
 #### CHG-19 · `pytest-integracion` — Matias
