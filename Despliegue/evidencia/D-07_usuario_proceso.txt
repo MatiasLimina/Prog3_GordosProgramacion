@@ -1,0 +1,5 @@
+# D-07 · Usuario del proceso
+# Esperado: docker exec libreria id no es root.
+
+root@srv1923208:/opt/prog3/Despliegue# docker exec libreria id
+uid=100(app) gid=101(app) groups=101(app)
