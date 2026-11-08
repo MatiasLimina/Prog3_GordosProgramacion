@@ -47,6 +47,6 @@
 ## 7. Cierre
 
 - [x] 7.1 Checkpoint FINAL_DIFF: consultar al `advisor` sobre `git diff main` (script, test, README, evidencia, AGENTS/PLAN) con el resumen de 5.3; atender CONCERNS y no seguir con un BLOCK sin confirmación del usuario
-- [ ] 7.2 Commit `chore(entrega): README, evidencia y armado del zip` y PR a `main` cuando el usuario lo pida; verificar que el PR muestra los archivos esperados y ningún `.env` ni `dist/`
-- [ ] 7.3 Con el número del PR: fila de CHG-20 en `PLAN_PARCIAL.md` (sección 2) en `mergeado (#N)` y `openspec archive entrega-zip` en la misma rama (AGENTS §10); verificar `openspec list --json` sin el change y la fila actualizada
-- [ ] 7.4 Armado final sobre el árbol commiteado: `python scripts/armar_zip.py`, con `git status --short` limpio en las dos carpetas (parcial y Despliegue), verificar de nuevo las entradas obligatorias y prohibidas del zip y dejar `dist/Parcial_Cap1a6_GordosProgramacion.zip` listo para que un integrante lo suba al campus
+- [x] 7.2 Commit `chore(entrega): README, evidencia y armado del zip` y PR a `main` cuando el usuario lo pida; verificar que el PR muestra los archivos esperados y ningún `.env` ni `dist/`
+- [x] 7.3 Con el número del PR: fila de CHG-20 en `PLAN_PARCIAL.md` (sección 2) en `mergeado (#N)` y `openspec archive entrega-zip` en la misma rama (AGENTS §10); verificar `openspec list --json` sin el change y la fila actualizada
+- [x] 7.4 Armado final sobre el árbol commiteado: `python scripts/armar_zip.py`, con `git status --short` limpio en las dos carpetas (parcial y Despliegue), verificar de nuevo las entradas obligatorias y prohibidas del zip y dejar `dist/Parcial_Cap1a6_GordosProgramacion.zip` listo para que un integrante lo suba al campus

@@ -74,7 +74,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 | CHG-17 | `seed-parcial` | Lauti (lo tomó Matias) | CHG-08, CHG-10 | mergeado (#57) |
 | CHG-18 | `casos-http` | Lauti (lo tomó Matias; Nico revisa) | CHG-17 y el change de cada caso | mergeado (#63) |
 | CHG-19 | `pytest-integracion` | Matias | CHG-13, 16 | mergeado (#62) |
-| CHG-20 | `entrega-zip` | Lauti + Matias | todo | pendiente |
+| CHG-20 | `entrega-zip` | Lauti + Matias | todo | mergeado (#65) |
 
 ---
 
