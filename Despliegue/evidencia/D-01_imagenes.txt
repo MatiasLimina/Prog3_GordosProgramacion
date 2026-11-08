@@ -1,0 +1,8 @@
+# D-01 · docker images con la imagen base y la del proyecto
+# Esperado: python:3.12-alpine por debajo de 100 MB; el Dockerfile parte de ella (FROM python:3.12-alpine).
+# Columnas: IMAGE  ID  DISK USAGE (descomprimida)  CONTENT SIZE (lo que se transfiere)
+
+root@srv1923208:/opt/prog3/Despliegue# docker pull -q python:3.12-alpine && docker images | grep -E 'libreria|python'
+docker.io/library/python:3.12-alpine
+libreria:latest                                   a5869ab10872        257MB         59.3MB
+python:3.12-alpine                                e064671ca452       74.8MB         18.7MB
