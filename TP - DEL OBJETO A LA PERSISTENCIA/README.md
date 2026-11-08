@@ -150,7 +150,7 @@ docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB
 
 La carpeta [`evidencia/`](evidencia/) tiene la salida de los dos casos que no se ven en una respuesta HTTP:
 
-- [`evidencia/C-14_solo_agregado.txt`](evidencia/C-14_solo_agregado.txt): salida de psql de `test/solo_agregado.sql`; el UPDATE y el DELETE sobre `movimiento_stock` los rechaza el disparador.
+- [`evidencia/C-14_solo_agregado.txt`](evidencia/C-14_solo_agregado.txt): salida de psql de `test/solo_agregado.sql`; el UPDATE y el DELETE sobre `movimiento_stock` los rechaza el disparador. Las mismas corridas en capturas de pantalla: [`C-14_paso1_fila_antes.png`](evidencia/C-14_paso1_fila_antes.png) (la fila antes de los intentos) y [`C-14_pasos2a4_rechazo.png`](evidencia/C-14_pasos2a4_rechazo.png) (los dos rechazos y la fila sin cambios).
 - [`evidencia/C-15_detalle_consultas.txt`](evidencia/C-15_detalle_consultas.txt): consola de uvicorn con `SQL_ECHO=true`; el detalle de una venta de 2 renglones y el de una de 4 emiten la misma cantidad de consultas.
 
 ## Endpoints
