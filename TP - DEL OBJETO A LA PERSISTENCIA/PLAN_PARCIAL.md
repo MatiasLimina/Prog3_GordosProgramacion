@@ -55,7 +55,7 @@ La tabla describe `main`: la actualiza el propio PR del change (ver `AGENTS.md`,
 |---|---|---|---|---|
 | CHG-00 | `bootstrap-parcial` | Matias | — | mergeado (#29) |
 | CHG-01 | `deploy-imagen` | Lauti | — | mergeado (#37) |
-| CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | pendiente |
+| CHG-02 | `deploy-vps` | Lauti (+Matias) | CHG-01, accesos al VPS | mergeado (#64) |
 | CHG-03 | `settings-lifespan` | Nico (Matias revisa) | CHG-00 | mergeado (#33) |
 | CHG-04 | `core-repository-uow` | Nico (Matias revisa) | CHG-03 | mergeado (#40) |
 | CHG-05 | `paginacion-envoltorio` | Lauti | CHG-00 | mergeado (#45) |

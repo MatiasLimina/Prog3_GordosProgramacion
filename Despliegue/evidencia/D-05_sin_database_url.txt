@@ -1,0 +1,16 @@
+# D-05 · Correr la imagen sin DATABASE_URL
+# Esperado: el contenedor no queda sirviendo; termina con un error porque el TP no trae ninguna dirección de base por defecto.
+# Falla en migrations/env.py (alembic upgrade head), así que uvicorn nunca arranca.
+
+root@srv1923208:/opt/prog3/Despliegue# docker run --rm libreria; echo "exit=$?"
+Traceback (most recent call last):
+  File "/usr/local/bin/alembic", line 8, in <module>
+    sys.exit(main())
+  ...
+  File "/app/migrations/env.py", line 21, in <module>
+    config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
+                                             ^^^^^^^^^^^^^^
+  File "/app/app/core/config.py", line 30, in get_settings
+    raise RuntimeError(
+RuntimeError: Falta la variable de entorno DATABASE_URL. Copiá env.example a .env y completalo.
+exit=1

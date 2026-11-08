@@ -1,0 +1,29 @@
+# D-02 · Servidor limpio: docker build y docker run; después docker ps
+# Esperado: contenedor healthy; en docker logs, las migraciones del TP aplicadas al arrancar.
+
+root@srv1923208:~# cd /opt/prog3/Despliegue && docker build -t libreria .
+[+] Building 45.2s (11/11) FINISHED                                       docker:default
+ => [1/6] FROM docker.io/library/python:3.12-alpine@sha256:e064671ca452...           2.3s
+ => [2/6] WORKDIR /app                                                               0.1s
+ => [3/6] COPY requirements.txt .                                                    0.1s
+ => [4/6] RUN pip install --no-cache-dir -r requirements.txt                        29.0s
+ => [5/6] COPY . .                                                                   0.2s
+ => [6/6] RUN addgroup -S app     && adduser -S -D -H -G app app                     0.6s
+ => => naming to docker.io/library/libreria:latest                                   0.0s
+
+root@srv1923208:/opt/prog3/Despliegue# docker run -d --name libreria -p 8000:8000 --restart unless-stopped --env-file /opt/libreria.env --network easypanel-gordos_programacion libreria
+86494d4a04dad16e356f0dcf87cdbf833b327754e22d5e7b185981bccac8386e
+
+root@srv1923208:/opt/prog3/Despliegue# sleep 40; docker ps --filter name=^libreria$ --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'; docker logs libreria 2>&1 | tail -20
+NAMES      STATUS                        PORTS
+libreria   Up About a minute (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 5600df0fc99c, catalogo, clientes y ventas sin genero
+INFO  [alembic.runtime.migration] Running upgrade 5600df0fc99c -> 9df0eb6a1dd6, agrega genero y libro.genero_id
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:42186 - "GET /health/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50434 - "GET /health/ready HTTP/1.1" 200 OK
