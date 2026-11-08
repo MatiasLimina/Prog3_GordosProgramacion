@@ -1,0 +1,10 @@
+# D-08 · La venta registrada en el caso D-03
+# Esperado: el aviso del comprobante aparece en docker logs libreria después de la línea de la respuesta.
+# La IP del cliente que hizo el POST se reemplazó por <ip-cliente>.
+
+root@srv1923208:/opt/prog3/Despliegue# docker logs libreria 2>&1 | tail -5
+INFO:     127.0.0.1:36356 - "GET /health/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54304 - "GET /health/ready HTTP/1.1" 200 OK
+INFO:     <ip-cliente>:34658 - "POST /ventas/ HTTP/1.1" 201 Created
+INFO:     Comprobante de la venta 2 enviado a tomas@example.com.
+INFO:     127.0.0.1:49526 - "GET /health/ready HTTP/1.1" 200 OK
