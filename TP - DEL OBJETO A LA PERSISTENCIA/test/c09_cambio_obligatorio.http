@@ -1,0 +1,49 @@
+@host = http://localhost:8000
+# Contraseñas de mentira: la del seed (seed.py) y la nueva, que se crea en este archivo.
+@passNuevo = nuevo-seed-1
+@passNueva = clave-cambiada-1
+
+# C-09 · Cambio obligatorio de contraseña (RN-06).
+# Antes de correr: `python seed.py`. Se corre de arriba abajo. Usa nuevo@example.com (VENDEDOR, usuario 5).
+
+### Login de nuevo@example.com
+# Esperado: 200 `debe_cambiar_password` es true.
+# @name loginNuevo
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "nuevo@example.com", "password": "{{passNuevo}}" }
+
+### Una ruta protegida de su rol
+# Esperado: 403 «Tenés que cambiar la contraseña antes de continuar.»
+# @no-cookie-jar
+GET {{host}}/ventas/
+Cookie: {{loginNuevo.response.headers.Set-Cookie}}
+
+### /auth/yo no pasa por el control
+# Esperado: 200 `debe_cambiar_password` true.
+# @no-cookie-jar
+GET {{host}}/auth/yo
+Cookie: {{loginNuevo.response.headers.Set-Cookie}}
+
+### Cambiar la contraseña
+# Esperado: 200 no emite un token nuevo.
+# @no-cookie-jar
+POST {{host}}/auth/cambiar-password
+Content-Type: application/json
+Cookie: {{loginNuevo.response.headers.Set-Cookie}}
+
+{ "password_actual": "{{passNuevo}}", "password_nueva": "{{passNueva}}" }
+
+### /auth/yo con la misma cookie
+# Esperado: 200 `debe_cambiar_password` ahora es false.
+# @no-cookie-jar
+GET {{host}}/auth/yo
+Cookie: {{loginNuevo.response.headers.Set-Cookie}}
+
+### La ruta protegida con la misma cookie, sin volver a iniciar sesión
+# Esperado: 200
+# @no-cookie-jar
+GET {{host}}/ventas/
+Cookie: {{loginNuevo.response.headers.Set-Cookie}}

@@ -1,0 +1,65 @@
+@host = http://localhost:8000
+# Contraseñas de mentira del seed (seed.py); no son credenciales reales.
+@passVendedor = vendedor-seed-1
+@passAna = ana-seed-1
+
+# C-06 · 401 contra 403, y lo propio (RN-14).
+# Antes de correr: `python seed.py`. Se corre de arriba abajo.
+# La carga inicial no le da ninguna venta a Ana: la crea el vendedor dentro de este archivo.
+
+### Sesión del vendedor
+# Esperado: 200
+# @name loginVendedor
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "vendedor@example.com", "password": "{{passVendedor}}" }
+
+### Sesión de Ana (cliente)
+# Esperado: 200
+# @name loginAna
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "ana@example.com", "password": "{{passAna}}" }
+
+### Crear un libro sin sesión
+# Esperado: 401
+# @no-cookie-jar
+POST {{host}}/libros/
+Content-Type: application/json
+
+{ "isbn": "978-000-00-0001-0", "titulo": "Sin sesión", "precio": "1000.00", "editorial_id": 1 }
+
+### Crear un libro con la sesión del vendedor (no es ADMIN)
+# Esperado: 403 «No tenés permiso para esta operación.»
+# @no-cookie-jar
+POST {{host}}/libros/
+Content-Type: application/json
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+{ "isbn": "978-000-00-0001-0", "titulo": "Sin permiso", "precio": "1000.00", "editorial_id": 1 }
+
+### El vendedor registra una venta para Ana (cliente 3)
+# Esperado: 201
+# @name ventaAna
+# @no-cookie-jar
+POST {{host}}/ventas/
+Content-Type: application/json
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+{ "cliente_id": 3, "renglones": [ { "libro_id": 2, "cantidad": 1 } ] }
+
+### Ana ve su venta
+# Esperado: 200
+# @no-cookie-jar
+GET {{host}}/ventas/{{ventaAna.response.body.$.id}}
+Cookie: {{loginAna.response.headers.Set-Cookie}}
+
+### Ana pide la venta 1 (de Lucía)
+# Esperado: 403 «No tenés permiso para esta operación.»
+# @no-cookie-jar
+GET {{host}}/ventas/1
+Cookie: {{loginAna.response.headers.Set-Cookie}}

@@ -1,0 +1,81 @@
+@host = http://localhost:8000
+# Contraseña de mentira del seed (seed.py); no es una credencial real.
+@passAdmin = admin-seed-1
+
+# C-13 · Reposición, baja lógica y alta del mismo ISBN.
+# Antes de correr: `python seed.py`. Se corre de arriba abajo.
+
+### Sesión del administrador
+# Esperado: 200
+# @name loginAdmin
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@example.com", "password": "{{passAdmin}}" }
+
+### Reponer 10 unidades de la Antología (libro 2)
+# Esperado: 200 stock 15 y el movimiento de reposición (+10) en la respuesta.
+# @no-cookie-jar
+POST {{host}}/libros/2/reponer
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{ "cantidad": 10, "motivo": "Reposición de prueba" }
+
+### Baja de Rayuela (libro 1)
+# Esperado: 204
+# @no-cookie-jar
+DELETE {{host}}/libros/1
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Buscar Rayuela en el catálogo
+# Esperado: 200 total 0: el libro dado de baja no aparece.
+# @no-cookie-jar
+GET {{host}}/libros/?titulo=rayuela
+
+### Pedir Rayuela por id
+# Esperado: 404
+# @no-cookie-jar
+GET {{host}}/libros/1
+
+### Alta de otro libro con el ISBN de Rayuela
+# Esperado: 201 el ISBN sólo es único entre los libros vigentes.
+# @name altaRayuela
+# @no-cookie-jar
+POST {{host}}/libros/
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{
+  "isbn": "978-950-00-0001-1",
+  "titulo": "Rayuela (edición nueva)",
+  "precio": "26000.00",
+  "stock_inicial": 3,
+  "editorial_id": 1,
+  "genero_id": 1
+}
+
+### El mismo alta otra vez
+# Esperado: 409 «Ya existe un libro con ese ISBN.»
+# @no-cookie-jar
+POST {{host}}/libros/
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{
+  "isbn": "978-950-00-0001-1",
+  "titulo": "Rayuela (otra vez)",
+  "precio": "26000.00",
+  "stock_inicial": 3,
+  "editorial_id": 1,
+  "genero_id": 1
+}
+
+### La venta 1 sigue mostrando el libro dado de baja
+# Esperado: 200 un renglón con el título «Rayuela».
+# @no-cookie-jar
+GET {{host}}/ventas/1
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+# Control SQL: correr test/invariante_stock.sql con psql (ver su encabezado); sin diferencias (seis libros: el nuevo y el de baja).

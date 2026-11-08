@@ -1,0 +1,68 @@
+@host = http://localhost:8000
+# Contraseñas de mentira: la mala no es de nadie; la buena es la del seed (seed.py).
+@passMala = clave-incorrecta-1
+@passAdmin2 = admin2-seed-1
+
+# C-05 · Límite de intentos (RN-07): 5 fallos con el mismo correo desde la misma IP en 60 s -> el sexto da 429.
+# Antes de correr: `python seed.py` (vacía intento_acceso, así la cuenta parte de cero).
+# Correr los siete pedidos seguidos, en pocos milisegundos (dentro de los 60 s).
+
+### Intento 1
+# Esperado: 401
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin2@example.com", "password": "{{passMala}}" }
+
+### Intento 2
+# Esperado: 401
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin2@example.com", "password": "{{passMala}}" }
+
+### Intento 3
+# Esperado: 401
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin2@example.com", "password": "{{passMala}}" }
+
+### Intento 4
+# Esperado: 401
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin2@example.com", "password": "{{passMala}}" }
+
+### Intento 5
+# Esperado: 401
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin2@example.com", "password": "{{passMala}}" }
+
+### Intento 6
+# Esperado: 429 con el encabezado Retry-After; no se calcula ningún hash.
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin2@example.com", "password": "{{passMala}}" }
+
+### Séptimo, con la contraseña CORRECTA
+# Esperado: 429 el límite se revisa antes de verificar la contraseña.
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin2@example.com", "password": "{{passAdmin2}}" }
+
+# Control SQL (psql; cómo conectarse: ver el encabezado de test/solo_agregado.sql): los cinco fallos quedaron anotados.
+#   SELECT * FROM intento_acceso ORDER BY id;
+#   -- cinco filas fallidas de admin2@example.com (los 429 no se anotan como intento)

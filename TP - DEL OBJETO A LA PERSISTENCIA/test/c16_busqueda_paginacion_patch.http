@@ -1,0 +1,53 @@
+@host = http://localhost:8000
+# Contraseña de mentira del seed (seed.py); no es una credencial real.
+@passAdmin = admin-seed-1
+
+# C-16 · Búsqueda con parámetros ligados (sin inyección), paginación con filtro y PATCH parcial.
+# Antes de correr: `python seed.py`. Se corre de arriba abajo.
+
+### Sesión del administrador
+# Esperado: 200
+# @name loginAdmin
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@example.com", "password": "{{passAdmin}}" }
+
+### Inyección en la búsqueda: titulo = ' OR '1'='1
+# Esperado: 200 `items` vacío y `total` 0 (el texto se trata como dato, no como SQL).
+# @no-cookie-jar
+GET {{host}}/libros/?titulo=%27%20OR%20%271%27%3D%271
+
+### Filtro y página de 1
+# Esperado: 200 `total` 1 (Ficciones), `pages` 1.
+# @no-cookie-jar
+GET {{host}}/libros/?titulo=ficc&size=1
+
+### Página 2 de un filtro con una sola página
+# Esperado: 422 «La página 2 no existe: hay 1»
+# @no-cookie-jar
+GET {{host}}/libros/?titulo=ficc&size=1&page=2
+
+### Tamaño de página fuera de rango
+# Esperado: 422
+# @no-cookie-jar
+GET {{host}}/libros/?size=500
+
+### PATCH parcial: sólo el precio de Ficciones (libro 3)
+# Esperado: 200 `precio` 23500.00; el título «Ficciones» y el stock 8 siguen igual.
+# @no-cookie-jar
+PATCH {{host}}/libros/3
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{ "precio": "23500.00" }
+
+### PATCH con stock
+# Esperado: 422 el stock no se edita por PATCH (sólo por movimientos).
+# @no-cookie-jar
+PATCH {{host}}/libros/3
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{ "stock": 100 }

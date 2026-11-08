@@ -75,7 +75,7 @@ app/
     └── router.py           # rutas HTTP: construyen el UoW, llaman al servicio y traducen errores
 migrations/                 # Alembic (env.py + versions/)
 seed.py                     # carga inicial, en la raíz
-test/*.http                 # casos C-01 a C-16 y solo_agregado.sql (C-14)
+test/*.http                 # un cNN_*.http por caso (C-01 a C-16, sin C-14), solo_agregado.sql (C-14) e invariante_stock.sql
 tests/                      # pytest
 evidencia/                  # captura de psql (C-14) y consola (C-15)
 ```
@@ -228,9 +228,9 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 | ~~Servicios que reciben `AsyncSession`~~ | reciben el UoW; repositorios por entidad | CHG-04 (base), 13 ✅ hecho (catálogo), 15 ✅ hecho (clientes), 16 ✅ hecho (ventas) |
 | ~~`app/core/pagination.py` con `limit` / `offset`~~ | `app/core/paginacion.py` con `{items, total, page, size, pages}` | CHG-05 ✅ hecho (catálogo CHG-13 ✅, clientes CHG-15 ✅, ventas CHG-16 ✅; el viejo está borrado) |
 | ~~`app/core/errors.py` (`commit_or_409` / `traducir_integrity` reciben la sesión)~~ | el UoW lanza `Conflicto` (con `mensaje_para`) y `main.py` lo pasa a 409; los dos ayudantes están borrados | CHG-04, 13 ✅ (catálogo), 15 ✅ (clientes), 16 ✅ (ventas) |
-| `test/*.http` con los casos C-01 a C-08 del TP | casos C-01 a C-16 del parcial (otra numeración y otro significado); desde CHG-13 los listados del catálogo y desde CHG-15 los de clientes usan el envoltorio (`page`/`size`), las escrituras del catálogo piden sesión y el 409 de correo repetido de clientes dice «correo»; desde CHG-16 el listado de ventas usa el envoltorio y los 409 de stock y de baja traen el texto del punto único; los `.http` se ajustan en CHG-18 | CHG-18 |
+| ~~`test/*.http` con los casos C-01 a C-08 del TP~~ | casos C-01 a C-16 del parcial (otra numeración y otro significado); desde CHG-13 los listados del catálogo y desde CHG-15 los de clientes usan el envoltorio (`page`/`size`), las escrituras del catálogo piden sesión y el 409 de correo repetido de clientes dice «correo»; desde CHG-16 el listado de ventas usa el envoltorio y los 409 de stock y de baja traen el texto del punto único; los `.http` viejos se borraron y hay un `cNN_*.http` por caso, que `pytest` corre sobre el seed | CHG-18 ✅ hecho |
 | ~~`tests/` con un conftest que deriva `libreria_test` de `DATABASE_URL`; `env.example` con `DATABASE_URL`~~ | deriva de `Settings` / `POSTGRES_*` | CHG-03 ✅ hecho |
-| `test/libros.http` y `test/ventas.http` mencionan `DB_ECHO=true` | `SQL_ECHO=true` | CHG-18 |
+| ~~`test/libros.http` y `test/ventas.http` mencionan `DB_ECHO=true`~~ | `SQL_ECHO=true` (C-15) | CHG-18 ✅ hecho |
 | ~~Semáforo de bcrypt: `BCRYPT_MAX_CONCURRENTES` ya está en `Settings`, pero el `asyncio.Semaphore` todavía no se crea~~ | el lifespan crea el semáforo y `security.py` lo usa | CHG-10 ✅ hecho |
 | ~~`scripts/seed.py` (`python -m scripts.seed`)~~ | `seed.py` en la raíz (`python seed.py`) | CHG-17 ✅ hecho |
 | ~~`libro.stock` editable, ISBN con UNIQUE común~~ | stock por movimientos, ISBN único entre vigentes | CHG-07, 08, 13 ✅ hecho |

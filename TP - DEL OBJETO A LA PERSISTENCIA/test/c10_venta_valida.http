@@ -1,0 +1,66 @@
+@host = http://localhost:8000
+# Contraseñas de mentira del seed (seed.py); no son credenciales reales.
+@passAdmin = admin-seed-1
+@passVendedor = vendedor-seed-1
+
+# C-10 · Venta válida (RN-10): venta, renglones con el precio copiado, total, descuento de stock y un movimiento por renglón.
+# Antes de correr: `python seed.py`. Se corre de arriba abajo. Mirar también la consola de uvicorn.
+
+### Sesión del vendedor
+# Esperado: 200
+# @name loginVendedor
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "vendedor@example.com", "password": "{{passVendedor}}" }
+
+### Sesión del administrador (para ver los movimientos)
+# Esperado: 200
+# @name loginAdmin
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@example.com", "password": "{{passAdmin}}" }
+
+### Venta de la consigna: cliente 2, Rayuela × 2 y Respiración artificial × 1
+# Esperado: 201 total 77000.00; precio_unitario 25000.00 (Rayuela) y 27000.00 (Respiración artificial).
+# En la consola de uvicorn, ~0,5 s DESPUÉS de la línea de acceso del POST: «Comprobante de la venta N enviado a tomas@example.com.»
+# @name venta
+# @no-cookie-jar
+POST {{host}}/ventas/
+Content-Type: application/json
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 2 },
+    { "libro_id": 4, "cantidad": 1 }
+  ]
+}
+
+### Rayuela
+# Esperado: 200 stock 8 (era 10).
+# @no-cookie-jar
+GET {{host}}/libros/1
+
+### Respiración artificial
+# Esperado: 200 stock 2 (era 3).
+# @no-cookie-jar
+GET {{host}}/libros/4
+
+### Movimientos de Rayuela
+# Esperado: 200 el de «Stock inicial» (+11), el de la venta del seed (-1) y uno nuevo de -2 con `venta_id` de la venta de arriba.
+# @no-cookie-jar
+GET {{host}}/libros/1/movimientos
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Movimientos de Respiración artificial
+# Esperado: 200 «Stock inicial» (+3) y uno nuevo de -1 con `venta_id` de la venta de arriba.
+# @no-cookie-jar
+GET {{host}}/libros/4/movimientos
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+# Control SQL: correr test/invariante_stock.sql con psql (ver su encabezado); los cinco libros con coincide = t.

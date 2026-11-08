@@ -1,0 +1,27 @@
+@host = http://localhost:8000
+# Contraseña de mentira del seed (seed.py); no es una credencial real.
+@passAdmin = admin-seed-1
+
+# C-08 · Autoprotección (RN-05): nadie se revoca su propio ADMIN.
+# Antes de correr: `python seed.py`. Se corre de arriba abajo.
+
+### Sesión de admin@example.com (usuario 1)
+# Esperado: 200
+# @name loginAdmin
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@example.com", "password": "{{passAdmin}}" }
+
+### El administrador 1 intenta revocar su propio ADMIN
+# Esperado: 409 «No podés revocarte tu propio rol de administrador.»
+# @no-cookie-jar
+DELETE {{host}}/usuarios/1/roles/ADMIN
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Su rol sigue vigente
+# Esperado: 200 el ADMIN del usuario 1 sigue sin `revocada_en`.
+# @no-cookie-jar
+GET {{host}}/usuarios/1/roles
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}

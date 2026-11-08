@@ -1,5 +1,8 @@
 @host = http://localhost:8000
 
+# No es un caso C de la consigna: demuestra el punto 2 de la definición de terminado (AGENTS.md §11),
+# `/health/live` y `/health/ready` responden 200 con `python seed.py` + `uvicorn app.main:app` levantados.
+
 # Antes de correr: `python seed.py` (deja la base en el estado inicial conocido,
 # así los ids y los códigos esperados de abajo coinciden).
 
