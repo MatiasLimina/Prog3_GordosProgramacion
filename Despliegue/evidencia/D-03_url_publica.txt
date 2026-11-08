@@ -1,0 +1,22 @@
+# D-03 · Desde afuera del VPS, en la URL pública
+# Esperado: /health/ready 200; /libros/ 200 con los datos iniciales; POST /ventas/ 201 con los precios copiados y el total calculado.
+# Corrido desde una PC fuera del VPS (Windows PowerShell).
+
+## Carga de datos iniciales (en el VPS)
+root@srv1923208:/opt/prog3/Despliegue# docker exec libreria python -m scripts.seed
+Seed cargado: 3 editoriales, 3 géneros, 5 autores, 4 libros, 6 autorías, 2 clientes, 1 perfiles, 1 ventas, 2 renglones.
+
+## GET /health/ready
+PS> curl.exe -s -w "`n%{http_code}`n" http://matiaslimina.me:8000/health/ready
+{"estado":"listo","base_de_datos":"disponible"}
+200
+
+## GET /libros/
+PS> curl.exe -s -w "`n%{http_code}`n" http://matiaslimina.me:8000/libros/
+[{"id":1,"isbn":"978-950-07-0001-1","titulo":"Rayuela","precio":"25000.00","stock":10,"editorial":{"id":1,"nombre":"Sudamericana","pais":"Argentina"},"genero":{"id":1,"nombre":"Novela"}},{"id":2,"isbn":"978-950-04-0002-2","titulo":"Antología de la literatura fantástica","precio":"22000.00","stock":4,"editorial":{"id":3,"nombre":"Emecé","pais":"Argentina"},"genero":null},{"id":3,"isbn":"978-950-04-0003-3","titulo":"El Aleph","precio":"18500.50","stock":6,"editorial":{"id":3,"nombre":"Emecé","pais":"Argentina"},"genero":{"id":2,"nombre":"Cuento"}},{"id":4,"isbn":"978-950-07-0004-4","titulo":"Respiración artificial","precio":"27000.00","stock":6,"editorial":{"id":2,"nombre":"Alfaguara","pais":"España"},"genero":{"id":1,"nombre":"Novela"}}]
+200
+
+## POST /ventas/ con el cuerpo de ejemplo del TP (test/ventas.http, C-04)
+PS> $r = Invoke-WebRequest -UseBasicParsing -Method Post -Uri "http://matiaslimina.me:8000/ventas/" -ContentType "application/json" -Body '{"cliente_id": 2, "renglones": [{"libro_id": 1, "cantidad": 2}, {"libro_id": 4, "cantidad": 1}]}'; $r.StatusCode; $r.Content
+201
+{"id":2,"fecha":"2026-11-08T19:44:49.516147Z","total":"77000.00","cliente":{"id":2,"nombre":"Tomás Ríos","email":"tomas@example.com"},"renglones":[{"libro_id":1,"titulo":"Rayuela","cantidad":2,"precio_unitario":"25000.00","subtotal":"50000.00"},{"libro_id":4,"titulo":"Respiración artificial","cantidad":1,"precio_unitario":"27000.00","subtotal":"27000.00"}]}
