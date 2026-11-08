@@ -1,5 +1,6 @@
 # Secretos locales
 .env
+.env.*
 
 # Entorno virtual y cachés de Python
 .venv/
@@ -19,3 +20,6 @@ __pycache__/
 
 # Instrucciones personales de Claude Code (no se comparten)
 CLAUDE.local.md
+
+# Salida del armado de la entrega (scripts/armar_zip.py)
+dist/

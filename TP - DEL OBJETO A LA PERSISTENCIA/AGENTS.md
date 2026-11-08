@@ -41,6 +41,7 @@ alembic upgrade head                 # crea el esquema (única forma permitida)
 python seed.py                       # deja la base en estado inicial conocido (vacía y recarga; atómico e idempotente)
 uvicorn app.main:app --reload        # servidor
 pytest                               # tests automatizados
+python scripts/armar_zip.py          # arma dist/Parcial_Cap1a6_GordosProgramacion.zip (parcial/ + despliegue/)
 ```
 
 Todos los comandos se corren **desde esta carpeta** (`TP - DEL OBJETO A LA PERSISTENCIA/`), no desde la raíz del repositorio: `Settings` busca el `.env` en el directorio actual y, desde otra carpeta, no lo encuentra (la app no arranca por falta de variables obligatorias).
@@ -75,9 +76,10 @@ app/
     └── router.py           # rutas HTTP: construyen el UoW, llaman al servicio y traducen errores
 migrations/                 # Alembic (env.py + versions/)
 seed.py                     # carga inicial, en la raíz
+scripts/armar_zip.py        # arma el zip de la entrega (CHG-20); la salida va a dist/, ignorada por git
 test/*.http                 # un cNN_*.http por caso (C-01 a C-16, sin C-14), solo_agregado.sql (C-14) e invariante_stock.sql
 tests/                      # pytest
-evidencia/                  # captura de psql (C-14) y consola (C-15)
+evidencia/                  # texto de psql (C-14_solo_agregado.txt) y de la consola (C-15_detalle_consultas.txt); capturas de pantalla, si el grupo las agrega, al lado
 ```
 
 Módulos mínimos: `health`, `usuarios`, `editoriales`, `generos`, `autores`, `libros`, `clientes`, `ventas`.
@@ -259,4 +261,4 @@ Regla: **el código nuevo sigue las reglas del parcial; un módulo existente se 
 4. Con `SQL_ECHO=true`, el detalle de una venta emite la misma cantidad de consultas con 2 o 4 renglones (C-15). `evidencia/` con la captura de psql de C-14 y la consola de C-15.
 5. En los cinco libros, `stock` = suma de sus movimientos tras cada caso de venta.
 6. Sin contraseñas ni clave de firma en el repo ni en el historial; `.env` ignorado; `env.example` presente; `alembic.ini` sin URL.
-7. Entrega: `Parcial_Cap1a6_<Grupo>.zip` con `parcial/` (README con integrantes y pasos desde cero, `evidencia/`) y `despliegue/`, sin `.venv`, `__pycache__` ni `.env`.
+7. Entrega: `Parcial_Cap1a6_GordosProgramacion.zip` con `parcial/` (README con integrantes y pasos desde cero, `evidencia/`) y `despliegue/`, sin `.venv`, `__pycache__` ni `.env`. Se arma con `python scripts/armar_zip.py` (lista de archivos desde git; aborta si git versiona un `.env`; salida en `dist/`) y se arma sobre el árbol commiteado.
