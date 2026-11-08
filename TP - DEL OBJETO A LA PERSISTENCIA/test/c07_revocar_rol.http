@@ -1,0 +1,74 @@
+@host = http://localhost:8000
+# Contraseñas de mentira del seed (seed.py); no son credenciales reales.
+@passAdmin = admin-seed-1
+@passVendedor = vendedor-seed-1
+
+# C-07 · Revocar un rol con la sesión del usuario abierta (RN-04): los roles vigentes se consultan en la base en cada petición.
+# Antes de correr: `python seed.py`. Se corre de arriba abajo, con las dos sesiones a la vez (cada login lleva
+# `# @no-cookie-jar` y sus pedidos mandan su propia cookie).
+
+### Sesión del administrador
+# Esperado: 200
+# @name loginAdmin
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@example.com", "password": "{{passAdmin}}" }
+
+### Sesión del vendedor
+# Esperado: 200
+# @name loginVendedor
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "vendedor@example.com", "password": "{{passVendedor}}" }
+
+### El vendedor lista las ventas
+# Esperado: 200 total 1
+# @no-cookie-jar
+GET {{host}}/ventas/
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+### El administrador le revoca el rol VENDEDOR (usuario 3)
+# Esperado: 200 la asignación vuelve con `revocada_en` completo.
+# @no-cookie-jar
+DELETE {{host}}/usuarios/3/roles/VENDEDOR
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### El vendedor repite el pedido con la MISMA cookie
+# Esperado: 403 «No tenés permiso para esta operación.» La revocación rige desde la petición siguiente.
+# @no-cookie-jar
+GET {{host}}/ventas/
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+### /auth/yo del vendedor: la diferencia entre el token y la base
+# Esperado: 200 `roles_token` trae VENDEDOR y `roles_vigentes` está vacío.
+# @no-cookie-jar
+GET {{host}}/auth/yo
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+### Roles del vendedor
+# Esperado: 200 la fila revocada sigue (no se borra), con `revocada_en`.
+# @no-cookie-jar
+GET {{host}}/usuarios/3/roles
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Asignar un rol con vencimiento en el pasado
+# Esperado: 422 el vencimiento tiene que estar en el futuro (no 409).
+# @no-cookie-jar
+POST {{host}}/usuarios/3/roles
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{ "rol": "VENDEDOR", "vence_en": "2020-01-01T00:00:00+00:00" }
+
+### Asignar un rol con vencimiento sin zona horaria
+# Esperado: 422 el vencimiento tiene que traer zona horaria.
+# @no-cookie-jar
+POST {{host}}/usuarios/3/roles
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{ "rol": "VENDEDOR", "vence_en": "2030-01-01T00:00:00" }

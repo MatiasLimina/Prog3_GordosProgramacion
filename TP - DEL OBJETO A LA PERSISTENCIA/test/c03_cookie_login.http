@@ -1,0 +1,40 @@
+@host = http://localhost:8000
+# Contraseña de mentira del seed (seed.py); no es una credencial real.
+@passAna = ana-seed-1
+
+# C-03 · El token viaja sólo en la cookie `access_token`; nunca en el cuerpo ni en Authorization.
+# Antes de correr: `python seed.py`. Se corre de arriba abajo.
+
+### Login de Ana
+# Esperado: 200 Mirar los encabezados de la respuesta: Set-Cookie: access_token=...; HttpOnly; Max-Age=...; Path=/; SameSite=lax
+# (con `Secure` si COOKIE_SECURE=true). El cuerpo es {mensaje, debe_cambiar_password, expira_en_segundos}: SIN token.
+# @name loginAna
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "ana@example.com",
+  "password": "{{passAna}}"
+}
+
+### Control positivo: /auth/yo con la cookie
+# Esperado: 200 usuario ana@example.com, roles_vigentes y roles_token con CLIENTE.
+# @no-cookie-jar
+GET {{host}}/auth/yo
+Cookie: {{loginAna.response.headers.Set-Cookie}}
+
+### Sin cookie
+# Esperado: 401
+# @no-cookie-jar
+GET {{host}}/auth/yo
+
+### Con el token en Authorization: Bearer (y sin cookie)
+# Esperado: 401 `Authorization` nunca se lee.
+# REST Client no puede recortar un encabezado, así que acá viaja el valor completo del Set-Cookie
+# (el token real con los atributos detrás). Para la prueba estricta se puede pegar a mano, en lugar
+# de la variable, sólo el token (lo que sigue a `access_token=` hasta el `;`), SIN commitearlo: también da 401.
+# tests/test_auth_sesion_db.py ya lo prueba con el token pelado.
+# @no-cookie-jar
+GET {{host}}/auth/yo
+Authorization: Bearer {{loginAna.response.headers.Set-Cookie}}

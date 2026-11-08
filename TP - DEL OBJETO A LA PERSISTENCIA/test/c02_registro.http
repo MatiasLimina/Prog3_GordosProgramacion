@@ -1,0 +1,61 @@
+@host = http://localhost:8000
+# Contraseñas de mentira (de usuarios que se crean o no existen en este archivo).
+@passNueva = clave-nueva-1
+@passLucia = clave-lucia-1
+
+# C-02 · Auto-registro y correos repetidos.
+# Antes de correr: `python seed.py`. Se corre de arriba abajo.
+
+### Registro de un correo nuevo
+# Esperado: 201 usuario creado (sin password_hash); queda con rol CLIENTE y su ficha de cliente.
+# @no-cookie-jar
+POST {{host}}/auth/registro
+Content-Type: application/json
+
+{
+  "email": "persona@example.com",
+  "nombre": "Persona Nueva",
+  "password": "{{passNueva}}"
+}
+
+### El mismo correo otra vez
+# Esperado: 409 «Ya existe un usuario con ese correo.»
+# @no-cookie-jar
+POST {{host}}/auth/registro
+Content-Type: application/json
+
+{
+  "email": "persona@example.com",
+  "nombre": "Persona Nueva",
+  "password": "{{passNueva}}"
+}
+
+### Correo de un cliente que ya existe (Lucía, sin usuario)
+# Esperado: 409 «Ya existe un cliente con ese correo.» No se apropia de la ficha de Lucía.
+# @no-cookie-jar
+POST {{host}}/auth/registro
+Content-Type: application/json
+
+{
+  "email": "lucia@example.com",
+  "nombre": "Otra Lucía",
+  "password": "{{passLucia}}"
+}
+
+### Login de Lucía: el registro rechazado no creó ningún usuario
+# Esperado: 401 no existe el usuario.
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "lucia@example.com",
+  "password": "{{passLucia}}"
+}
+
+# Control SQL (psql; cómo conectarse: ver el encabezado de test/solo_agregado.sql). Tras correr el archivo:
+#   SELECT count(*) FROM usuario WHERE email = 'lucia@example.com';   -- 0
+#   SELECT usuario_id FROM cliente WHERE email = 'lucia@example.com'; -- NULL (la ficha de Lucía sigue sin usuario)
+#   SELECT count(*) FROM usuario;                                     -- 6 (los 5 del seed + persona@example.com)
+#   SELECT u.email, a.rol FROM asignacion_rol a JOIN usuario u ON u.id = a.usuario_id
+#     WHERE u.email = 'persona@example.com';                          -- CLIENTE

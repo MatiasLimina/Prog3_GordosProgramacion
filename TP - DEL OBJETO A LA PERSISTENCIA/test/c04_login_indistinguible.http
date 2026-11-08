@@ -1,0 +1,30 @@
+@host = http://localhost:8000
+# Contraseña de mentira: no es la de nadie (el objetivo es fallar).
+@passMala = clave-incorrecta-1
+
+# C-04 · Correo existente con contraseña mala y correo inexistente: misma respuesta y mismo tiempo aproximado.
+# Antes de correr: `python seed.py`. Se corre de arriba abajo.
+# Hay que COMPARAR a mano el cuerpo de las dos respuestas y el tiempo que muestra REST Client
+# (el hash ficticio se calcula una sola vez al arrancar, así los dos tardan lo mismo que un bcrypt).
+
+### Correo existente, contraseña mala
+# Esperado: 401 Anotar el cuerpo y el tiempo de respuesta.
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "vendedor@example.com",
+  "password": "{{passMala}}"
+}
+
+### Correo que no existe
+# Esperado: 401 El cuerpo debe ser idéntico al anterior y el tiempo, parecido.
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "noexiste@example.com",
+  "password": "{{passMala}}"
+}

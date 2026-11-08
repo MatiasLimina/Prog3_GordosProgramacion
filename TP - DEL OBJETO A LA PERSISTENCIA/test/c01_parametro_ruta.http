@@ -1,0 +1,37 @@
+@host = http://localhost:8000
+# Contraseña de mentira del seed (seed.py); no es una credencial real.
+@passAdmin = admin-seed-1
+
+# C-01 · Parámetro de ruta que no es un entero de 32 bits -> 422 (no 404 ni 500).
+# Antes de correr: `python seed.py`. Se corre de arriba abajo.
+# Con la sesión iniciada: la validación del parámetro corta antes de ejecutar el handler.
+
+### Sesión del administrador
+# Esperado: 200 Set-Cookie access_token; el cuerpo no trae el token.
+# @name loginAdmin
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "{{passAdmin}}"
+}
+
+### Id no numérico
+# Esperado: 422 error de validación del parámetro venta_id (no 404, no 500).
+# @no-cookie-jar
+GET {{host}}/ventas/abc
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Id fuera del rango de 32 bits (2147483648 = 2^31)
+# Esperado: 422 error de validación del parámetro libro_id.
+# @no-cookie-jar
+GET {{host}}/libros/2147483648
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Control: un id válido y existente responde 200
+# Esperado: 200
+# @no-cookie-jar
+GET {{host}}/ventas/1
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}

@@ -1,0 +1,49 @@
+@host = http://localhost:8000
+# Contraseñas de mentira del seed (seed.py); no son credenciales reales.
+@passAdmin = admin-seed-1
+
+# C-15 · El detalle de una venta emite un número FIJO de consultas (sin N+1), con 2 o con 4 renglones.
+# Antes de correr: `python seed.py` y levantar el servidor con SQL_ECHO=true en .env (o en el entorno):
+#   uvicorn app.main:app --reload
+# Se corre de arriba abajo. En la consola, contar las consultas SQL que salen entre cada GET /ventas/{id} y el siguiente
+# pedido: tienen que ser la MISMA cantidad en los dos detalles (el mismo usuario hace los dos, así las consultas de
+# sesión y de roles son iguales). Pegar la consola en evidencia/ (la captura es de CHG-20).
+
+### Sesión del administrador
+# Esperado: 200
+# @name loginAdmin
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@example.com", "password": "{{passAdmin}}" }
+
+### Detalle de la venta 1 (2 renglones)
+# Esperado: 200 dos renglones. Contar las consultas de la consola.
+# @no-cookie-jar
+GET {{host}}/ventas/1
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Venta de 4 renglones (cliente 2; libros 1 a 4 × 1)
+# Esperado: 201
+# @name ventaCuatro
+# @no-cookie-jar
+POST {{host}}/ventas/
+Content-Type: application/json
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 1 },
+    { "libro_id": 2, "cantidad": 1 },
+    { "libro_id": 3, "cantidad": 1 },
+    { "libro_id": 4, "cantidad": 1 }
+  ]
+}
+
+### Detalle de la venta de 4 renglones
+# Esperado: 200 cuatro renglones. Las consultas de la consola: la misma cantidad que en el detalle de la venta 1.
+# @no-cookie-jar
+GET {{host}}/ventas/{{ventaCuatro.response.body.$.id}}
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}

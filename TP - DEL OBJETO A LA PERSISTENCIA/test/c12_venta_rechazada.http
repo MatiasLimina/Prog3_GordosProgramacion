@@ -1,0 +1,66 @@
+@host = http://localhost:8000
+# Contraseñas de mentira del seed (seed.py); no son credenciales reales.
+@passAdmin = admin-seed-1
+@passVendedor = vendedor-seed-1
+
+# C-12 · Venta con cliente inexistente, libro inexistente o libro dado de baja: 409 y sin escrituras.
+# Antes de correr: `python seed.py`. Se corre de arriba abajo.
+
+### Sesión del vendedor
+# Esperado: 200
+# @name loginVendedor
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "vendedor@example.com", "password": "{{passVendedor}}" }
+
+### Sesión del administrador
+# Esperado: 200
+# @name loginAdmin
+# @no-cookie-jar
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@example.com", "password": "{{passAdmin}}" }
+
+### El administrador da de baja Bestiario (libro 5)
+# Esperado: 204
+# @no-cookie-jar
+DELETE {{host}}/libros/5
+Cookie: {{loginAdmin.response.headers.Set-Cookie}}
+
+### Venta con un cliente que no existe
+# Esperado: 409 «El cliente indicado no existe.»
+# @no-cookie-jar
+POST {{host}}/ventas/
+Content-Type: application/json
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+{ "cliente_id": 999999, "renglones": [ { "libro_id": 1, "cantidad": 1 } ] }
+
+### Venta con un libro que no existe
+# Esperado: 409 «El libro indicado no existe.»
+# @no-cookie-jar
+POST {{host}}/ventas/
+Content-Type: application/json
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+{ "cliente_id": 2, "renglones": [ { "libro_id": 999999, "cantidad": 1 } ] }
+
+### Venta con el libro dado de baja
+# Esperado: 409 «El libro 5 está dado de baja.»
+# @no-cookie-jar
+POST {{host}}/ventas/
+Content-Type: application/json
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+{ "cliente_id": 2, "renglones": [ { "libro_id": 5, "cantidad": 1 } ] }
+
+### No quedó ninguna venta nueva
+# Esperado: 200 total 1 (sólo la venta del seed).
+# @no-cookie-jar
+GET {{host}}/ventas/
+Cookie: {{loginVendedor.response.headers.Set-Cookie}}
+
+# Control SQL: correr test/invariante_stock.sql con psql (ver su encabezado); sin diferencias (Bestiario, de baja, sigue en 1).
